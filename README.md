@@ -2,34 +2,39 @@
 
 This JavaScript library implements a web client interface to the Dydra 
 replication facility.
-It mediates persistence for native JavaScript u/i data models through worker
-threads to a remote Dydra replication service via GSP/websockets.
-The remote service implemented CRDT-repositories which reconcile and replicate
+It mediates persistence for native JavaScript application and u/i data models
+through web worker threads to a remote Dydra replication service via
+GSP/websockets.
+The remote service implements CRDT-repositories which reconcile and replicate
 revisions among multiple clients.
 
-The library realizes an application model which spans multiple processes
-and comprises three object kinds
+The library realizes an application model which comprises multiple processes
+and and their respective data:
 
 - web application resources 
   represented as JavaScript objects   
-  identified by a combination of subject iri and application key data  
-  described by JavaScript object fields each of which binds either an atomic
-    value, an object or an array of such
+  identified by a combination of subject iri and application key values  
+  represented by JavaScript object fields each of which binds either an atomic
+    value, an object, or an array of such
   combined into a model which is qualified by revision  
 
 - intermediate graphs  
   each a collection of triples  
-  each marshalls the object field changes associated with a given transaction  
+  each marshalls the object field changes associated with a given application
+    model transaction  
   each associated with a revision to enable undo/redo  
 
-- remote replica  
-  a collection of revisioned quads (that is multiple graphs)  
+- remote replicas  
+  a collection of revisioned quads (that is, multiple graphs) stored in a
+    service repository  
   the subject iri of which correspond to the application model subject iri  
   the predicate arity is either one, for atomic values or higher for arrays  
-  the object terms are either literals or related subject iri
+  the object terms are either literals or subject iri of related resources
 
 
-The JavaScript implementation comprises three realms:
+The JavaScript implementation concerns the first two processes
+and is realized by three components in the client:
+
  - the application API
  - JavaScript / RDF mediation
  - the background remote replication 
@@ -54,13 +59,15 @@ implmentation comprises the files
 It provides the abstract model class, ReplicatedObject, which encapsulates
 specialization intances to track field modifications and record a delta
 map for use by the RDF mediation layer.
-In addition to tracking logic, it provides default implementation for
+In addition to the tracking logic, it provides default implementations for
 the operators which support un/marshalling:
 
     ReplicableObject.RDFToObject
     ReplicableObject.ObjectToRDF
 
-which the application can override as needed.
+Should the application require other than the generic transformations,
+it can override them as needed.
+
 
 ### JavaScript / RDF Mediation
 
@@ -111,21 +118,21 @@ They must also define respective static fields for
     _transactionalProperties
 
 to indicate which fields are to be managed. These are coallesced for the
-respective class, upon first use.
+respective concrete class, upon first use.
 
 The arguments to attach operations serve as roots to a reachability graph,
-of which the objects are registered with the active ObjectStore.
-When a transaction commits, this collection is examined, its field delta maps
-are interpreted to generate GSP PATCH operations to propagate to the remote
-service.
+of which the objects are registered with the transaction's active ObjectStore.
+When a transaction commits, this collection is examined and its field delta
+maps are interpreted to generate GSP PATCH operations to propagate to the
+remote replication service.
 If a transaction aborts, then the maps are used to roll the object states back.
 
 The application main thread also accepts messages from the background worker
-in the form of GSP PATCH operations.
+through the mediation layer in the form of GSP PATCH operations.
 These are translated into
-the corresponding operation on the respective instance to communicate changes to
-the application and the ui.
-In order to handle these changes, the application's data model must implemented
+the corresponding operation on the respective object to communicate changes to
+the application and the U/I.
+In order to handle these changes, the application's data model must implement
 the methods
 
     ReplicatedObject.oncreate
@@ -144,12 +151,12 @@ Its implementation spans the files
     rdf-environment.js
     rdflib.js
 
-The worker accepts onmessage commands from the JavaScript main thread.
+The worker accepts onmessage instructions from the JavaScript main thread.
 These specify [graph store protocol](https://www.w3.org/TR/2013/REC-sparql11-http-rdf-update-20130321/)
 operations, most likely PATCH to effect implicit object persistence,
 but also PUT and DELETE for blanket modifications.
 
 The worker's websocket connection to the remote service also accepts remote
-notifications in the form of GSP PATCH operations, which it communicates as
-messages back to the main thread.
+instructions in the form of GSP PATCH operations.
+It communicates these as messages back to the main thread.
 
