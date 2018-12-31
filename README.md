@@ -1,52 +1,56 @@
-## dydra replication web client support
+## dydra web client support
 
-This JavaScript library implements a web client interface to the Dydra 
-replication facility.
+This library implements a JavaScript web client interface to the Dydra 
+RDF service.
 It mediates persistence for native JavaScript application and u/i data models
-through web worker threads to a remote Dydra replication service via
-GSP/websockets.
-The remote service implements CRDT-repositories which reconcile and replicate
-revisions among multiple clients.
+to a remote Dydra service via GSP/HTTP and/or websockets.
+The remote service implements either W3C GSP-conformant transactional repositories,
+revisioned repositories which maintain data through PUT/POST/DELETE operations
+or CRDT-repositories which interpret PATCH opertations to replicate and
+reconcile data among multiple clients.
 
-The library realizes an application model which comprises multiple processes
-and and their respective data:
+The library integrates an application data model with a remote store
+by reconciling representations in three realms:
 
-- web application resources 
+- web application data  
   represented as JavaScript objects   
-  identified by a combination of subject iri and application key values  
-  represented by JavaScript object fields each of which binds either an atomic
-    value, an object, or an array of such
-  combined into a model which is qualified by revision  
+  identified by a combination of instance identifier and application key values  
+  represented by JavaScript object properties, each of which binds either an atomic
+    value, an object, or an array of such  
+  combined into an active model which is associated with a revision  
+  JavaScript proxy objects monitor access to instance fields and propagate
+    them through the intermediate graphs to the store  
+
+- persistent data  
+  represented as a revisioned collection of RDF quads stored in a
+    service repository  
+  where the subject iri correspond to the application model instance identifier  
+  the predicate arity is either one, for atomic values or higher for arrays  
+  the object terms are either literals or subject iri of related resources  
 
 - intermediate graphs  
   each a collection of triples  
-  each marshalls the object field changes associated with a given application
+  each captures the object field changes associated with a given application
     model transaction  
+  a JSON-LD context governs the relation between terms and property values  
   each associated with a revision to enable undo/redo  
 
-- remote replicas  
-  a collection of revisioned quads (that is, multiple graphs) stored in a
-    service repository  
-  the subject iri of which correspond to the application model subject iri  
-  the predicate arity is either one, for atomic values or higher for arrays  
-  the object terms are either literals or subject iri of related resources
+The library concerns the application data, the intermediate
+graph and communicating it to the remote RDF repository.
+It is realized by three components in the client:
 
-
-The JavaScript implementation concerns the first two processes
-and is realized by three components in the client:
-
- - the application API
+ - the GraphObject API
  - JavaScript / RDF mediation
- - the background remote replication 
+ - the background remote requst processing 
 
 
-       application API                         background replication
-    <- ReplicableObject ->               <---------- RDF-worker --------->
+        application API                         background requests
+    <-    GraphObject   ->               <- GraphStore + RDF GSP,SPARQL ->
     
     Object  -  field-cache  -  Graph  -  GSP/websockets  -  RDF-repository
     
                       JavaScript / RDF mediation
-               <---------- ReplicaDatabase ----------->
+               <---- GraphDatabase + RDFDatabase ----->
 
 
 ### Application API
@@ -54,109 +58,147 @@ and is realized by three components in the client:
 The application API supports the user interface data model. Its
 implmentation comprises the files
 
-    replicated-object.js
+    graph-object.js
 
-It provides the abstract model class, ReplicatedObject, which encapsulates
-specialization intances to track field modifications and record a delta
-map for use by the RDF mediation layer.
-In addition to the tracking logic, it provides default implementations for
-the operators which support un/marshalling:
+It provides the abstract model class, GraphObject, which encapsulates
+intances of specializations to track field modifications and record a delta
+map for use by the store mediation
+layer.
+That relies on, in addition to the tracking logic, default
+methods to transform the delta map into an abstract patch
+according to instance state (clean, deleted, modified, new, etc.)
+and on logic to manage declarations for managed properties
 
-    ReplicableObject.RDFToObject
-    ReplicableObject.ObjectToRDF
-
+    GraphObject.prototype.asPatch[]()
+    GraphObject.prototype.managedProperties()
+    GraphObject.prototype.persistentProperties()
+    GraphObject.prototype.transactionalProperties()
+    
 Should the application require other than the generic transformations,
 it can override them as needed.
+In connection with these, the respective concrete U/I classes must
+They must also define respective static fields for
 
+    _persistentProperties
+    _transactionalProperties
+
+to indicate which fields are to be managed.
+These are coallesced for the respective concrete class, upon first use.
 
 ### JavaScript / RDF Mediation
 
 The mediation layer implements the relation between the native JSON data
-model and its representation as RDF. Its implementation comprises the files
+model and its representation as RDF. Its elements incorporate two layers:
+absctract graph operations and RDF-specific implementations:
 
-    replica-database.js
-    rdf-environment.js
-    rdf-context.js
-    rdf-graph.js
+    graph-database.js
+    RDF-database.js
+    graph-environment.js
+    RDF-environment.js
 
-and includes the remote libraries
+and includes the utility
 
-    json-ld.js
-    rdflib.js
+    uuid-v1.js
 
-At the mediation layer, the class ReplicaDatabase provides a means
+
+At the mediation layer, the class GraphDatabase provides the means
 for the application to realize persistence either by
 [JDO-like](https://db.apache.org/jdo/) reachability or through
 explicit store write operations. Either approach follows the pattern defined by
 [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
 ([google](https://developers.google.com/web/ilt/pwa/working-with-indexeddb),
  [w3c](https://www.w3.org/TR/IndexedDB-2)),
-in that a ReplicaTransaction provides the context for both implicitly
+in that a GDBTransaction provides the context for both implicitly
 persistent model data manipulation and explicit store operations.
+
 In order to propagate commits and accept remote notifications this relies on
-RDFGraph instances and it, in turn, on RDFEnvironment and RDFContext instances,
+RDFGraph instances and it, in turn, on RDFEnvironment  instances,
 to perform un/marshalling between RDF graphs and JSON objects.
 
 The mediation layer provides the operations
 
-    ReplicaObjectStore.put
-    ReplicaObjectStore.get
-    ReplicaObjectStore.delete
-    {ReplicaDatabase,ReplicaObjectStore}.attach
-    {ReplicaDatabase,ReplicaObjectStore}.detach
-    ReplicaObjectStore.transaction
-    ReplicaTransaction.abort
-    ReplicaTransaction.commit
-    ReplicaTransaction.objectStore
+    GraphDatabase.objectStore
+    GraphDatabase.transaction
+    GDBObjectStore.put
+    GDBObjectStore.get
+    GDBObjectStore.delete
+    GDBObjectStore.attach
+    GDBObjectStore.detach
+    GDBTransaction.abort
+    GDBTransaction.commit
+    GDBTransaction.objectStore
 
-In connection with these, the respective concrete U/I classes must
+which implement the abstract mechanisms to bind instance to stores,
+create transactions to govern changes and transform state changes onto
+store requests upon transaction completion.
+
+
+
+
+They rely on the RDF-specific implementation in 
 implement RDF instance identifiers and IndexedDB key functions to govern the
 relation between data model entities and their remote RDF representation.
-They must also define respective static fields for
 
-    _persistentProperties
-    _transactionalProperties
 
-to indicate which fields are to be managed. These are coallesced for the
-respective concrete class, upon first use.
 
 The arguments to attach operations serve as roots to a reachability graph,
 of which the objects are registered with the transaction's active ObjectStore.
 When a transaction commits, this collection is examined and its field delta
 maps are interpreted to generate GSP PATCH operations to propagate to the
 remote replication service.
-If a transaction aborts, then the maps are used to roll the object states back.
+If a transaction aborts, then the maps are used to roll the object states back
+view the method
 
-The application main thread also accepts messages from the background worker
-through the mediation layer in the form of GSP PATCH operations.
-These are translated into
-the corresponding operation on the respective object to communicate changes to
-the application and the U/I.
-In order to handle these changes, the application's data model must implement
-the methods
-
-    ReplicatedObject.oncreate
-    ReplicatedObject.onupdate
-    ReplicatedObject.ondelete
+    GraphObject.prototype.rollback
 
 ### Background Replication
 
-The communication with the remote RDF service for the actual data replication
-is accomplished by a background
-[web worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API).
-Its implementation spans the files
+The interaction with a remote RDF service for the actual data exchange
+is accomplished by a background via Promises.
+When either a transaction is committed explicitly or a chain of GDBObjectStore put
+operations completes, the deferred phase transforms the abstract 
+patch descriptions into a concrete GSP request and executes it on the remote 
+service.
 
-    rdf-worker.js
-    rdf-graph-store.js
-    rdf-environment.js
-    rdflib.js
+This is defined in 
 
-The worker accepts onmessage instructions from the JavaScript main thread.
-These specify [graph store protocol](https://www.w3.org/TR/2013/REC-sparql11-http-rdf-update-20130321/)
-operations, most likely PATCH to effect implicit object persistence,
-but also PUT and DELETE for blanket modifications.
+    rdf-database.js
 
-The worker's websocket connection to the remote service also accepts remote
-instructions in the form of GSP PATCH operations.
-It communicates these as messages back to the main thread.
+as concrete implemetations for the operators
+
+    RDFDatabase.prototype.describe()
+    RDFDatabase.prototype.head()
+    RDFDatabase.prototype.get()
+    RDFDatabase.prototype.patch()
+
+which rely on the RDFEnvironment implementation for
+     
+    RDFEnvironment.prototype.createPatch()
+    RDFEnvironment.prototype.createNamedNode()
+
+and GSP/SPARQL implementation for
+
+    GSP.get()
+    GSP.head()
+    GSP.patch()
+
+The operations yielf IndexedDB Request results and completion
+notification is through the onsuccess property.
+
+
+### NYI: Background change notification
+
+The application main thread receives changes from background websocket
+listeners, which accept patch requests from the remote service.
+These are translated back into GraphObject references and property
+delta maps, which are passed to the application in the events
+
+    GraphObject.prototype.oncreate
+    GraphObject.prototype.onupdate
+    GraphObject.prototype.ondelete
+
+for it to examine and apply with the methods
+
+    GraphObject.prototype.rollforward
+
 

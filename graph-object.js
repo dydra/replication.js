@@ -191,6 +191,25 @@ export class GraphObject {
     return (self.asPatch[self._state].call(self));
   }
 
+  rollback(patch) {
+    var self = this._self || this;
+    patch.forEach(function(name, values) {
+      var value = values[1];
+      if (value != undefined) {
+        self[name] = value;
+      }
+    });
+  }
+  rollforward(patch) {
+    var self = this._self || this;
+    patch.forEach(function(name, values) {
+      var value = values[0];
+      if (value != undefined) {
+        self[name] = value];
+      }
+    });
+  }
+
 }
 
 GraphObject.stateClean = "clean";
@@ -212,24 +231,6 @@ GraphObject.prototype.asPatch[GraphObject.stateDeleted] =
     statements.push([id, "@type", self.constructor.name]);
     return ({delete: statements});
   }
-
-GraphObject.stateNew = "new";
-GraphObject.prototype.asPatch[GraphObject.stateNew] =
-  function() {
-    //console.log('GraphObject.prototype.asPatch[GraphObject.stateNew]');
-    //console.log(this);
-    //console.log(this.persistentProperties());
-    // iterate over all properties and collect the elements to delete
-    var self = this;
-    var id = self.identifier;
-    var statements = [];
-    self.persistentProperties().forEach(function(name) {
-      statements.push([id, name, self[name]]);
-    });
-    statements.push([id, "@type", self.constructor.name]);
-    return ({post: statements});
-  }
-
 
 GraphObject.stateModified = "dirty";
 GraphObject.prototype.asPatch[GraphObject.stateModified] =
@@ -253,8 +254,27 @@ GraphObject.prototype.asPatch[GraphObject.stateModified] =
     return ({post: posts, delete: deletes});
   }
 
+GraphObject.stateNew = "new";
+GraphObject.prototype.asPatch[GraphObject.stateNew] =
+  function() {
+    //console.log('GraphObject.prototype.asPatch[GraphObject.stateNew]');
+    //console.log(this);
+    //console.log(this.persistentProperties());
+    // iterate over all properties and collect the elements to delete
+    var self = this;
+    var id = self.identifier;
+    var statements = [];
+    self.persistentProperties().forEach(function(name) {
+      statements.push([id, name, self[name]]);
+    });
+    statements.push([id, "@type", self.constructor.name]);
+    return ({post: statements});
+  }
 
-// collect property definitions from classes and bind to prototypes
+
+// collect property definitions from classes on-demand.
+// walk the constructor chain from the requesting class
+// bind to respective initiating prototype
 GraphObject.computeEffectiveProperties = function(name) {
   var props = [];
   for (constructor = this;
@@ -265,6 +285,7 @@ GraphObject.computeEffectiveProperties = function(name) {
     if (!cprops) { break; }
     props = props.concat(cprops || []);
   }
+  // de-duplicate
   return (Array.from(new Set(props)));
 }
 GraphObject.managedProperties = function() {
@@ -348,6 +369,7 @@ Row = class Row extends GraphObject {
     this._email = email.trim();
   }
 }
+Row._persistentProperties = ['_identifier', '_mail'];
 
 var r = new Row("a name");
 */

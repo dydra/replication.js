@@ -50,4 +50,4 @@ export class RDFDatabase extends GraphDatabase {
   }
 }
 
-console.log('rdf-database.js: loaded');
+// console.log('rdf-database.js: loaded');
