@@ -43,14 +43,15 @@ It is realized by three components in the client:
  - JavaScript / RDF mediation
  - the background remote requst processing 
 
-
-        application API                         background requests
+<div style='text-justify: none'>
+        application API                         background requests  
     <-    GraphObject   ->               <- GraphStore + RDF GSP,SPARQL ->
     
     Object  -  field-cache  -  Graph  -  GSP/websockets  -  RDF-repository
     
-                      JavaScript / RDF mediation
+                      JavaScript / RDF mediation  
                <---- GraphDatabase + RDFDatabase ----->
+</div>
 
 
 ### Application API
