@@ -41,10 +41,9 @@ It is realized by three components in the client:
 
  - the GraphObject API
  - JavaScript / RDF mediation
- - the background remote requst processing 
+ - the background remote request processing 
 
-<div style='text-justify: none'>
-
+<pre>
         application API                         background requests  
     <-    GraphObject   ->               <- GraphStore + RDF GSP,SPARQL ->
     
@@ -53,7 +52,7 @@ It is realized by three components in the client:
                       JavaScript / RDF mediation  
                <---- GraphDatabase + RDFDatabase ----->
 
-</div>
+</pre>
 
 
 ### Application API
