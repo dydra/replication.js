@@ -44,6 +44,7 @@ It is realized by three components in the client:
  - the background remote requst processing 
 
 <div style='text-justify: none'>
+
         application API                         background requests  
     <-    GraphObject   ->               <- GraphStore + RDF GSP,SPARQL ->
     
@@ -51,6 +52,7 @@ It is realized by three components in the client:
     
                       JavaScript / RDF mediation  
                <---- GraphDatabase + RDFDatabase ----->
+
 </div>
 
 
