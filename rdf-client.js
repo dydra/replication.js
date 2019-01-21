@@ -2,10 +2,11 @@
 
 // prefetch everything of interest
 
-
-import * as rdfjs from '/javascripts/vendor/rdfjs/data-model/dist/rdf-data-model.js';
-export {rdfjs};
+// /javascripts/vendor/nearley/lib/nearley.js
+//import * as rdfjs from '/javascripts/vendor/rdfjs/data-model/dist/rdf-data-model.js';
+//export {rdfjs};
 //import * as URI from '/javascripts/vendor/uri-js/dist/es5/uri.all.min.js';
+import * as nearley from '/javascripts/vendor/nearley/lib/nearley.js';
 import * as nquadsGrammar from './n-quads-grammar.js';
 import {GraphEnvironment} from './graph-environment.js';
 export {GraphEnvironment};

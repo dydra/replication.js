@@ -82,13 +82,18 @@ import {GraphObject} from './graph-object.js';
 import {NotFoundError} from './errors.js';
 import * as $uuid from './revision-identifier.js';
 
+const now = Date.now;
+window.theWebsocket = null;
+
 class GraphFactory extends IDBFactory {
 
   open(name, location, authentication) {
     return (new GraphDatabase(name, location, authentication));
   }
 
-  cmp(iri1, iri2) {}
+  cmp(iri1, iri2) { // why is this necessary
+    return (iri1.equals(iri2));
+  }
 
   deleteDatabase(name) { console.log("deleteDatabase is ignored");}
 }
@@ -101,11 +106,35 @@ export class GraphDatabase { // extends IDBDatabase {
     this.name = name;
     this.location = location;
     this.revision = "HEAD";
+    this.revisions = [];
     this.authentication = authentication;
     this.objectStores = {};
     this.environment = options.environment ||
      new (options.environmentClass || GraphDatabase.graphEnvironmentClass)();
-    //console.log(this);
+    var url = 'wss://' + (new URL(location)).host + '/ws';
+    console.log("websocket url", url);
+    var wsOptions = {"method": "HEAD"};
+    var websocket = (options.asynchronous ? new WebSocket(url, null, wsOptions) : null);
+//    var websocket = (options.asynchronous ? new WebSocket(url) : null);
+    console.log("websocket");
+    console.log(websocket);
+    this.websocket = websocket;
+    window.theWebsocket = websocket;
+    websocket.addEventListener('open', function (event) {
+      console.log('websocket open ', event);
+      websocket.send('GET /james/public/service HTTP/1.1\r\nAccept: application/n-quads\r\n\r\n');
+      console.log('websocket sent');
+    });
+    websocket.onerror = function(event) {
+      console.log("websocket error ", event.data);
+    }
+    websocket.onclose = function() {
+      console.log("websocket closed");
+    }
+    websocket.addEventListener('message', function (event) {
+      console.log('Message from server ', event.data);
+    });
+
     //console.log(this.objectStores);
     var thisDatabase = this;
     if (location) {
@@ -116,7 +145,7 @@ export class GraphDatabase { // extends IDBDatabase {
         //console.log(thisDatabase);
         //console.log(that);
         thisDatabase.head({}).then(function(response) {
-          //console.log("responded");
+          //console.log("head responded");
           //console.log(response);
           //for (var [k,v] of response.headers.entries()) {console.log([k,v])};
           var etag = response.headers.get('etag');
@@ -159,7 +188,8 @@ export class GraphDatabase { // extends IDBDatabase {
     } else {
       var newStore = new GDBObjectStore(name, {environment: environment});
       this.objectStores[name] = newStore;
-      newStore.database = this;
+      Object.defineProperties(newStore,
+                             {database: {value: this, writable: false}});
       //console.log(this.objectStores);
       return( newStore );
     }
@@ -202,6 +232,7 @@ export class GraphDatabase { // extends IDBDatabase {
 
   transaction(names = this.objectStoreNames(), mode) {
     var transaction = new GDBTransaction(this, names, mode);
+    transaction.environment = this.environment;
     return (transaction);
   }
 
@@ -219,7 +250,10 @@ export class GraphDatabase { // extends IDBDatabase {
     throw (new Error(`${this.constructor.name}.get must be defined`));
   }
   patch(content, options, continuation) {
-    throw (new Error(`${this.constructor.name}.patch must be defined`));
+    var patch = this.environment.createPatch(content)
+    patch.date = Date.now;
+    patch.revision = this.revision;
+    this.revisions.push(patch);
   }
   put(content, options, continuation) {
     throw (new Error(`${this.constructor.name}.put must be defined`));
@@ -270,11 +304,12 @@ export class GDBTransaction { // extends IDBTransaction {
     return (thisTransaction);
   }
 
+  /* in db only
   createObjectStore(name, options = {}) {
     var store = database.createObjectStore(name, {environment: (options.environment || this.environment)});
     return( Object.defineProperties(store,
-                                          {transaction: {value: this, writable: false}}) );
-  }
+                                    {transaction: {value: this, writable: false}}) );
+  }*/
 
   objectStore(name) {
     var store = this.stores[name];
@@ -305,16 +340,23 @@ export class GDBTransaction { // extends IDBTransaction {
     // pass the collected operations through to the remote Graph
     var request = new CommitRequest(this, this);
     var thisTransaction = this;
+
     var p = this.database.patch({delete: deletes, post: posts, put: puts},
                                 {},
-                                function(request) {
+                                function(response) {
                                   thisTransaction.cleanObjects();
-                                  if (request.onsuccess) {
-                                    request.onsuccess(new SuccessEvent("success", "commit", request.result));
+                                  if (response.onsuccess) {
+                                    response.onsuccess(new SuccessEvent("success", "commit", response.result));
                                   }
                                   console.log("commit response");
-                                  console.log(request);
-                                  return (request);
+                                  console.log(response);
+                                  console.log("headers");
+                                  for (var [k,v] of response.headers.entries()) {console.log([k,v])};
+                                  var etag = response.headers.get("etag");
+                                  if (etag) {
+                                    thisTransaction.database.revision = etag;
+                                  }
+                                  return (response) ;
                                 });
     return (request);
   }
@@ -363,7 +405,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
     // super(name);
     this.name = name;
     this.environment = options.environment;
-    this.objects = new Set();
+    this.objects = new Map();
     this.requests = [];
     this.patches = [];
     this.transaction = null;
@@ -405,53 +447,76 @@ export class GDBObjectStore { // extends IDBObjectStore {
   // needs to be qualified by revision, allowing HEAD, HEAD^^, etc as well as uuid
   // in order to implement roll-back/forward
   get(key) {
+    console.log("get", key);
     var thisStore = this;
-    var request = new GetRequest(this, this.transaction);
-    this.requests[key] = request;
-    var p = new Promise(function(accept, reject) {
-      switch (typeof(key)) {
-      case 'string' :
-        // retrieve the single instance via from the database
-        this.database.get(this.transaction.location,
-                          {subject: key, revision: this.transaction.parentRevisionID},
-                          function(response) { 
-                            accept(parseRDF(response.body));
-                          });
-        break;
-      case 'object' :
-        // construct a describe
-        this.database.describe(key, {},
-                               function(response) { 
-                                 accept(parseRDF(response.body));
-                               });
-        break;
-      default :
-        return (null);
-      }
-    });
+    var request = new GetRequest(thisStore, thisStore.transaction);
+    var p = null;
+    thisStore.requests[key] = request;
+    console.log(request);
     switch (typeof(key)) {
-    case 'object' :
-      p.then(function(quads) {
-        request.result = thisStore.environment.computeGraphObjects(quads);
-        delete this.requests[key];
-        if (request.onsuccess) {
-          request.onsuccess(new SuccessEvent("success", "get", request.result));
-        }
-        thisStore.transaction.commitIfComplete();
-      });
-      break; 
     case 'string' :
-      p.then(function(quads) {
-        request.result = thisStore.environment.computeGraphObject(quads, key);
-        delete this.requests[key];
-        if (request.onsuccess) {
-          request.onsuccess(new SuccessEvent("success", "get", request.result));
+      p = // perform a get retrieve the single instance via from the database
+        thisStore.database.get(this.transaction.location,
+                          {subject: key, revision: thisStore.revision});
+      break;
+    case 'object' :
+      console.log("as object");
+      p = // construct a describe to retrieve the single instance via from the database
+        thisStore.database.describe(key, {revision: thisStore.revision, "Accept": 'application/n-quads'});
+      break;
+    default :
+      return (null);
+    }
+
+    console.log("dbop promise", p);
+    p.then(function(response) {
+      var contentType = response.headers.get['Content-Type'] || 'application/n-quads';
+      console.log("get.continuation", response);
+      delete thisStore.requests[key];
+      response.text().then(function(text) {
+        console.log("text", text);
+        console.log("aftertext");
+        console.log("store", thisStore);
+        console.log("env", thisStore.environment);
+        console.log("decode", thisStore.environment.decode);
+        var decoded = thisStore.environment.decode(text, contentType);
+        console.log('get decoded', decoded);
+        if (decoded) {
+          var deltas = thisStore.environment.computeDeltas(decoded);
+          console.log("deltas", deltas);
+          var gottenObjects = deltas.map(function(idDeltas) {
+            console.log('next delta', idDeltas);
+            var [id, deltas] = idDeltas;
+            console.log('next id', id);
+            console.log('next id', id, thisStore);
+            console.log('next id', id, thisStore, thisStore.objects);
+            var object = thisStore.objects.get(id);
+            console.log('gotten', object);
+            if (object) {
+              console.log("update");
+              console.log("update", object.onupdate);
+              object.onupdate(deltas);
+            } else {
+              console.log("create"); 
+              object = idDeltas['object'];
+              console.log("create", object); 
+              if (object) {
+                console.log("create", object, object.oncreate); 
+                object.oncreate(deltas);
+              }
+            }
+            return (object);
+          });
+          console.log("gotten objects", gottenObjects);
+          if (request.onsuccess) {
+            request.result = delta;
+            request.onsuccess(new SuccessEvent("success", "get", gottenObjects));
+          }
         }
         thisStore.transaction.commitIfComplete();
       });
-      break; 
-    }    
-    return( request );
+    });
+    return (request);
   }
 
   /* if the object is attached, just marks its closure
@@ -523,7 +588,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
         }
       }
       if (! objects.has(object)) {
-        objects.add(object);
+        objects.set(object.identifier, object);
         object._store = thisStore;
         object._transaction = thisStore.transaction;
         object.persistentValues(object).forEach(attachChild);
@@ -544,7 +609,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
       }
     }
     if (object._store == this) {
-      objects.delete(object);
+      objects.delete(object.identifier);
       object._state = GraphObject.stateNew;
       object._transaction = null;
       object._store = null;
@@ -555,16 +620,14 @@ export class GDBObjectStore { // extends IDBObjectStore {
 
   abort() {
     // revert all attached objects
-    this.objects.forEach(function(object) {
+    this.objects.values().forEach(function(object) {
       if (object._transaction) { // allow for multiple attachments
-        var target = object._self;
+        var target = object._self || object;
         target._transaction = null;
-        target._patch.forEach(function(name, values) {
-          target[name] = values[1];
-        });
+        target.rollback();
       }
     });
-    this.objects = new Set();
+    this.objects = new Map();
     return (this);
   }
 
@@ -582,7 +645,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
       posts = posts.concat(patch.post || []);
       puts = puts.concat(patch.put || []);
     });
-    this.objects.forEach(function(object) {
+    this.objects.values().forEach(function(object) {
       var patch = object.asPatch();
       //console.log('asPatch.forEach');
       //console.log(patch);
@@ -590,7 +653,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
       posts = posts.concat(patch.post || []);
       puts = puts.concat(patch.put || []);
     });
-    return (this.environment.createPatch({delete: deletes, post: posts, put: puts}));
+    var patch = this.environment.createPatch({delete: deletes, post: posts, put: puts});
+    return (patch);
   }
 
   cleanObjects() {
@@ -598,12 +662,10 @@ export class GDBObjectStore { // extends IDBObjectStore {
       if (object instanceof GraphObject) {
         var state = object._state;
         object._state = GraphObject.stateClean; 
-        return (state != GraphObject.stateDeleted);
       } else { // there should not be anything else
-        return (false);
       }
     }
-    this.objects = this.objects.forEach(cleanObject);
+    this.objects.values().forEach(cleanObject);
   }
 
 
@@ -625,6 +687,8 @@ class GraphRequest extends IDBRequest {
   noSuccessProvided() {};
 }
 
+export class GetRequest extends GraphRequest {
+}
 export class PostRequest extends GraphRequest {
 }
 export class PutRequest extends GraphRequest {
@@ -635,4 +699,4 @@ export class CommitRequest extends GraphRequest {
 }
 
 
-console.log('Graph-database.js: loaded');
+console.log('graph-database.js: loaded');

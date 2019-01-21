@@ -9,8 +9,8 @@ import {GraphDatabase} from './graph-database.js';
 import {GSP, SPARQL} from './rdf-graph-store.js';
 import * as RDFEnvironment from './rdf-environment.js';
 
-console.log('rdf-database.js: start');
-console.log(GraphDatabase);
+// console.log('rdf-database.js: start');
+// console.log(GraphDatabase);
 
 export class RDFDatabase extends GraphDatabase {
   constructor(name, location, authentication, options = {}) {
@@ -18,16 +18,17 @@ export class RDFDatabase extends GraphDatabase {
   }
 
   head(options, continuation) {
-    console.log("inhead");
+    // console.log("RDFDatabase.head");
     options = Object.assign({}, options, {authentication: this.authentication});
     var p = GSP.head(this.location, options, continuation);
     return (p);
   }
 
   patch(content, options, continuation) {
+    super.patch(content, options, null);
     options = Object.assign({}, options, {authentication: this.authentication});
-    console.log('RDFDatabase.patch');
-    console.log(options);
+    //console.log('RDFDatabase.patch');
+    //console.log(options);
     var p = GSP.patch(this.location,
                       this.environment.createPatch(content),
                       options,
@@ -35,18 +36,37 @@ export class RDFDatabase extends GraphDatabase {
     return (p);
   }
   get(options, continuation) {
+    var decodeGetContent = function(response) {
+      // yields a graph or a patch depending on arriving media type
+      var content = this.environment.decode(response.headers.get('Content-Type'), response.body);
+      return (continuation(content));
+    };
     options = Object.assign({}, options, {authentication: this.authentication});
     return (GSP.get(this.location, options,
-                    continuation));
+                    decodeGetContent));
   }
   describe(keyObject, options, continuation) {
-    options = Object.assign({}, options, {authentication: this.authentication});
-    var where = key.entries.map(function([key, value]) {
-      var predicate = this.environment.createNamedNode(key);
-      return (`?s ${predicate} ${value}`);
-    }).join(' . ');
+    console.log("describe");
+    console.log(keyObject);
+    var thisDatabase = this;
+    options = Object.assign({}, options, {authentication: thisDatabase.authentication});
+    var properties = keyObject.persistentProperties();
+    var where = Object.getOwnPropertyNames(keyObject).map(function(key) {
+      if (properties.indexOf(key) >= 0) {
+        var value = keyObject[key];
+        if (value) {
+          var predicate = thisDatabase.environment.createNamedNode(key);
+          console.log('predicate ' + key + ' : ' + predicate)
+          return (`?s <${predicate.lexicalForm}> "${value}" .`);
+        } else {
+          return ("");
+        }
+      } else {
+       return ("");
+      }
+    }).join(' ');
     var query = `describe ?s where { ${where} }`;
-    return (SPARQL.get(this.location, query, options, continuation));
+    return (SPARQL.get(thisDatabase.location, query, options, continuation));
   }
 }
 

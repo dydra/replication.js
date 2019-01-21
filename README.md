@@ -15,11 +15,11 @@ by reconciling representations in three realms:
 - web application data  
   represented as JavaScript objects   
   identified by a combination of instance identifier and application key values  
-  represented by JavaScript object properties, each of which binds either an atomic
+  described by JavaScript object properties, each of which binds either an atomic
     value, an object, or an array of such  
   combined into an active model which is associated with a revision  
-  JavaScript proxy objects monitor access to instance fields and propagate
-    them through the intermediate graphs to the store  
+  JavaScript proxy objects monitor access to instance propertiess and propagate
+    them to the store  
 
 - persistent data  
   represented as a revisioned collection of RDF quads stored in a
@@ -30,7 +30,7 @@ by reconciling representations in three realms:
 
 - intermediate graphs  
   each a collection of triples  
-  each captures the object field changes associated with a given application
+  each captures the object property changes associated with a given application
     model transaction  
   a JSON-LD context governs the relation between terms and property values  
   each associated with a revision to enable undo/redo  

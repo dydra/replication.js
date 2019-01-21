@@ -11,6 +11,7 @@ export class GraphEnvironment {
   constructor(options) {
     //this.context = null;
     this.resolveContext(options['context']);
+    this.module = options['module'] || {};
   }
 
   get baseIRI() {
@@ -70,7 +71,7 @@ export class GraphEnvironment {
     case 'string': // field name
       return (this.context[name] || null);
     case 'object': // url
-      var namestring = identifier.name;
+      var namestring = identifier.lexicalForm;
       def = this.context[namestring];
       if (def) {
         return (def);
@@ -93,11 +94,25 @@ export class GraphEnvironment {
 
 
   findIdentifierName(uri) {
-    var uriNamestring = uri.name;
+    console.log("fin", uri);
+    var uriNamestring = uri.lexicalForm;
     var fieldName = this.context[uriNamestring];
+    if (! fieldName) {
+      for (var name in this.context) {
+        var def = this.context[name];
+        var id = def['@id'];
+        if (id == uriNamestring) {
+          fieldName = name;
+          this.context[uriNamestring] = name;
+          break;
+        }
+      }
+    }
     if (! fieldName) {
       fieldName = this.context[uriNamestring] = predicateLeaf(uri);
     }
+
+    console.log("fin=", fieldName);
     return ( fieldName );
   }
 
@@ -144,17 +159,37 @@ export class GraphEnvironment {
   }
 
   createObject(className, state = {}) {
+    console.log('createObject', className)
+    console.log('prototype', className.prototype)
+    console.log('type', typeof(className))
+    console.log('module', this.module);
+    var classInstance = this.module[className];
+    console.log('class', classInstance);
     var defs = {};
-    Object.entries(state).map(function([entryKey, entryValue]) {
-      defs[entryKey] = {value: entryValue, enumerable: true};
-    });       
-    var instance = Object.create(className.prototype, defs);
-    return( instance );
+    if (state) {
+      Object.entries(state).map(function([entryKey, entryValue]) {
+        defs[entryKey] = {value: entryValue, enumerable: true};
+      });
+    }
+    if (classInstance) {
+      var instance = Object.create(classInstance.prototype, defs);
+      var proxy = instance.createProxy();
+      console.log('graph-environment.createObject', instance);
+      console.log('graph-environment.createObject', proxy);
+      console.log('graph-environment.createObject.type', typeof(instance));
+      console.log('graph-environment.createObject.type', typeof(proxy));
+      console.log('graph-environment.createObject.constructor', instance.constructor);
+      console.log('graph-environment.createObject.constructor', proxy.constructor);
+      return( instance );
+    } else {
+      console.log(`graph-environment.createObject: class not found '${className}'`);
+      return (defs);
+    }
   } 
 }
 
-export function predicateLeaf(uri) {
-  var asURL = new URL(url);
+export function predicateLeaf(url) {
+  var asURL = ( (url instanceof URL) ? url : URL(url.toString()))
   return ( (asURL.hash.length > 0) ? asURL.hash.slice(1) : asURL.pathname.split('/').pop() );
 }
 

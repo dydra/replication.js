@@ -8,15 +8,14 @@
 //const $rdf = require('rdflib');
 //const now = require('performance-now');
 
-console.log(typeof importScripts);
-console.log(("function" === typeof importScripts));
-if ("function" === typeof importScripts) {
+/*if ("function" === typeof importScripts) {
   importScripts('https://solid.github.io/releases/rdflib.js/rdflib-0.12.2.min.js');
 }
 console.log("past importscripts");
+*/
 const now = Date.now;
 
-/* alternative for wen sockets
+/* alternative for web sockets
 var connection = null;
 function logFetch(location, args) {
     console.log('fetchLog');
@@ -26,7 +25,8 @@ function logFetch(location, args) {
     connection = new WebSocket(location);
   }
   return (new Promise(function(resolve, reject) {
-    connection.send(args.body);
+    // need to pack headers and content togetehr for the request
+    connection.send(args.headers + args.body);
     resolve(location);
     return;
   }));
@@ -39,7 +39,10 @@ function logFetch(location, args) {
   console.log(args);
   var headers = args.headers;
   for (var [k,v] of headers.entries()) {console.log([k,v])};
-  return (fetch(location, args));
+  var p = fetch(location, args);
+  p.gsp = location;
+  console.log(p);
+  return (p);
 }
 
 export class GSP {
@@ -209,6 +212,7 @@ GSP.put.ContentType = 'application/n-quads';
 // sparql protocol
 
 SPARQL.get = function(location, query, options = {}, continuation) {
+  console.log("SPARQL.get ", {'options': options});
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.get.acceptMediaType) });
   if (options['authentication']) {
     headers.set("Authorization",
@@ -388,5 +392,5 @@ result = getSPARQL('http://dydra.com/james/test2/sparql',
 
 // console.log(result);
 */
-console.log('graph-store: loaded');
+console.log('rdf-graph-store: loaded');
 

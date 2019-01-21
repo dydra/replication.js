@@ -9,10 +9,12 @@
 //   https://github.com/rdf-ext/rdf-ext
 //   https://github.com/rdfjs/data-model
 
-import * as nquadsGrammar from './n-quads-grammar.js';
+import {grammar as nquadsGrammar} from './n-quads-grammar.js';
+import {grammar as multipartGrammar} from './multipart-grammar.js';
 import { makeUUIDString } from './revision-identifier.js';
 import { GraphEnvironment, predicateLeaf } from './graph-environment.js';
 import { GraphObject } from './graph-object.js';
+import * as nearley from '/javascripts/vendor/nearley/lib/nearley.js';
 
 // possible alternative uri library, but wants punycode via invalid import
 // import * as URI from '/javascripts/vendor/uri-js/dist/esnext/uri.js';
@@ -166,11 +168,11 @@ export class RDFEnvironment extends GraphEnvironment {
   }
 
 
-  computeGraphObject(field, resourceID = RDFFieldResourceID(field).name, context = {}) {
+  computeGraphObject(field, resourceID = this.graphResourceID(field).name, context = new Map()) {
     // close circularity
-    var resource = context[resourceID];
+    var resource = context.get(resourceID);
     if (! resource) {
-      var resourceClass = this.graphClassName(field);
+      var resourceClass = this.graphClassName(field, resourceID);
       if ( resourceClass ) {
         // create the object without state and set just its identifier
         resource = this.createObject(resourceClass)._self;
@@ -178,18 +180,18 @@ export class RDFEnvironment extends GraphEnvironment {
       } else {
         return ( null );
       }
-      context[resourceID] = resource;
+      context.set(resourceID, resource);
     }
     var setEntry = function(statement) {
       if (resourceID.equals(statement.subject)) {
         var predicate = statement.predicate;
-        var name = RDFPredicateName(LDContext, predicate);
-        if (name != "type") {
+        if (! predicate.equals(NamedNode.rdf.type)) {
+          var name = this.findIdentifierName(predicate);
           var object = statement.object;
           var value;
           switch( typeof(object) ) {
             case 'URI':
-              value = computeGraphObject(field, context, object) || object;
+              value = this.computeGraphObject(field, object, context) || object;
               break;     
             default:
               value = this.termValue(object, predicate);
@@ -204,7 +206,7 @@ export class RDFEnvironment extends GraphEnvironment {
     return( resource );
   }
 
-  computeGraphObjects(field, resourceIDs = RDFFieldResourceIDs(field).map(name), context = {}) {
+  computeGraphObjects(field, resourceIDs = this.graphResourceIDs(field).map(name), context = new Map()) {
     return (resourceIDs.map(function(id) { return (computeGraphObject(field, id, context)); }));
   }
 
@@ -214,6 +216,16 @@ export class RDFEnvironment extends GraphEnvironment {
       return ( predicate.equals(NamedNode.rdf.type) ? predicateLeaf(statement.object) : null );
     }
     return( field.some(statementClass) );
+  }
+
+  /* given some response content and an object cache,
+   * extract instance identifiers, isolate the respective statements
+   * find or make an instance respective each identifier
+   * for each instance extract its +/- deltas
+   */
+  computeDeltas(content) {
+    console.log("cd", content, content.computeDeltas);
+    return (content.computeDeltas(this));
   }
  
   computeObjectGraph (object) {
@@ -264,6 +276,11 @@ export class RDFEnvironment extends GraphEnvironment {
       }
       throw (new Error(`RDFEnvironment.toLiteral: invalid value: '${value}' of type '${typeof value}'`));
     }
+  }
+
+  decode(document, mediaType, continuation = null) {
+    console.log("rdfenv.decode", mediaType);
+    return (decode[mediaType](document, continuation));
   }
 }
 
@@ -373,6 +390,57 @@ export class Graph {
 
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
+  }
+
+  computeDeltas(environment) {
+    console.log('computeDeltas', this, environment);
+    console.log('computeDeltas.fin', environment.findIdentifierName)
+    // extract all subjects , for each assemble add/remove sets
+    var ids = [];
+    var allDeltas = new Map();
+      console.log('allDeltas', allDeltas);
+    var addStatementDelta = function(stmt, makeEntry) {
+      console.log("cd.statement", stmt);
+      var name = environment.findIdentifierName(stmt.predicate);
+      var value = environment.toValue(stmt.object, stmt.predicate);
+      console.log("name", name, "value", value);
+      var id = stmt.subject.lexicalForm;
+      console.log('id', id);
+      console.log('allDeltas', allDeltas);
+      var idDeltas = allDeltas.get(id);
+      console.log( 'iddeltas', idDeltas);
+      var delta = makeEntry(value);
+      console.log('entry', delta);
+      var deltas = null;
+      if (! idDeltas ) {
+        deltas = {};
+        idDeltas = [id, deltas];
+        allDeltas.set(id, idDeltas);
+      } else {
+        deltas = idDeltas[1];
+      }
+      console.log('set delta', deltas);
+      deltas[name] = delta;
+      console.log('set delta', deltas);
+      var object = null;
+      if (name == '@type') {
+        console.log('type');
+        var stmtClass = stmt.object.lexicalForm;
+        console.log('class', stmtClass);
+        object = environment.createObject(stmtClass, null);
+        console.log('object by type', object);
+        object._identifier = id;
+        console.log('object by type', object);
+        idDeltas['object'] = object;
+        console.log('object by type', object);
+      }
+      console.log("computeDeltas.asd", stmt);
+    };
+    this.statements.forEach(function(stmt) {
+      addStatementDelta(stmt, function(value) { return ([value, undefined]); });
+    });
+    console.log('computeDeltas', allDeltas);
+    return (Array.from(allDeltas.values()));
   }
 }
 
@@ -569,7 +637,45 @@ export class Patch {
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
   }
-
+  computeDeltas(environment) {
+    // extract all subjects , for each assemble add/remove sets
+    var ids = [];
+    var deltas = new Map();
+    var addStatementDelta = function(stmt, makeEntry) {
+      var name = environment.findIdentifierName(stmt.predicate);
+      var value = environment.toValue(stmt.object, stmt.predicate);
+      var id = stmt.subject.lexicalForm;
+      var idDeltas = deltas.get(id);
+      var delta = makeEntry(value);
+      var object = null;
+      if (name == '@type') {
+        var stmtClass = predicateLeaf(stmt.object)
+        object = environment.createObject(stmtClass, null);
+        object.identifier = id;
+      }
+      var deltas = null;
+      if (! idDeltas ) {
+        deltas = {};
+        deltas.set(id, [id, deltas]);
+      } else {
+        deltas = idDeltas[1];
+      }
+      if (object) {
+        idDeltas.object = object;
+      }
+      deltas[name] = entry;
+    };
+    this.delete.forEach(function(stmt) {
+      addStatementDelta(stmt, function(value) { return ([undefined, value]); });
+    });
+    this.post.forEach(function(stmt) {
+      addStatementDelta(stmt, function(value) { return ([value, undefined]); });
+    });
+    this.put.forEach(function(stmt) {
+      addStatementDelta(stmt, function(value) { return ([value, undefined]); });
+    });
+  return (Array.from(deltas.values()));
+  }
 }
 
 export function createPatch(options) {
@@ -606,15 +712,61 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
   };
 
 
-
-export function decode(document, mediaType, continuation) {
-  return (decode[mediaType](document, continuation));
-}
+export var decode = {};
 
 decode['application/n-quads'] = function(document, continuation) {
-  var parser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar.grammar));
-  var result = parser.feed(document);
-  return (continuation ? continuation(result) : result);
+  console.log("decode['application/n-quads']");
+  console.log('nearley', nearley);
+  console.log('nearley.Parser', nearley.Parser);
+  console.log('nearley.Grammar', nearley.Grammar);
+  console.log('nquadsGrammar', nquadsGrammar);
+  console.log('make parser');
+  var parser = null;
+  try {
+    parser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar));
+  } catch (error) {
+    console.log("from grammar failed: ", error);
+    return (null);
+  }
+  try {
+    var statements = parser.feed(document).results[0];
+    var graph = createGraph(statements);
+    console.log('decoded', graph);
+    return (continuation ? continuation(graph) : graph);
+  } catch (error) {
+    console.log("error", error);
+    return (null);
+  }
+}
+
+decode['multipart/related'] = function(document, continuation) {
+  // segment into parts, parse each, collate respective delete/post/put sections
+  // create and return a patch object
+  var parser = new nearley.Parser(nearley.Grammar.fromCompiled(multipartGrammar));
+  var posts = [];
+  var puts = [];
+  var deletes = [];
+  var parts = parser.feed(document).result[0];
+  if (parts) {
+    parts.forEach(function([headers, content]) {
+      var contentParser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar));
+      var method = headers['X-Http-Method-Override'];
+      graph = contentParser.feed(content);
+      switch(method.toUpperCase()) {
+      case 'delete':
+        deletes = deletes.concat(graph);
+        break;
+      case 'post':
+        posts = posts.concat(graph);
+        break;
+      case 'put':
+        puts = puts.concat(graph);
+        break;
+      }
+    });
+  }
+  var patch = createPatch({delete: deletes, post: posts, put: puts});
+  return (continuation ? continuation(patch) : patch);
 }
 
 export function encode(object, mediaType, continuation) {

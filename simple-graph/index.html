@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>simple graph</title>
+    <link rel="stylesheet" href="simple.css" />
+  </head>
+
+  <body style="width: 100%">
+    <div id="graph"/>
+    <div id="toolbox" style="border: 3px inset grey; position: fixed; left:10px; bottom:10px">
+     <table>
+      <tr><td>content</td><td><textarea id="content" style="width: 40em; height: 10ex;"></textarea></td></tr>
+      <tr><td>location</td><td><input type="text" id="location" style="width: 20em;" value="wss://de8.dydra.com/jhacker/test"></td></tr>
+      <tr><td>authentication</td><td><input type="password" id="authentication" style="width: 20em;"></td></tr>
+      <tr><td><span onclick="window.graphUI.getEntities()">entities</span></td><td>
+       <div id="entitylist" />
+       <!-- <ul id="entitylist" style="background: red;"></ul></td></tr> -->
+     </table>
+     
+    </div>
+
+    <script type="module", src="/javascripts/replication/simple-graph/simple-graph.js"></script>
+  </body>
+
+</html>

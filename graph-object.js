@@ -44,10 +44,14 @@ export class GraphObject {
     this._state = GraphObject.stateNew;
     this._store = null;
     this._transaction = null;
-    this._patch = null;
+    this._deltas = null;
     // out-of-line initialization to avoid proxy
     this.initializeInstance(...arguments);
+    return (this.createProxy());
+  }
 
+  createProxy() {
+    // console.log('create proxy', this);
     var proxy = new Proxy (this, {
       set(target, name, value) {
         //console.log({set: name, value: value});
@@ -69,16 +73,16 @@ export class GraphObject {
             //console.log('persistent set');
             var oldValue = target[name];
             if (oldValue != value ) {
-              var patch = target._patch;
-              if (! patch) {
-                patch = {};
-                target._patch = patch;
+              var deltas = target._deltas;
+              if (! deltas) {
+                deltas = {};
+                target._deltas = deltas;
               }
-              var delta = patch[name];
+              var delta = deltas[name];
               if (delta) {
                 if (delta[1] == value) {
                   // if setting back to the original value, delete the entry
-                  patch.delete(name);
+                  deltas.delete(name);
                 } else {
                   // otherwise replace the new value
                   delta[0] = value;
@@ -86,7 +90,7 @@ export class GraphObject {
               } else {
                 // iff this is the first change, record [new,old]
                 delta = [value, oldValue];
-                patch[name] = delta;
+                deltas[name] = delta;
               }
             }
           } else {
@@ -123,6 +127,7 @@ export class GraphObject {
         }
       }
     });
+    console.log('create proxy', proxy);
     return (proxy);
   }
 
@@ -141,9 +146,9 @@ export class GraphObject {
     return (this._repository);
   }
 
-  oncreate() {}
-  onupdate() {}
-  ondelete() {}
+  oncreate(deltas) { console.log('GraphObject.oncreate'); this.rollforward(deltas); }
+  onupdate(deltas) { this.rollforward(deltas); }
+  ondelete(deltas) { /* ?? */}
 
   persistentValues() {
     var self = this._self || this;
@@ -191,23 +196,24 @@ export class GraphObject {
     return (self.asPatch[self._state].call(self));
   }
 
-  rollback(patch) {
+  // nb. also undefined values, could restrict to null
+  rollback(deltas = this._deltas) {
     var self = this._self || this;
-    patch.forEach(function(name, values) {
+    deltas.forEach(function(name, values) {
       var value = values[1];
-      if (value != undefined) {
-        self[name] = value;
-      }
+      self[name] = value;
     });
   }
-  rollforward(patch) {
+  rollforward(deltas = this._deltas) {
+    console.log('rollforward', deltas);
     var self = this._self || this;
-    patch.forEach(function(name, values) {
+    console.log('rollforward', self);
+    Object.entries(deltas).forEach(function([name, values]) {
+      console.log('rollforward', name, values);
       var value = values[0];
-      if (value != undefined) {
-        self[name] = value];
-      }
+        self[name] = value;
     });
+    console.log('rollforward', this);
   }
 
 }
@@ -241,8 +247,8 @@ GraphObject.prototype.asPatch[GraphObject.stateModified] =
     var posts = [];
     var deletes = [];
     self.persistentProperties().forEach(function(name) {
-      if (self._patch && self._patch.hasOwnProperty(name)) {
-        var [newValue, oldValue] = self._patch[name];
+      if (self._deltas && self._deltas.hasOwnProperty(name)) {
+        var [newValue, oldValue] = self._deltas[name];
         if (oldValue) {
           deletes.push([id, name, oldValue]);
         }
@@ -374,5 +380,5 @@ Row._persistentProperties = ['_identifier', '_mail'];
 var r = new Row("a name");
 */
 
-console.log('Graph-object.js: loaded');
+console.log('graph-object.js: loaded');
 
