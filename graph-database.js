@@ -447,7 +447,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
   // needs to be qualified by revision, allowing HEAD, HEAD^^, etc as well as uuid
   // in order to implement roll-back/forward
   get(key) {
-    console.log("get", key);
+    console.log("GDBObjectStore.get", key);
     var thisStore = this;
     var request = new GetRequest(thisStore, thisStore.transaction);
     var p = null;
@@ -460,7 +460,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
                           {subject: key, revision: thisStore.revision});
       break;
     case 'object' :
-      console.log("as object");
+      console.log("GDBObjectStore.get: as object");
       p = // construct a describe to retrieve the single instance via from the database
         thisStore.database.describe(key, {revision: thisStore.revision, "Accept": 'application/n-quads'});
       break;
@@ -468,7 +468,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
       return (null);
     }
 
-    console.log("dbop promise", p);
+    console.log("GDBObjectStore.get: promise", p);
     p.then(function(response) {
       var contentType = response.headers.get['Content-Type'] || 'application/n-quads';
       console.log("get.continuation", response);
@@ -483,31 +483,31 @@ export class GDBObjectStore { // extends IDBObjectStore {
         console.log('get decoded', decoded);
         if (decoded) {
           var deltas = thisStore.environment.computeDeltas(decoded);
-          console.log("deltas", deltas);
+          console.log("GDBObjectStore.get: deltas", deltas);
           var gottenObjects = deltas.map(function(idDeltas) {
-            console.log('next delta', idDeltas);
+            console.log('GDBObjectStore.get: next delta', idDeltas);
             var [id, deltas] = idDeltas;
             console.log('next id', id);
             console.log('next id', id, thisStore);
             console.log('next id', id, thisStore, thisStore.objects);
             var object = thisStore.objects.get(id);
-            console.log('gotten', object);
+            console.log('GDBObjectStore.get: gotten:', object);
             if (object) {
               console.log("update");
               console.log("update", object.onupdate);
               object.onupdate(deltas);
             } else {
-              console.log("create"); 
+              console.log("GDBObjectStore.get: to create"); 
               object = idDeltas['object'];
-              console.log("create", object); 
+              console.log("GDBObjectStore.get: created", object); 
               if (object) {
-                console.log("create", object, object.oncreate); 
+                console.log("GDBObjectStore.get: created.oncreate", object, object.oncreate); 
                 object.oncreate(deltas);
               }
             }
             return (object);
           });
-          console.log("gotten objects", gottenObjects);
+          console.log("GDBObjectStore.get: gotten objects", gottenObjects);
           if (request.onsuccess) {
             request.result = delta;
             request.onsuccess(new SuccessEvent("success", "get", gottenObjects));
@@ -620,7 +620,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
 
   abort() {
     // revert all attached objects
-    this.objects.values().forEach(function(object) {
+    this.objects.forEach(function(object, id) {
       if (object._transaction) { // allow for multiple attachments
         var target = object._self || object;
         target._transaction = null;
@@ -645,7 +645,11 @@ export class GDBObjectStore { // extends IDBObjectStore {
       posts = posts.concat(patch.post || []);
       puts = puts.concat(patch.put || []);
     });
-    this.objects.values().forEach(function(object) {
+    console.log('asPatch: this: ', this);
+    console.log('asPatch: this.objects: ', this.objects);
+    console.log('asPatch: this.objects.values(): ', this.objects.values());
+    this.objects.forEach(function(object, id) {
+      console.log('asPatch: forEach: ', id, object);
       var patch = object.asPatch();
       //console.log('asPatch.forEach');
       //console.log(patch);
@@ -665,7 +669,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
       } else { // there should not be anything else
       }
     }
-    this.objects.values().forEach(cleanObject);
+    this.objects.forEach(function(object, id) {cleanObject(object);});
   }
 
 

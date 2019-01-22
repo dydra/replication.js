@@ -1,8 +1,8 @@
 var GraphCreator = null;
 
-import { graphDatabase, graphObject, rdfDatabase, rdfEnvironment}
+import { graphDatabase, graphObject, rdfDatabase, rdfEnvironment, GSP, SPARQL}
   from '../rdf-client.js';
-import {GSP, SPARQL} from '../rdf-graph-store.js';
+//import {GSP, SPARQL} from '../rdf-graph-store.js';
 
 class GraphUI {
 
@@ -29,16 +29,18 @@ class GraphUI {
           contentElement.value = text;
           var listElement = document.getElementById('entitylist');
           var json = JSON.parse(text);
-          // console.log('json ', json);
+           console.log('json ', json);
           var bindings = json['results']['bindings'];
           listElement.innerHTML = '';
           bindings.forEach(function(solution) {
             var re = document.createElement('div');
             var id = solution['s']['value'];
-            re.onclick = function(element) {
-              contentElement.value = id;
-              thisGraphUI.getNode(id);
-            };
+            // console.log("addEventListener-", re, id);
+            try { re.addEventListener('click', thisGraphUI.displaySelectedNodeByID, false);
+            } catch (error) {
+              console.log("addEventListener! ", error);
+            }
+            //console.log("addEventListener+");
             re.appendChild(document.createTextNode(id));
             listElement.appendChild(re);
           });
@@ -47,7 +49,17 @@ class GraphUI {
     );
   }
 
-  getNode(id) {
+  displaySelectedNodeByID(event) {
+    var div = event.target;
+    console.log("div", div);
+    var id = div.innerText;
+    console.log("id", id);
+    var contentElement = document.getElementById('content');
+    contentElement.value = id;
+    window.graphUI.getNodeByID(id);
+  }
+
+  getNodeByID(id) {
     var location = this.location();
     var authentication = this.authentication();
     var contentElement = document.getElementById('content');
@@ -68,6 +80,14 @@ class GraphUI {
 function runSimpleGraph() {
   window.graphUI = new GraphUI();
   console.log("GraphUI", window.graphUI);
+  var gebi = document.getElementById('getEntities');
+  console.log("gebi ", gebi);
+  var clickEventHandler = function(event) {
+    console.log('getEntitites event', event);
+    window.graphUI.getEntities(event);
+  };
+  gebi.addEventListener('click', clickEventHandler, false);
+  gebi.addEventListener('touchstart', clickEventHandler, false);
 };
 
 

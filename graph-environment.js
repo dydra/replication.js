@@ -173,14 +173,12 @@ export class GraphEnvironment {
     }
     if (classInstance) {
       var instance = Object.create(classInstance.prototype, defs);
-      var proxy = instance.createProxy();
-      console.log('graph-environment.createObject', instance);
-      console.log('graph-environment.createObject', proxy);
-      console.log('graph-environment.createObject.type', typeof(instance));
-      console.log('graph-environment.createObject.type', typeof(proxy));
-      console.log('graph-environment.createObject.constructor', instance.constructor);
-      console.log('graph-environment.createObject.constructor', proxy.constructor);
-      return( instance );
+      var proxy = instance.createProxy();  // do not test, just require the operator
+      console.log('graph-environment.createObject: instance', typeof(instance), instance);
+      console.log('graph-environment.createObject: proxy', typeof(proxy), proxy);
+      console.log('graph-environment.createObject: instance.constructor', instance.constructor);
+      console.log('graph-environment.createObject: instance.constructor', proxy.constructor);
+      return( proxy );
     } else {
       console.log(`graph-environment.createObject: class not found '${className}'`);
       return (defs);
