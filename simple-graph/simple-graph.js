@@ -29,7 +29,7 @@ class GraphUI {
           contentElement.value = text;
           var listElement = document.getElementById('entitylist');
           var json = JSON.parse(text);
-           console.log('json ', json);
+          // console.log('json ', json);
           var bindings = json['results']['bindings'];
           listElement.innerHTML = '';
           bindings.forEach(function(solution) {
@@ -51,9 +51,7 @@ class GraphUI {
 
   displaySelectedNodeByID(event) {
     var div = event.target;
-    console.log("div", div);
     var id = div.innerText;
-    console.log("id", id);
     var contentElement = document.getElementById('content');
     contentElement.value = id;
     window.graphUI.getNodeByID(id);
@@ -64,7 +62,7 @@ class GraphUI {
     var authentication = this.authentication();
     var contentElement = document.getElementById('content');
     var query = 'describe <' + id + '>';
-    console.log("query ", query);
+    console.log("getNodeByID.query ", query);
     SPARQL.get(location,
                query,
                {"authentication": authentication,
@@ -79,11 +77,10 @@ class GraphUI {
 
 function runSimpleGraph() {
   window.graphUI = new GraphUI();
-  console.log("GraphUI", window.graphUI);
+  console.log("runSimpleGraph.GraphUI", window.graphUI);
   var gebi = document.getElementById('getEntities');
-  console.log("gebi ", gebi);
   var clickEventHandler = function(event) {
-    console.log('getEntitites event', event);
+    // console.log('getEntitites event', event);
     window.graphUI.getEntities(event);
   };
   gebi.addEventListener('click', clickEventHandler, false);

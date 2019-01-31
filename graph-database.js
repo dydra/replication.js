@@ -83,7 +83,7 @@ import {NotFoundError} from './errors.js';
 import * as $uuid from './revision-identifier.js';
 
 const now = Date.now;
-window.theWebsocket = null;
+window.thisDatabase = null;
 
 class GraphFactory extends IDBFactory {
 
@@ -95,8 +95,117 @@ class GraphFactory extends IDBFactory {
     return (iri1.equals(iri2));
   }
 
-  deleteDatabase(name) { console.log("deleteDatabase is ignored");}
+  deleteDatabase(name) {
+    console.log("deleteDatabase is ignored");
+  }
 }
+
+
+function openWebSocket(database) {
+  var location = database.location;
+  console.log("GraphDatabase.openWebSocket: location", location);
+  var p = new Promise(function (resolve, reject) {
+    var url = new URL(location);
+    var host = url.host;
+    var wsURL = 'wss://' + host + '/ws'; // just /ws
+    var websocket = null;
+
+    console.log("GraphDatabase.openWebSocket: url", wsURL);
+    try {
+      websocket = new WebSocket(wsURL);
+    } catch(e) {
+      console.log('openWebSocket.new failed: ', e);
+      return (null);
+    }
+    console.log("GraphDatabase.openWebSocket: websocket", websocket);
+    websocket.onerror = function(event) {
+      console.log("GraphDatabase.openWebSocket: error ", event, websocket);
+      reject(event);
+    };
+    websocket.onclose = function() {
+      console.log("GraphDatabase.openWebSocket: onclose");
+    }
+    websocket.onmessage = function (event) {
+      // console.log("GraphDatabase.openWebSocket: onmessage", event)
+      database.onmessage(event.data);
+    };
+    websocket.onopen = function (event) {
+      console.log("GraphDatabase.openWebSocket: onopen", websocket, event);
+      resolve(websocket);
+    };
+  });
+  return (p);
+}
+
+// extract the request line, headers and body from a websocket response.
+function onmessage_parse(document, options = {hasResponseLine: true}) {
+  var lineRegex = /([^\r\n]*)\r\n/;
+  var nextLine = function () {
+    var result = document.match(lineRegex);
+    if (result) {
+      // console.log("nextLine: ", result);
+      document = document.substring(result[0].length);
+      // console.log("nextLine: ", result, document);
+      return (result[1]);
+    } else {
+      return (null);
+    }
+  }
+  var parseRRLine = function () {
+    var responseLineRegex = /^([^\s]+)\s+([^\s]+)\s+(.*)$/;
+    var line = nextLine() || "";
+    var match = line.match(responseLineRegex);
+    if (!match) {
+      throw(`onmessage_parse: invalid response line: "${line}"`);
+    }
+    var field1 = match[1];
+    if (['DELETE', 'PATCH', 'POST', 'PUT'].includes(field1)) {
+      // is a request
+      return ({httpVersion: match[3], method: field1, path: match[2]});
+    } else {
+      // is a response
+      return ({httpVersion: field1, statusCode: match[2], reasonPhrase: match[3]});
+    }
+  }
+  var parseHeaderLine = function () {
+    var headerLineRegex = /^([^:]+)\s*:\s*(.*)$/;
+    var line = nextLine() || "";
+    if (line.length == 0) {
+      return (null);
+    } else {
+      var match = line.match(headerLineRegex);
+      if (!match) {
+        throw(`onmessage_parse: invalid header line: "${line}"`);
+      }
+      return ({name: match[1], value: match[2]});
+    }
+  };
+  var parseHeaders = function () {
+    var headers = {};
+    for (var header = parseHeaderLine(); header; header = parseHeaderLine()) {
+      headers[header.name] = header.value;
+    }
+    return (headers);
+  };
+  var parseBody = function () {
+    return (document);
+  }
+  
+  var responseLine = (options.hasResponseLine ? parseRRLine() : {});
+  // console.log("GraphDatabase.response line:", responseLine);
+  var headers = parseHeaders();
+  // console.log("GraphDatabase.parse_response: headers", headers);
+  if (responseLine.method) {
+    return (new Request(responseLine.path, {method: responseLine.method, headers: headers,
+                                            body: parseBody()}));
+  } else {
+    return (new Response(parseBody(), {status: responseLine.statusCode, statusText: responseLine.reasonPhrase,
+                                       headers: headers}));
+  }
+}
+/*
+var resp = onmessage_parse("HTTP/1.1 200 OK\r\nContent-Type: application/n-quads\r\n\r\n<http://x.o/s> <http://x.o/p> 'o' .")
+*/
 
 export class GraphDatabase { // extends IDBDatabase {
   constructor(name, location, authentication, options = {}) {
@@ -104,36 +213,17 @@ export class GraphDatabase { // extends IDBDatabase {
     //console.log('GraphDatabase.constructor');
     //console.log(arguments);
     this.name = name;
+    this.baseETag = this.makeUUID();
+    this.nodeAddress = this.baseETag.substring(24);  // use to filter or check mirrored replications
     this.location = location;
     this.revision = "HEAD";
     this.revisions = [];
     this.authentication = authentication;
     this.objectStores = {};
+    this.websocket = null;
+    this.disposition = options.disposition || this.name.replace(/ /g,'');
     this.environment = options.environment ||
      new (options.environmentClass || GraphDatabase.graphEnvironmentClass)();
-    var url = 'wss://' + (new URL(location)).host + '/ws';
-    console.log("websocket url", url);
-    var wsOptions = {"method": "HEAD"};
-    var websocket = (options.asynchronous ? new WebSocket(url, null, wsOptions) : null);
-//    var websocket = (options.asynchronous ? new WebSocket(url) : null);
-    console.log("websocket");
-    console.log(websocket);
-    this.websocket = websocket;
-    window.theWebsocket = websocket;
-    websocket.addEventListener('open', function (event) {
-      console.log('websocket open ', event);
-      websocket.send('GET /james/public/service HTTP/1.1\r\nAccept: application/n-quads\r\n\r\n');
-      console.log('websocket sent');
-    });
-    websocket.onerror = function(event) {
-      console.log("websocket error ", event.data);
-    }
-    websocket.onclose = function() {
-      console.log("websocket closed");
-    }
-    websocket.addEventListener('message', function (event) {
-      console.log('Message from server ', event.data);
-    });
 
     //console.log(this.objectStores);
     var thisDatabase = this;
@@ -155,17 +245,73 @@ export class GraphDatabase { // extends IDBDatabase {
           }
         })
       });
+      // console.log("GraphDatabase: options.asynchronous", options.asynchronous);
+      if (options.asynchronous) {
+        // console.log("GraphDatabase: opening asyncronous connection");
+        try {
+          openWebSocket(this).then(function(websocket) {
+            thisDatabase.setWebsocket(websocket);
+          });
+        } catch(e) { console.log("GraphDatabase.openWebSocket failed: ", e); }
+      }
     }
     window.thisDatabase = thisDatabase;
   }
-  /*
-  GSP.head('https://de8.dydra.com/jhacker/test/service', {},
-           function(response) { for (var [k,v] of response.headers.entries()) {console.log([k,v])}})*/
+
+  setWebsocket(websocket) {
+    // console.log("GraphDatabase.setWebsocket:", websocket);
+    this.websocket = websocket;
+    var url = new URL(this.location);
+    var path = url.pathname;
+    var CRLF = '\r\n';
+    var method = 'PUT';
+    var requestLine = `${method} ${path}/disposition HTTP/1.0`;
+    var headers = "";
+     headers += `Content-Disposition: replicate=${this.disposition}` + CRLF;
+     headers += `ETag: ${this.baseETag}` + CRLF;
+    if (this.authentication) {
+      headers += "Authorization: Basic " + btoa(":" + this.authentication) + CRLF;
+    }
+    var data = requestLine + CRLF + headers + CRLF;
+    // console.log("GraphDatabase.setWebsocket.send: data:", data);
+    websocket.send(data);
+    return(websocket);
+  }
+
+  onmessage(data) {
+    // if there is some handler for the given media type, delegate to that to handle the message
+    try {
+      // console.log("onmessage: ", data);
+      var response = onmessage_parse(data);
+      var contentType;
+      var match;
+      var etag = response.headers.get('ETag');
+      if (etag && this.revisions.find(function(p) { return (etag == p.revision); })) {
+        console.log("onmessage: reflected", etag);
+      } else {
+        if ((contentType = response.headers.get('Content-Type')) &&
+            (match = contentType.match(/([^;]+)(?:;.*)?/))) {
+          var handler = onmessage[match[1]];
+          // console.log("onmessage: contentType ", contentType, handler);
+          if (handler) {
+            handler(this, response);
+          } else {
+            throw (new Error(`GraphDatabase.onmessage: no handler defined for media type: ${contentType}`));
+          }
+        } else {
+          console.log("onmessage: no media type", response);
+        }
+      }
+    } catch (e) {
+      console.log("onmessage: ", e, data);
+    }
+  }
 
   close() {
-    //this.worker.postMessage({operation: "closeDatabase", data: {}});
-    //this.worker = null;
+    // could check to see if any requests are pending.
+    // otherwise, nothing to do
   }
+
   name() {
     return( this.name );
   }
@@ -196,8 +342,7 @@ export class GraphDatabase { // extends IDBDatabase {
   }
 
   findObjectStore(name) {
-    //console.log('in gdb createObjectStore');
-    //console.log(name);
+    // console.log('findObjectStore', name);
     var store = this.objectStores[name];
     if (store) {
       return (store);
@@ -250,33 +395,97 @@ export class GraphDatabase { // extends IDBDatabase {
     throw (new Error(`${this.constructor.name}.get must be defined`));
   }
   patch(content, options, continuation) {
+    // the state manipulation aspect, but without the transport
     var patch = this.environment.createPatch(content)
     patch.date = Date.now;
-    patch.revision = this.revision;
+    patch.revision = options.etag;
     this.revisions.push(patch);
   }
   put(content, options, continuation) {
     throw (new Error(`${this.constructor.name}.put must be defined`));
   }
+
+  findObject(id) {
+    // console.log("findObject", id);
+    for (var name in this.objectStores) {
+      var store = this.objectStores[name];
+      var found = store.objects.get(id);
+      if (found) {
+        return(found);
+      }
+    }
+    return (null);
+  }
 }
+
 
 GraphDatabase.open = function(name, location, authentication, options = {}) {
   //console.log('in open');
-  var result = new (options.databaseClass || GraphDatabase.graphDatabaseClass)(name, location, authentication, options);
+  var dbClass = (options.databaseClass || GraphDatabase.graphDatabaseClass);
+  var db = new dbClass(name, location, authentication, options);
   //console.log('opened');
-  //console.log(result);
-  //console.log(result.constructor.name);
-  return (result);
+  //console.log(db);
+  //console.log(db.constructor.name);
+  return (db);
 }
 GraphDatabase.graphDatabaseClass = GraphDatabase;
 GraphDatabase.graphEnvironmentClass = GraphEnvironment;
 
+export var onmessage = {};
+
+onmessage['*/*'] = function(db, response) {
+  // do nothing
+}
+onmessage['application/n-quads'] = function(db, response) {
+}
+
+onmessage['multipart/related'] = function(db, response) {
+  // decode the multipart document as patches to the objects described by the
+  // respective subjects
+  response.text().then(function(document) {
+    try {
+      var contentType = response.headers.get('Content-Type');
+      var patch = null;
+      patch = db.environment.decode(document, contentType);
+      if (patch) {
+        var deltas = null;
+        deltas = db.environment.computeDeltas(patch);
+        if (deltas) {
+          // console.log("GDBObjectStore.onmessage.multipart: deltas", deltas);
+          var gottenObjects = deltas.map(function(idDeltas) {
+            // console.log("GDBObjectStore.onmessage: next delta", idDeltas);
+            var [id, deltas] = idDeltas;
+            var object = db.findObject(id);
+            // console.log("GDBObjectStore.onmessage: found:", object);
+            if (object) {
+              object.onupdate(deltas);
+            } else {
+              object = idDeltas['object'];
+              // console.log("GDBObjectStore.onmessage: created", object); 
+              if (object) {
+                object.oncreate(deltas);
+              }
+            }
+            return (object);
+          });
+          console.log("GDBObjectStore.onmessage: messaged", gottenObjects);
+        }
+      } else {
+        console.log("GDBObjectStore.onmessage: no patch", response);
+      }
+    } catch(error) {
+      console.log("onmessage['multipart/related']: error", error);
+      return (null)
+    }
+  });
+}
 
 
 export class GDBTransaction { // extends IDBTransaction {
-  constructor(database, names = [], mode = "readonly") {
+  constructor(database, names = [], mode = "readonly", options = {}) {
     //console.log('transaction.constructor: names');
     //console.log(names);
+   
     if (typeof(names) == 'string') {
       names = [names];
     }
@@ -288,8 +497,7 @@ export class GDBTransaction { // extends IDBTransaction {
                            mode: {value: mode}});
     var stores = names.map(function(name) {
       var store = database.cloneObjectStore(name);
-      //console.log(`transaction store for '${name}’`);
-      //console.log(store);
+      //console.log(`transaction store for '${name}’`, store);
       if (store.transaction) {
         throw new Error(`store is already in a transaction: ${thisTransaction}: ${store}.${store.transaction}`);
       } else {
@@ -298,6 +506,7 @@ export class GDBTransaction { // extends IDBTransaction {
       }
       return (store);
     });
+    thisTransaction.disposition = options.disposition || database.disposition;
     thisTransaction.stores = stores;
     //console.log('GDBTransaction.constructed');
     //console.log(thisTransaction);
@@ -326,6 +535,7 @@ export class GDBTransaction { // extends IDBTransaction {
    * to assume that any communication has occurred when the call has returned.
    */
   commit() {
+    console.log(`GDBTransaction.commit @${this.revisionID} complete`, this);
     // iterate over the owned stores;
     // for each, get its delta graph
     var posts = [];
@@ -342,20 +552,21 @@ export class GDBTransaction { // extends IDBTransaction {
     var thisTransaction = this;
 
     var p = this.database.patch({delete: deletes, post: posts, put: puts},
-                                {},
+                                {contentDisposition: this.disposition,
+                                 etag: this.revisionID},
                                 function(response) {
                                   thisTransaction.cleanObjects();
                                   if (response.onsuccess) {
                                     response.onsuccess(new SuccessEvent("success", "commit", response.result));
                                   }
-                                  console.log("commit response");
-                                  console.log(response);
-                                  console.log("headers");
-                                  for (var [k,v] of response.headers.entries()) {console.log([k,v])};
+                                  // console.log("commit response", response);
+                                  // console.log("headers", response.headers);
+                                  // for (var [k,v] of response.headers.entries()) {console.log([k,v])};
                                   var etag = response.headers.get("etag");
                                   if (etag) {
                                     thisTransaction.database.revision = etag;
                                   }
+                                  console.log(`GDBTransaction.commit @${thisTransaction.revisionID} complete`);
                                   return (response) ;
                                 });
     return (request);
@@ -405,6 +616,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
     // super(name);
     this.name = name;
     this.environment = options.environment;
+    this.contentDisposition = options.contentDisposition;
     this.objects = new Map();
     this.requests = [];
     this.patches = [];
@@ -418,7 +630,6 @@ export class GDBObjectStore { // extends IDBObjectStore {
     object._state = object.stateNew;
     var p = new Promise(function(accept, reject) {
       var patch = object.asPatch();
-      request.result = instance;
       request.patch = patch;
       request.transaction = thisStore.transaction;
       request.result = object;
@@ -447,20 +658,21 @@ export class GDBObjectStore { // extends IDBObjectStore {
   // needs to be qualified by revision, allowing HEAD, HEAD^^, etc as well as uuid
   // in order to implement roll-back/forward
   get(key) {
-    console.log("GDBObjectStore.get", key);
+    console.log("GDBObjectStore.get", key, this);
     var thisStore = this;
     var request = new GetRequest(thisStore, thisStore.transaction);
     var p = null;
     thisStore.requests[key] = request;
-    console.log(request);
+    // console.log(request);
     switch (typeof(key)) {
     case 'string' :
+      console.log("GDBObjectStore.get: as string", key);
       p = // perform a get retrieve the single instance via from the database
         thisStore.database.get(this.transaction.location,
                           {subject: key, revision: thisStore.revision});
       break;
     case 'object' :
-      console.log("GDBObjectStore.get: as object");
+      console.log("GDBObjectStore.get: as object", key);
       p = // construct a describe to retrieve the single instance via from the database
         thisStore.database.describe(key, {revision: thisStore.revision, "Accept": 'application/n-quads'});
       break;
@@ -468,46 +680,37 @@ export class GDBObjectStore { // extends IDBObjectStore {
       return (null);
     }
 
-    console.log("GDBObjectStore.get: promise", p);
+    // console.log("GDBObjectStore.get: promise", p);
     p.then(function(response) {
       var contentType = response.headers.get['Content-Type'] || 'application/n-quads';
-      console.log("get.continuation", response);
+      // console.log("get.continuation", response);
       delete thisStore.requests[key];
       response.text().then(function(text) {
-        console.log("text", text);
-        console.log("aftertext");
-        console.log("store", thisStore);
-        console.log("env", thisStore.environment);
-        console.log("decode", thisStore.environment.decode);
+        // console.log("text", text);
+        // console.log("store", thisStore);
+        // console.log("env", thisStore.environment);
         var decoded = thisStore.environment.decode(text, contentType);
-        console.log('get decoded', decoded);
         if (decoded) {
           var deltas = thisStore.environment.computeDeltas(decoded);
-          console.log("GDBObjectStore.get: deltas", deltas);
+          // console.log("GDBObjectStore.get: deltas", deltas);
           var gottenObjects = deltas.map(function(idDeltas) {
-            console.log('GDBObjectStore.get: next delta', idDeltas);
+            // console.log('GDBObjectStore.get: next delta', idDeltas);
             var [id, deltas] = idDeltas;
-            console.log('next id', id);
-            console.log('next id', id, thisStore);
-            console.log('next id', id, thisStore, thisStore.objects);
+            // console.log('GDBObjectStore.get: next idDeltas', idDeltas);
             var object = thisStore.objects.get(id);
-            console.log('GDBObjectStore.get: gotten:', object);
+            // console.log('GDBObjectStore.get: gotten:', object);
             if (object) {
-              console.log("update");
-              console.log("update", object.onupdate);
               object.onupdate(deltas);
             } else {
-              console.log("GDBObjectStore.get: to create"); 
               object = idDeltas['object'];
-              console.log("GDBObjectStore.get: created", object); 
+              // console.log("GDBObjectStore.get: created", object); 
               if (object) {
-                console.log("GDBObjectStore.get: created.oncreate", object, object.oncreate); 
                 object.oncreate(deltas);
               }
             }
             return (object);
           });
-          console.log("GDBObjectStore.get: gotten objects", gottenObjects);
+          // console.log("GDBObjectStore.get: gotten objects", gottenObjects);
           if (request.onsuccess) {
             request.result = delta;
             request.onsuccess(new SuccessEvent("success", "get", gottenObjects));
@@ -645,19 +848,18 @@ export class GDBObjectStore { // extends IDBObjectStore {
       posts = posts.concat(patch.post || []);
       puts = puts.concat(patch.put || []);
     });
-    console.log('asPatch: this: ', this);
-    console.log('asPatch: this.objects: ', this.objects);
-    console.log('asPatch: this.objects.values(): ', this.objects.values());
     this.objects.forEach(function(object, id) {
-      console.log('asPatch: forEach: ', id, object);
+      // console.log('asPatch: forEach: ', id, object);
       var patch = object.asPatch();
-      //console.log('asPatch.forEach');
-      //console.log(patch);
+      // console.log('asPatch.forEach');
+      // console.log(patch);
       deletes = deletes.concat(patch.delete || []);
       posts = posts.concat(patch.post || []);
       puts = puts.concat(patch.put || []);
     });
+    // console.log('asPatch: deletes,posts,puts', deletes, posts, puts);
     var patch = this.environment.createPatch({delete: deletes, post: posts, put: puts});
+    this.cleanObjects();
     return (patch);
   }
 
@@ -665,7 +867,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     var cleanObject = function(object) {
       if (object instanceof GraphObject) {
         var state = object._state;
-        object._state = GraphObject.stateClean; 
+        object._state = GraphObject.stateClean;
+        object._deltas = null;
       } else { // there should not be anything else
       }
     }
@@ -704,3 +907,10 @@ export class CommitRequest extends GraphRequest {
 
 
 console.log('graph-database.js: loaded');
+
+/*
+GSP.head('https://de8.dydra.com/jhacker/test/service', {},
+         function(response) { for (var [k,v] of response.headers.entries()) {console.log([k,v])}})
+
+*/
+

@@ -67,7 +67,7 @@ var grammar = {
                                  },
     {"name": "headerLine", "symbols": [(lexer.has("LINE") ? {type: "LINE"} : LINE), (lexer.has("CRLF") ? {type: "CRLF"} : CRLF)], "postprocess": 
         function(r) { // console.log('header'); console.log(r);
-          var [v, name, value] = r[0].text.match(/([^:]+):(.+)/)
+          var [v, name, value] = r[0].text.match(/([^:]+):\s*(.+)/)
           return([name, value]); }
                                  },
     {"name": "content$ebnf$1", "symbols": []},

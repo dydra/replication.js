@@ -41,14 +41,21 @@ class GraphStateError extends Error {
 
 export class GraphObject {
   constructor() {
-    this._state = GraphObject.stateNew;
-    this._store = null;
-    this._transaction = null;
-    this._deltas = null;
+    this.initializeState();
     // out-of-line initialization to avoid proxy
     this.initializeInstance(...arguments);
     return (this.createProxy());
   }
+
+  initializeState(state = GraphObject.stateNew) {
+    this._state = state;
+    this._store = null;
+    this._transaction = null;
+    this._deltas = null;
+    this._identifier = undefined;
+  }
+
+  initializeInstance() {}
 
   createProxy() {
     // console.log('create proxy', this);
@@ -127,27 +134,25 @@ export class GraphObject {
         }
       }
     });
-    console.log('create proxy', proxy);
+    // console.log('create proxy', proxy);
     return (proxy);
   }
 
-  initializeInstance() {}
-
+  // the getter and setter for identifier must operate on a field which
+  // serves as its identity in the store.
+  // the value should be suitable to act as both an object and a map key
   get identifier () {
-    throw new Error("A GraphObject requires an identifier");
+    throw new Error("No GraphObject identifier defined.");
   }
   set identifier (value) {
-    throw new Error("A GraphObject requires an identifier");
+    throw new Error("No GraphObject identifier defined.");
   }
   get state() {
     return (this._state);
   }
-  get repository() {  // see
-    return (this._repository);
-  }
 
-  oncreate(deltas) { console.log('GraphObject.oncreate'); this.rollforward(deltas); }
-  onupdate(deltas) { this.rollforward(deltas); }
+  oncreate(deltas) { console.log('GraphObject.oncreate', this); this.rollforward(deltas); }
+  onupdate(deltas) { console.log('GraphObject.onupdate', this); this.rollforward(deltas); }
   ondelete(deltas) { /* ?? */}
 
   persistentValues() {
@@ -190,9 +195,9 @@ export class GraphObject {
     //console.log('GraphObject.asPatch');
     //console.log(this);
     var self = this._self || this;
-    //console.log(self);
+    // console.log('asPatch: ', self);
     // compute the patch for the target instance as per its state
-    //console.log(`for state: '${self._state}’`);
+    // console.log(`asPatch: for state: '${self._state}’`);
     return (self.asPatch[self._state].call(self));
   }
 
@@ -205,15 +210,14 @@ export class GraphObject {
     });
   }
   rollforward(deltas = this._deltas) {
-    console.log('rollforward', deltas);
     var self = this._self || this;
-    console.log('rollforward', self);
+    console.log('rollforward', self, deltas);
     Object.entries(deltas).forEach(function([name, values]) {
-      console.log('rollforward', name, values);
+      // console.log('rollforward', name, values);
       var value = values[0];
         self[name] = value;
     });
-    console.log('rollforward', this);
+    // console.log('rollforward.end', this);
   }
 
 }

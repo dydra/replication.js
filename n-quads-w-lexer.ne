@@ -36,7 +36,7 @@ var RDFEnvironment = {
   createNamedNode: function(lf) { return ({type: 'NamedNode', lexicalForm: lf}); },
   createBlankNode: function(lf) { return ({type: 'BlankNode', lexicalForm: lf}); },
   createLiteral: function(lf, lang, type) {
-    console.log("literal", lf, lang, type);
+    // console.log("literal", lf, lang, type);
     return({type: 'Literal', lexicalForm: lf, language: lang, type: type});
   },
   createQuad: function(s,p,o,g) { return({type: 'quad', s: s, p: p, o: o, g: g}); }
@@ -67,7 +67,7 @@ const lexer = moo.compile({
   BLANK_NODE_LABEL: { match: new RegExp('_:(?:' + PN_CHARS_UPattern() + '|[0-9])(?:(?:' + PN_CHARSPattern() + '|\\.)*' + PN_CHARSPattern() + ')?'),
                      value: function (token) {
                        var label = token.slice(2);
-                       console.log(`bnl '${label}'`);
+                       // console.log(`bnl '${label}'`);
    		       return (RDFEnvironment.createBlankNode(label));
  		     } } ,
 
@@ -87,7 +87,7 @@ nquadsDoc            ->  statementEOL:* statement:? {%
 statementEOL         ->  statement %EOL {% function(r) { return(r[0]); } %}
 statement            ->  %WS:? subject %WS:? predicate %WS:? object %WS:? ( graphLabel %WS:?):? %DOT {%
   function(r) {
-    console.log('statement.r', r);
+    // console.log('statement.r', r);
     return (RDFEnvironment.createQuad(r[1].value, r[3].value, r[5], (r[7] ? r[7].value : null)));
   }
 %}
@@ -97,19 +97,19 @@ subject	             ->  (%IRIREF | %BLANK_NODE_LABEL) {%
 predicate            ->  %IRIREF {% id %}
 object	             ->  (%IRIREF | %BLANK_NODE_LABEL | literal ) {%
                            function(r) {
-                             console.log('object.r', r);
+                             // console.log('object.r', r);
                              var object = r[0][0];
-                             console.log('object', object);
+                             // console.log('object', object);
                              return (object);
                            }
                          %}
 graphLabel           ->  (%IRIREF | %BLANK_NODE_LABEL) {% function(r) { r = r[0][0]; return(r[0] || r[1]); } %}
-literalType          ->  %CARAT %IRIREF {% function(r) { console.log('lt ', r); return (r[1].value); } %}
+literalType          ->  %CARAT %IRIREF {% function(r) { /* console.log('lt ', r); */ return (r[1].value); } %}
 literal	             ->  %STRING_LITERAL_QUOTE  (literalType | %LANGTAG):? {%
                            function(r) {
-                             console.log("r ", r);
+                             // console.log("r ", r);
                              var [literal, qualifier] = r;
-                             console.log(literal, qualifier);
+                             // console.log(literal, qualifier);
                              var term = null;
                              if (qualifier) {
                                qualifier = qualifier[0];
@@ -121,7 +121,7 @@ literal	             ->  %STRING_LITERAL_QUOTE  (literalType | %LANGTAG):? {%
                              } else {
                                term = RDFEnvironment.createLiteral(literal.value, null, null);
                              }
-                             console.log("literal term", term);
+                             // console.log("literal term", term);
                              return ( term );
                            }
                          %}

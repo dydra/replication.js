@@ -224,7 +224,7 @@ export class RDFEnvironment extends GraphEnvironment {
    * for each instance extract its +/- deltas
    */
   computeDeltas(content) {
-    console.log("cd", content, content.computeDeltas);
+    // console.log("cd", content, content.computeDeltas);
     return (content.computeDeltas(this));
   }
  
@@ -242,8 +242,10 @@ export class RDFEnvironment extends GraphEnvironment {
 
   toValue(term, predicate) {
     var datatype = term.datatype || this.fieldType(predicate);
+    // console.log('toValue', term, predicate, datatype);
     if (datatype) {
-      var converter = Literal.toValue[datatype];
+      var converter = Literal.toValue[datatype.lexicalForm];
+      // console.log('toValue.converter: ', converter);
       if (converter) {
         return (converter(term.lexicalForm));
       }
@@ -271,16 +273,27 @@ export class RDFEnvironment extends GraphEnvironment {
       default:
         converter = Literal.toLiteral[type];
         if (converter) {
-          return (converter(value));
+          var literal = converter(value);
+          return (literal);
         }
       }
       throw (new Error(`RDFEnvironment.toLiteral: invalid value: '${value}' of type '${typeof value}'`));
     }
   }
 
-  decode(document, mediaType, continuation = null) {
-    console.log("rdfenv.decode", mediaType);
-    return (decode[mediaType](document, continuation));
+  decode(document, contentType, continuation = null) {
+    var match;
+    // console.log("rdfenv.decode: for", contentType);
+    if (match = contentType.match(/([^;]+)(?:;.*)?/)) {
+      var decoder = decode[match[1]];
+      // console.log("rdfenv.decode: decoder", decoder);
+      var decoded = decoder(document, contentType, continuation);
+      // console.log("rdfenv.decode: decoded", decoded);
+      return (decoded);
+    } else {
+      console.log("rdfenv.decode: decoder not found");
+      return (null);
+    }
   }
 }
 
@@ -393,24 +406,26 @@ export class Graph {
   }
 
   computeDeltas(environment) {
-    console.log('computeDeltas', this, environment);
-    console.log('computeDeltas.fin', environment.findIdentifierName)
+    // console.log('computeDeltas', this, environment);
+    // console.log('computeDeltas.fin', environment.findIdentifierName)
     // extract all subjects , for each assemble add/remove sets
     var ids = [];
     var allDeltas = new Map();
-      console.log('allDeltas', allDeltas);
+    // console.log('allDeltas', allDeltas);
     var addStatementDelta = function(stmt, makeEntry) {
-      console.log("cd.statement", stmt);
-      var name = environment.findIdentifierName(stmt.predicate);
-      var value = environment.toValue(stmt.object, stmt.predicate);
-      console.log("name", name, "value", value);
+      // console.log("computeDeltas.asd:", stmt)
+      var name = null;
+      try { name = environment.findIdentifierName(stmt.predicate); } catch (e) {console.log("name", e);}
+      var value = null;
+      try { value = environment.toValue(stmt.object, stmt.predicate); } catch (e) {console.log("value", e);}
+      // console.log("name", name, "value", value);
       var id = stmt.subject.lexicalForm;
-      console.log('id', id);
-      console.log('allDeltas', allDeltas);
+      // console.log('id', id);
+      // console.log('allDeltas', allDeltas);
       var idDeltas = allDeltas.get(id);
-      console.log( 'iddeltas', idDeltas);
+      // console.log( 'iddeltas', idDeltas);
       var delta = makeEntry(value);
-      console.log('entry', delta);
+      // console.log('entry', delta);
       var deltas = null;
       if (! idDeltas ) {
         deltas = {};
@@ -419,28 +434,32 @@ export class Graph {
       } else {
         deltas = idDeltas[1];
       }
-      console.log('set delta', deltas);
+      // console.log('set delta', deltas);
       deltas[name] = delta;
-      console.log('set delta', deltas);
+      // console.log('set delta', deltas);
       var object = null;
       if (name == '@type') {
-        console.log('type');
+        // create an instance to accompany the deltas
+        // console.log('type');
         var stmtClass = stmt.object.lexicalForm;
-        console.log('class', stmtClass);
-        object = environment.createObject(stmtClass, null);
-        console.log('object by type', object);
-        object._identifier = id;
-        console.log('object by type', object);
+        // console.log('class', stmtClass);
+        object = environment.createObject(stmtClass, id);
+        // console.log('Graph.computeDeltas.asd: created: ', object._state);
+        // console.log('object by type', object);
         idDeltas['object'] = object;
-        console.log('object by type', object);
+        // console.log('object by type', object);
       }
-      console.log("computeDeltas.asd", stmt);
+      // console.log("computeDeltas.asd: added:", stmt);
     };
     this.statements.forEach(function(stmt) {
       addStatementDelta(stmt, function(value) { return ([value, undefined]); });
     });
     console.log('computeDeltas', allDeltas);
     return (Array.from(allDeltas.values()));
+  }
+
+  forEach(op) {
+    return (this.statements.forEach(op));
   }
 }
 
@@ -451,8 +470,9 @@ export function createGraph(statements, options = {}) {
 Graph.prototype.encode['application/n-quads'] = function(object, continuation) {
   var result = "";
   object.statements.forEach(function(s) {
-    s.encode('application/n-quads',function(encoded) { result += (encoded + ' \n');});
+    s.encode('application/n-quads',function(encoded) { result += (encoded + '\n');});
   });
+  // console.log("Graph.prototype.encode['application/n-quads']", result);
   return (continuation(result));
 };
 
@@ -533,6 +553,8 @@ export class Literal extends Term {
   }
 }
 
+window.classLiteral = Literal;
+
 Literal.prototype.encode['application/n-quads'] = function(object, continuation) {
   var type = object.datatype;
   var language = object.language;
@@ -577,12 +599,12 @@ Literal.toLiteral['string'] = function fromString(value) {
 }
 
 Literal.toValue = {};
-Literal.toValue[NamedNode.xsd.boolean] = function(lexicalForm) { return (Boolean(lexicalForm)); };
-Literal.toValue[NamedNode.xsd.dateTime] = function(lexicalForm) { return (new Date(lexicalForm)); };
-Literal.toValue[NamedNode.xsd.decimal] = function(lexicalForm) { return (Number(lexicalForm)); };
-Literal.toValue[NamedNode.xsd.double] = function(lexicalForm) { return (Number(lexicalForm)); };
-Literal.toValue[NamedNode.xsd.integer] = function(lexicalForm) { return (Number(lexicalForm)); };
-Literal.toValue[NamedNode.xsd.string] = function(lexicalForm) { return (lexicalForm); };
+Literal.toValue[NamedNode.xsd.boolean.lexicalForm] = function(lexicalForm) { return (Boolean(lexicalForm)); };
+Literal.toValue[NamedNode.xsd.dateTime.lexicalForm] = function(lexicalForm) { return (new Date(lexicalForm)); };
+Literal.toValue[NamedNode.xsd.decimal.lexicalForm] = function(lexicalForm) { return (Number(lexicalForm)); };
+Literal.toValue[NamedNode.xsd.double.lexicalForm] = function(lexicalForm) { return (Number(lexicalForm)); };
+Literal.toValue[NamedNode.xsd.integer.lexicalForm] = function(lexicalForm) { return (Number(lexicalForm)); };
+Literal.toValue[NamedNode.xsd.string.lexicalForm] = function(lexicalForm) { return (lexicalForm); };
 
 export function createLiteral(value, language, datatype) {
   if (language) {
@@ -640,30 +662,30 @@ export class Patch {
   computeDeltas(environment) {
     // extract all subjects , for each assemble add/remove sets
     var ids = [];
-    var deltas = new Map();
+    var deltaMap = new Map();
     var addStatementDelta = function(stmt, makeEntry) {
       var name = environment.findIdentifierName(stmt.predicate);
       var value = environment.toValue(stmt.object, stmt.predicate);
       var id = stmt.subject.lexicalForm;
-      var idDeltas = deltas.get(id);
+      var idDeltas = deltaMap.get(id);
       var delta = makeEntry(value);
       var object = null;
       if (name == '@type') {
         var stmtClass = predicateLeaf(stmt.object)
-        object = environment.createObject(stmtClass, null);
-        object.identifier = id;
+        object = environment.createObject(stmtClass, id);
+        // console.log('computeDeltas: created: ', object._state);
       }
       var deltas = null;
       if (! idDeltas ) {
         deltas = {};
-        deltas.set(id, [id, deltas]);
+        deltaMap.set(id, [id, deltas]);
       } else {
         deltas = idDeltas[1];
       }
       if (object) {
         idDeltas.object = object;
       }
-      deltas[name] = entry;
+      deltas[name] = delta;
     };
     this.delete.forEach(function(stmt) {
       addStatementDelta(stmt, function(value) { return ([undefined, value]); });
@@ -674,7 +696,7 @@ export class Patch {
     this.put.forEach(function(stmt) {
       addStatementDelta(stmt, function(value) { return ([value, undefined]); });
     });
-  return (Array.from(deltas.values()));
+  return (Array.from(deltaMap.values()));
   }
 }
 
@@ -697,7 +719,7 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
         content.encode(object.contentType, function(e) {
           if (e && e.length > 0) {
             body += separator + crlf;
-            body += `X-Http-Method-Override: ${method}${crlf}`;
+            body += `X-HTTP-Method-Override: ${method}${crlf}`;
             body += `ContentType: ${object.contentType}${crlf}${crlf}`;
             body += e;
           }
@@ -707,20 +729,20 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
     appendSection(object.delete, "DELETE");
     appendSection(object.put, "PUT");
     appendSection(object.post, "POST");
-    body += separator + " --" + crlf;
+    body += separator + "--" + crlf;
     return (continuation(body, {boundary: boundary}));
   };
 
 
 export var decode = {};
 
-decode['application/n-quads'] = function(document, continuation) {
-  console.log("decode['application/n-quads']");
-  console.log('nearley', nearley);
-  console.log('nearley.Parser', nearley.Parser);
-  console.log('nearley.Grammar', nearley.Grammar);
-  console.log('nquadsGrammar', nquadsGrammar);
-  console.log('make parser');
+decode['application/n-quads'] = function(document, contentType, continuation) {
+  // console.log("decode['application/n-quads']");
+  // console.log('nearley', nearley);
+  // console.log('nearley.Parser', nearley.Parser);
+  // console.log('nearley.Grammar', nearley.Grammar);
+  // console.log('nquadsGrammar', nquadsGrammar);
+  // console.log('make parser');
   var parser = null;
   try {
     parser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar));
@@ -731,41 +753,55 @@ decode['application/n-quads'] = function(document, continuation) {
   try {
     var statements = parser.feed(document).results[0];
     var graph = createGraph(statements);
-    console.log('decoded', graph);
+    // console.log('decoded', graph);
     return (continuation ? continuation(graph) : graph);
   } catch (error) {
-    console.log("error", error);
+    console.log("decode['application/n-quads'] failed", error);
     return (null);
   }
 }
 
-decode['multipart/related'] = function(document, continuation) {
+decode['multipart/related'] = function(document, contentType, continuation) {
   // segment into parts, parse each, collate respective delete/post/put sections
   // create and return a patch object
   var parser = new nearley.Parser(nearley.Grammar.fromCompiled(multipartGrammar));
   var posts = [];
   var puts = [];
   var deletes = [];
-  var parts = parser.feed(document).result[0];
+  var parsed = parser.feed(document);
+  // console.log("decode['multipart/related']: parsed", parsed)
+  // console.log("decode['multipart/related']: results", parsed.results)
+  var parts = parsed.results[0];
+  // console.log("decode['multipart/related']: parts", parts)
   if (parts) {
     parts.forEach(function([headers, content]) {
+      // console.log("decode['multipart/related']: part", [headers, content])
       var contentParser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar));
-      var method = headers['X-Http-Method-Override'];
-      graph = contentParser.feed(content);
+      var method = headers['X-HTTP-Method-Override'];
+      var parsed = contentParser.feed(content);
+      var statements = parsed.results[0];
+      // console.log("decode['multipart/related']: part statements", method, statements)
       switch(method.toUpperCase()) {
-      case 'delete':
-        deletes = deletes.concat(graph);
+      case 'DELETE':
+        deletes = deletes.concat(statements);
+        // console.log("decode['multipart/related']: deletes", deletes);
         break;
-      case 'post':
-        posts = posts.concat(graph);
+      case 'POST':
+        // console.log("decode['multipart/related']: posts", posts);
+        posts = posts.concat(statements);
         break;
-      case 'put':
-        puts = puts.concat(graph);
+      case 'PUT':
+        puts = puts.concat(statements);
         break;
+      default:
+        console.log(`decode['multipart/related']: invalid method '${method.toUpperCase()}'`);
       }
     });
   }
-  var patch = createPatch({delete: deletes, post: posts, put: puts});
+  var patch = {delete: deletes, post: posts, put: puts};
+  // console.log("decode['multipart/related']: prepatch", patch);
+  patch = createPatch(patch);
+  // console.log("decode['multipart/related']: patch", patch);
   return (continuation ? continuation(patch) : patch);
 }
 

@@ -25,10 +25,10 @@ export class RDFDatabase extends GraphDatabase {
   }
 
   patch(content, options, continuation) {
+    console.log("RDFDatabase.patch", content, options);
     super.patch(content, options, null);
-    options = Object.assign({}, options, {authentication: this.authentication});
-    //console.log('RDFDatabase.patch');
-    //console.log(options);
+    options = Object.assign({}, options, {authentication: this.authentication,
+                                          contentDisposition: `replicate=${this.name.replace(/ /g,'')}`});
     var p = GSP.patch(this.location,
                       this.environment.createPatch(content),
                       options,
@@ -36,6 +36,7 @@ export class RDFDatabase extends GraphDatabase {
     return (p);
   }
   get(options, continuation) {
+    console.log("RDFDatabase.get");
     var decodeGetContent = function(response) {
       // yields a graph or a patch depending on arriving media type
       var content = this.environment.decode(response.headers.get('Content-Type'), response.body);
@@ -46,7 +47,7 @@ export class RDFDatabase extends GraphDatabase {
                     decodeGetContent));
   }
   describe(keyObject, options, continuation) {
-    console.log("describe");
+    console.log("RDFDatabase.describe");
     console.log(keyObject);
     var thisDatabase = this;
     options = Object.assign({}, options, {authentication: thisDatabase.authentication});

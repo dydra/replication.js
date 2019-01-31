@@ -11,37 +11,23 @@
 /*if ("function" === typeof importScripts) {
   importScripts('https://solid.github.io/releases/rdflib.js/rdflib-0.12.2.min.js');
 }
-console.log("past importscripts");
 */
 const now = Date.now;
 
-/* alternative for web sockets
-var connection = null;
 function logFetch(location, args) {
-    console.log('fetchLog');
-    console.log(location);
-    console.log(args);
-  if (!connection) {
-    connection = new WebSocket(location);
-  }
-  return (new Promise(function(resolve, reject) {
-    // need to pack headers and content togetehr for the request
-    connection.send(args.headers + args.body);
-    resolve(location);
-    return;
-  }));
-}
-*/
-
-function logFetch(location, args) {
-  console.log('fetchLog');
-  console.log(location);
-  console.log(args);
+  console.log('fetch:', location, args);
   var headers = args.headers;
-  for (var [k,v] of headers.entries()) {console.log([k,v])};
+  // for (var [k,v] of headers.entries()) {console.log('fetch:', [k,v])};
   var p = fetch(location, args);
-  p.gsp = location;
-  console.log(p);
+  p.location = location;
+  p = p.then(function(response) {
+        if (response.ok) {
+          return (response);
+        } else {
+          throw response;
+        }
+      });
+  // console.log(p);
   return (p);
 }
 
@@ -53,6 +39,7 @@ GSP.fetchOp = logFetch;
 
 export class SPARQL {
 }
+window.SPARQL = SPARQL;
 SPARQL.locationSuffix = "/sparql";
 SPARQL.fetchOp = logFetch;
 
@@ -76,6 +63,8 @@ GSP.delete = function(location, options = {}, continuation) {
   } else {
     headers.delete("Authorization");
   }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var args = { method: "DELETE",
                cache: "no-cache",
                headers: headers };
@@ -131,9 +120,10 @@ GSP.head = function(location, options, continuation) {
 }
 
 GSP.patch = function (location, content, options = {}, continuation) {
+  console.log("GSP.patch", location, content, options);
   var contentType = options["Content-Type"] || GSP.patch.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.patch.acceptMediaType),
-                              "Content-Type": contentType });
+                              "Content-Type": contentType,});
   var contentEncoded = ""
   var boundary = null;
   //console.log("GSP.patch");
@@ -143,6 +133,8 @@ GSP.patch = function (location, content, options = {}, continuation) {
   } else {
     headers.delete("Authorization");
   }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   //console.log(headers);
   //console.log(content);
   //console.log(contentType);
@@ -156,12 +148,13 @@ GSP.patch = function (location, content, options = {}, continuation) {
   var args = { method: "PATCH",
                headers: headers,
                body: contentEncoded };
-  location = location + GSP.locationSuffix;
-  var p = GSP.fetchOp(location, args);
+  var httpURL = location + GSP.patch.locationSuffix;
+  var p = GSP.fetchOp(httpURL, args);
   return (continuation ? p.then(continuation) : p);
 }
 GSP.patch.acceptMediaType = 'text/turtle';
 GSP.patch.contentMediaType = 'multipart/related';
+GSP.patch.locationSuffix = GSP.locationSuffix;
 
 GSP.post = function (location, content, options = {}, continuation) {
   var contentType = options["Content-Type"] || GSP.post.contentMediaType;
@@ -173,6 +166,8 @@ GSP.post = function (location, content, options = {}, continuation) {
   } else {
     headers.delete("Authorization");
   }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var contentEncoded = "";
   content.encode(contentType, function(e) { contentEncoded = e; });
 
@@ -196,6 +191,8 @@ GSP.put = function (location, content, options = {}, continuation) {
   } else {
     headers.delete("Authorization");
   }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var contentEncoded = "";
   content.encode(contentType, function(e) { contentEncoded = e; });
 
@@ -212,7 +209,7 @@ GSP.put.ContentType = 'application/n-quads';
 // sparql protocol
 
 SPARQL.get = function(location, query, options = {}, continuation) {
-  console.log("SPARQL.get ", {'options': options});
+  console.log("SPARQL.get ", query, options);
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.get.acceptMediaType) });
   if (options['authentication']) {
     headers.set("Authorization",

@@ -94,7 +94,7 @@ export class GraphEnvironment {
 
 
   findIdentifierName(uri) {
-    console.log("fin", uri);
+    // console.log("fin", uri);
     var uriNamestring = uri.lexicalForm;
     var fieldName = this.context[uriNamestring];
     if (! fieldName) {
@@ -112,23 +112,23 @@ export class GraphEnvironment {
       fieldName = this.context[uriNamestring] = predicateLeaf(uri);
     }
 
-    console.log("fin=", fieldName);
+    // console.log("fin=", fieldName);
     return ( fieldName );
   }
 
   findNameIdentifier(name) {
-    console.log('fni');
-    console.log(this);
-    console.log(this.context);
+    // console.log('fni');
+    // console.log(this);
+    // console.log(this.context);
     var uri = null;
     var def = this.context[name];
-    console.log('fni: ' + name);
+    // console.log('fni: ' + name);
     if (def) {
       uri = def['@id'];
-      console.log(uri);
+      // console.log(uri);
       return (uri || null);
     }
-    console.log(uri);
+    // console.log(uri);
     return (uri);
   }
 
@@ -158,36 +158,41 @@ export class GraphEnvironment {
     throw (new Error('GraphEnvironment.createIdentifiedNode must be implemented'));
   }
 
-  createObject(className, state = {}) {
+  createObject(className, identifier, state = {}) {
     console.log('createObject', className)
-    console.log('prototype', className.prototype)
-    console.log('type', typeof(className))
-    console.log('module', this.module);
+    // console.log('prototype', className.prototype)
+    // console.log('type', typeof(className))
+    // console.log('module', this.module);
     var classInstance = this.module[className];
-    console.log('class', classInstance);
+    // console.log('class', classInstance);
+    // console.log('state', state);
     var defs = {};
-    if (state) {
-      Object.entries(state).map(function([entryKey, entryValue]) {
-        defs[entryKey] = {value: entryValue, enumerable: true};
-      });
-    }
     if (classInstance) {
       var instance = Object.create(classInstance.prototype, defs);
+      // console.log("instance", instance);
+      instance.identifier = identifier;
+      instance.initializeState(instance.stateClean);
+      // console.log("initialized", instance);
+      // apply state after initialization
+      Object.entries(state).forEach(function([entryKey, entryValue]) {
+        instance[entryKey] = entryValue;
+      });
       var proxy = instance.createProxy();  // do not test, just require the operator
-      console.log('graph-environment.createObject: instance', typeof(instance), instance);
-      console.log('graph-environment.createObject: proxy', typeof(proxy), proxy);
-      console.log('graph-environment.createObject: instance.constructor', instance.constructor);
-      console.log('graph-environment.createObject: instance.constructor', proxy.constructor);
+      // console.log('graph-environment.createObject: instance', typeof(instance), instance);
+      // console.log('graph-environment.createObject: proxy', typeof(proxy), proxy);
+      // console.log('graph-environment.createObject: instance.constructor', instance.constructor);
+      // console.log('graph-environment.createObject: instance.constructor', proxy.constructor);
+      // console.log('graph-environment.createObject: state', instance._state);
       return( proxy );
     } else {
       console.log(`graph-environment.createObject: class not found '${className}'`);
-      return (defs);
+      return (state);
     }
   } 
 }
 
 export function predicateLeaf(url) {
-  var asURL = ( (url instanceof URL) ? url : URL(url.toString()))
+  var asURL = ( (url instanceof URL) ? url : new URL(url.toString()))
   return ( (asURL.hash.length > 0) ? asURL.hash.slice(1) : asURL.pathname.split('/').pop() );
 }
 

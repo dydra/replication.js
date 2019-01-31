@@ -33,7 +33,7 @@ var RDFEnvironment = {
   createNamedNode: function(lf) { return ({type: 'NamedNode', lexicalForm: lf}); },
   createBlankNode: function(lf) { return ({type: 'BlankNode', lexicalForm: lf}); },
   createLiteral: function(lf, lang, type) {
-    console.log("literal", lf, lang, type);
+    // console.log("literal", lf, lang, type);
     return({type: 'Literal', lexicalForm: lf, language: lang, type: type});
   },
   createQuad: function(s,p,o,g) { return({type: 'quad', s: s, p: p, o: o, g: g}); }
@@ -68,7 +68,7 @@ const lexer = moo.compile({
   BLANK_NODE_LABEL: { match: new RegExp('_:(?:' + PN_CHARS_UPattern() + '|[0-9])(?:(?:' + PN_CHARSPattern() + '|\\.)*' + PN_CHARSPattern() + ')?'),
                      value: function (token) {
                        var label = token.slice(2);
-                       console.log(`bnl '${label}'`);
+                       //console.log(`bnl '${label}'`);
    		       return (RDFEnvironment.createBlankNode(label));
  		     } } ,
 
@@ -105,7 +105,7 @@ var grammar = {
     {"name": "statement$ebnf$5", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "statement", "symbols": ["statement$ebnf$1", "subject", "statement$ebnf$2", "predicate", "statement$ebnf$3", "object", "statement$ebnf$4", "statement$ebnf$5", (lexer.has("DOT") ? {type: "DOT"} : DOT)], "postprocess": 
         function(r) {
-          console.log('statement.r', r);
+          //console.log('statement.r', r);
           return (RDFEnvironment.createQuad(r[1].value, r[3].value, r[5], (r[7] ? r[7].value : null)));
         }
         },
@@ -120,25 +120,25 @@ var grammar = {
     {"name": "object$subexpression$1", "symbols": ["literal"]},
     {"name": "object", "symbols": ["object$subexpression$1"], "postprocess": 
         function(r) {
-          console.log('object.r', r);
+          //console.log('object.r', r);
           var object = r[0][0];
-          console.log('object', object);
+          //console.log('object', object);
           return (object);
         }
                                  },
     {"name": "graphLabel$subexpression$1", "symbols": [(lexer.has("IRIREF") ? {type: "IRIREF"} : IRIREF)]},
     {"name": "graphLabel$subexpression$1", "symbols": [(lexer.has("BLANK_NODE_LABEL") ? {type: "BLANK_NODE_LABEL"} : BLANK_NODE_LABEL)]},
     {"name": "graphLabel", "symbols": ["graphLabel$subexpression$1"], "postprocess": function(r) { r = r[0][0]; return(r[0] || r[1]); }},
-    {"name": "literalType", "symbols": [(lexer.has("CARAT") ? {type: "CARAT"} : CARAT), (lexer.has("IRIREF") ? {type: "IRIREF"} : IRIREF)], "postprocess": function(r) { console.log('lt ', r); return (r[1].value); }},
+    {"name": "literalType", "symbols": [(lexer.has("CARAT") ? {type: "CARAT"} : CARAT), (lexer.has("IRIREF") ? {type: "IRIREF"} : IRIREF)], "postprocess": function(r) { /*console.log('lt ', r);*/ return (r[1].value); }},
     {"name": "literal$ebnf$1$subexpression$1", "symbols": ["literalType"]},
     {"name": "literal$ebnf$1$subexpression$1", "symbols": [(lexer.has("LANGTAG") ? {type: "LANGTAG"} : LANGTAG)]},
     {"name": "literal$ebnf$1", "symbols": ["literal$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "literal$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "literal", "symbols": [(lexer.has("STRING_LITERAL_QUOTE") ? {type: "STRING_LITERAL_QUOTE"} : STRING_LITERAL_QUOTE), "literal$ebnf$1"], "postprocess": 
         function(r) {
-          console.log("r ", r);
+          // console.log("r ", r);
           var [literal, qualifier] = r;
-          console.log(literal, qualifier);
+          // console.log(literal, qualifier);
           var term = null;
           if (qualifier) {
             qualifier = qualifier[0];
@@ -150,7 +150,7 @@ var grammar = {
           } else {
             term = RDFEnvironment.createLiteral(literal.value, null, null);
           }
-          console.log("literal term", term);
+          // console.log("literal term", term);
           return ( term );
         }
                                  }
