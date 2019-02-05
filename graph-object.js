@@ -1,6 +1,6 @@
 // Copyright (c) 2019 datagraph gmbh
 
-/*
+/**
 The class GraphObject is an abstract class which wraps each concrete
 instance in a proxy to mediate property access and implement a jdo/jpa-like
 state machine to control instance.
