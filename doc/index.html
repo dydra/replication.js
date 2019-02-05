@@ -42,7 +42,260 @@
 
 
 
+    <section>
+        <article><h2>dydra web client support</h2><p>This library implements a JavaScript web client interface to the Dydra 
+RDF service.
+It mediates persistence for native JavaScript application and u/i data models
+to a remote Dydra service via GSP/HTTP and/or websockets.
+The remote service implements either W3C GSP-conformant transactional repositories,
+revisioned repositories which maintain data through PUT/POST/DELETE operations
+or CRDT-repositories which interpret PATCH opertations to replicate and
+reconcile data among multiple clients.</p>
+<p>The library integrates an application data model with a remote store
+by reconciling representations in three realms:</p>
+<ul>
+<li><p>web application data<br>represented as JavaScript objects<br>identified by a combination of instance identifier and application key values<br>described by JavaScript object properties, each of which binds either an atomic
+  value, an object, or an array of such<br>combined into an active model which is associated with a revision<br>JavaScript proxy objects monitor access to instance propertiess and propagate
+  them to the store  </p>
+</li>
+<li><p>intermediate graphs<br>each a collection of triples<br>each captures the object property changes associated with a given application
+  model transaction<br>a JSON-LD context governs the relation between terms and property values<br>each associated with a revision to enable undo/redo  </p>
+</li>
+<li><p>persistent data<br>represented as a revisioned collection of RDF quads stored in a
+  service repository<br>where the subject iri correspond to the application model instance identifier<br>the predicate arity is either one, for atomic values or higher for arrays<br>the object terms are either literals or subject iri of related resources  </p>
+</li>
+</ul>
+<p>The library concerns the application data, the intermediate
+graph and communicating it to the remote RDF repository.
+It is realized by three components in the client:</p>
+<ul>
+<li>the GraphObject API</li>
+<li>JavaScript / RDF mediation</li>
+<li>the background remote request processing </li>
+</ul>
+<pre>
+        application API                         background requests  
+    <-    GraphObject   ->               <- GraphStore + RDF GSP,SPARQL ->
 
+    Object  -  field-cache  -  Graph  -  GSP/websockets  -  RDF-repository
+
+                      JavaScript / RDF mediation  
+              <---- Graph-Data-Model + RDFDatabase ----->
+</pre>
+
+
+<h3>Application API</h3><p>The application API supports the user interface data model. Its
+implmentation comprises the files</p>
+<pre class="prettyprint source"><code>graph-object.js</code></pre><p>It provides the abstract model class, GraphObject, which encapsulates
+intances of specializations to track field modifications and record a delta
+map for use by the store mediation
+layer.
+That relies on, in addition to the tracking logic, default
+methods to transform the delta map into an abstract patch
+according to instance state (clean, deleted, modified, new, etc.)
+and on logic to manage declarations for managed properties</p>
+<pre class="prettyprint source"><code>GraphObject.prototype.asPatch[]()
+GraphObject.prototype.managedProperties()
+GraphObject.prototype.persistentProperties()
+GraphObject.prototype.transactionalProperties()</code></pre><p>Should the application require other than the generic transformations,
+it can override them as needed.
+In connection with these, the respective concrete U/I classes must
+They must also define respective static fields for</p>
+<pre class="prettyprint source"><code>_persistentProperties
+_transactionalProperties</code></pre><p>to indicate which fields are to be managed.
+These are coallesced for the respective concrete class, upon first use.</p>
+<h3>JavaScript / RDF Mediation</h3><p>The mediation layer implements the relation between the native JSON data
+model and its representation as RDF. Its elements incorporate two layers:
+absctract graph operations and RDF-specific implementations:</p>
+<pre class="prettyprint source"><code>graph-database.js
+RDF-database.js
+graph-environment.js
+RDF-environment.js</code></pre><p>and includes the utility</p>
+<pre class="prettyprint source"><code>uuid-v1.js</code></pre><p>At the mediation layer, the class GraphDatabase provides the means
+for the application to realize persistence either by
+<a href="https://db.apache.org/jdo/">JDO-like</a> reachability or through
+explicit store write operations. Either approach follows the pattern defined by
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API">IndexedDB</a>
+(<a href="https://developers.google.com/web/ilt/pwa/working-with-indexeddb">google</a>,
+ <a href="https://www.w3.org/TR/IndexedDB-2">w3c</a>),
+in that a GDBTransaction provides the context for both implicitly
+persistent model data manipulation and explicit store operations.</p>
+<p>In order to propagate commits and accept remote notifications this relies on
+RDFGraph instances and it, in turn, on RDFEnvironment  instances,
+to perform un/marshalling between RDF graphs and JSON objects.</p>
+<p>The mediation layer provides the operations</p>
+<pre class="prettyprint source"><code>GraphDatabase.objectStore
+GraphDatabase.transaction
+GDBObjectStore.put
+GDBObjectStore.get
+GDBObjectStore.delete
+GDBObjectStore.attach
+GDBObjectStore.detach
+GDBTransaction.abort
+GDBTransaction.commit
+GDBTransaction.objectStore</code></pre><p>which implement the abstract mechanisms to bind instance to stores,
+create transactions to govern changes and transform state changes onto
+store requests upon transaction completion.</p>
+<p>They rely on the RDF-specific implementation to 
+implement RDF instance identifiers and IndexedDB key functions to govern the
+relation between data model entities and their remote RDF representation.</p>
+<p>The arguments to attach operations serve as roots to a reachability graph,
+of which the objects are registered with the transaction's active ObjectStore.
+When a transaction commits, this collection is examined and its field delta
+maps are interpreted to generate GSP PATCH operations to propagate to the
+remote replication service.
+If a transaction aborts, then the maps are used to roll the object states back
+view the method</p>
+<pre class="prettyprint source"><code>GraphObject.prototype.rollback</code></pre><h3>Background Replication</h3><p>The interaction with a remote RDF service for the actual data exchange
+is accomplished by a background via Promises.
+When either a transaction is committed explicitly or a chain of GDBObjectStore put
+operations completes, the deferred phase transforms the abstract 
+patch descriptions into a concrete GSP request and executes it on the remote 
+service.</p>
+<p>This is defined in </p>
+<pre class="prettyprint source"><code>rdf-database.js</code></pre><p>as concrete implemetations for the operators</p>
+<pre class="prettyprint source"><code>RDFDatabase.prototype.describe()
+RDFDatabase.prototype.head()
+RDFDatabase.prototype.get()
+RDFDatabase.prototype.patch()</code></pre><p>which rely on the RDFEnvironment implementation for</p>
+<pre class="prettyprint source"><code>RDFEnvironment.prototype.createPatch()
+RDFEnvironment.prototype.createNamedNode()</code></pre><p>and GSP/SPARQL implementation for</p>
+<pre class="prettyprint source"><code>GSP.get()
+GSP.head()
+GSP.patch()</code></pre><p>The operations yielf IndexedDB Request results and completion
+notification is through the onsuccess property.</p>
+<h3>Background change notification</h3><p>The application main thread receives changes from background websocket
+listeners, which accept patch requests from the remote service.
+These are translated back into property delta maps, which reference
+attached GraphObject instances
+and are passed to the application in the events</p>
+<pre class="prettyprint source"><code>GraphObject.prototype.oncreate
+GraphObject.prototype.onupdate
+GraphObject.prototype.ondelete</code></pre><p>for those instances for it to examine and apply with the methods</p>
+<pre class="prettyprint source"><code>GraphObject.prototype.rollforward</code></pre></article>
+    </section>
+
+
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>graph-object.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">The class GraphObject is an abstract class which wraps each concrete
+instance in a proxy to mediate property access and implement a jdo/jpa-like
+state machine to control instance.
+The logic distinguished detached/attached situations wrt a ReplicaObjectStore
+and, for attached objects, constrcts for them a delta map and uses that cache
+upon tranaction completion to propagate changes to the respective remote
+storage service.
+
+The state graph is a reduced version of the JDO space which corresponds to
+that model's 'persistent' states, and the 'transient' realm of that JDO space
+does not figure in this implementation.
+
+That is, the reduced space includes just
+    new
+    clean
+    dirty
+    deleted
+with which the attachment/transaction status combines to yield the JDO
+equivalents.
+
+see:
+    https://db.apache.org/jdo/state_transition.html,
+    https://en.wikipedia.org/wiki/Java_Persistence_API
+  
+For specialized GraphObject classes :
+  - writes to managed properties side-effect the state.
+  - attached objects also generate delta maps during a transaction.
+  - transactional reads from managed properties require a valid state.</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="graph-object.js.html">graph-object.js</a>, <a href="graph-object.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 
@@ -56,7 +309,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 05 2019 22:56:42 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 05 2019 23:03:56 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

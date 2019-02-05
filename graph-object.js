@@ -1,6 +1,7 @@
 // Copyright (c) 2019 datagraph gmbh
 
 /**
+ @overview
 The class GraphObject is an abstract class which wraps each concrete
 instance in a proxy to mediate property access and implement a jdo/jpa-like
 state machine to control instance.
@@ -31,6 +32,10 @@ For specialized GraphObject classes :
   - transactional reads from managed properties require a valid state.
 */
 
+/**
+ Encapsulate an error due to an invalid operation.
+ @extends Error
+ */
 class GraphStateError extends Error {
   constructor(state, operation) {
     super(`Operation (${operation}) is ìnvalid in state (${state}).`);
