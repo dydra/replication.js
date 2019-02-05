@@ -199,7 +199,7 @@ and are passed to the application in the events
     GraphObject.prototype.onupdate
     GraphObject.prototype.ondelete
 
-for those instances for it to examine and apply with the methods
+for those instances to examine and apply with the methods
 
     GraphObject.prototype.rollforward
 
