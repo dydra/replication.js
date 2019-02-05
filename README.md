@@ -21,19 +21,19 @@ by reconciling representations in three realms:
   JavaScript proxy objects monitor access to instance propertiess and propagate
     them to the store  
 
-- persistent data  
-  represented as a revisioned collection of RDF quads stored in a
-    service repository  
-  where the subject iri correspond to the application model instance identifier  
-  the predicate arity is either one, for atomic values or higher for arrays  
-  the object terms are either literals or subject iri of related resources  
-
 - intermediate graphs  
   each a collection of triples  
   each captures the object property changes associated with a given application
     model transaction  
   a JSON-LD context governs the relation between terms and property values  
   each associated with a revision to enable undo/redo  
+
+- persistent data  
+  represented as a revisioned collection of RDF quads stored in a
+    service repository  
+  where the subject iri correspond to the application model instance identifier  
+  the predicate arity is either one, for atomic values or higher for arrays  
+  the object terms are either literals or subject iri of related resources  
 
 The library concerns the application data, the intermediate
 graph and communicating it to the remote RDF repository.
@@ -50,8 +50,7 @@ It is realized by three components in the client:
     Object  -  field-cache  -  Graph  -  GSP/websockets  -  RDF-repository
     
                       JavaScript / RDF mediation  
-               <---- GraphDatabase + RDFDatabase ----->
-
+              <---- Graph-Data-Model + RDFDatabase ----->
 </pre>
 
 
@@ -137,7 +136,7 @@ store requests upon transaction completion.
 
 
 
-They rely on the RDF-specific implementation in 
+They rely on the RDF-specific implementation to 
 implement RDF instance identifiers and IndexedDB key functions to govern the
 relation between data model entities and their remote RDF representation.
 
@@ -188,18 +187,19 @@ The operations yielf IndexedDB Request results and completion
 notification is through the onsuccess property.
 
 
-### NYI: Background change notification
+### Background change notification
 
 The application main thread receives changes from background websocket
 listeners, which accept patch requests from the remote service.
-These are translated back into GraphObject references and property
-delta maps, which are passed to the application in the events
+These are translated back into property delta maps, which reference
+attached GraphObject instances
+and are passed to the application in the events
 
     GraphObject.prototype.oncreate
     GraphObject.prototype.onupdate
     GraphObject.prototype.ondelete
 
-for it to examine and apply with the methods
+for those instances for it to examine and apply with the methods
 
     GraphObject.prototype.rollforward
 

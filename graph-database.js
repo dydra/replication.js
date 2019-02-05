@@ -287,7 +287,7 @@ export class GraphDatabase { // extends IDBDatabase {
       var match;
       var etag = response.headers.get('ETag');
       if (etag && this.revisions.find(function(p) { return (etag == p.revision); })) {
-        console.log("onmessage: reflected", etag);
+        console.log("onmessage: reflected", etag, data);
       } else {
         if ((contentType = response.headers.get('Content-Type')) &&
             (match = contentType.match(/([^;]+)(?:;.*)?/))) {
