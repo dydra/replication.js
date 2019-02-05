@@ -1,13 +1,16 @@
 // Copyright (c) 2019 datagraph gmbh
 
-// implement a standard RDF api
-// follows
-//   https://www.w3.org/community/rdfjs/
-//   https://www.w3.org/community/rdfjs/wiki/Comparison_of_RDFJS_libraries
-//   https://www.w3.org/TR/rdf-interfaces/#idl-def-RDFEnvironment
-//   ceur-ws.org/Vol-1268/paper13.pdf
-//   https://github.com/rdf-ext/rdf-ext
-//   https://github.com/rdfjs/data-model
+/**
+ @overview
+
+ implement a standard RDF api, following
+   https://www.w3.org/community/rdfjs/
+   https://www.w3.org/community/rdfjs/wiki/Comparison_of_RDFJS_libraries
+   https://www.w3.org/TR/rdf-interfaces/#idl-def-RDFEnvironment
+   ceur-ws.org/Vol-1268/paper13.pdf
+   https://github.com/rdf-ext/rdf-ext
+   https://github.com/rdfjs/data-model
+ */
 
 import {grammar as nquadsGrammar} from './n-quads-grammar.js';
 import {grammar as multipartGrammar} from './multipart-grammar.js';
@@ -19,6 +22,11 @@ import * as nearley from '/javascripts/vendor/nearley/lib/nearley.js';
 // possible alternative uri library, but wants punycode via invalid import
 // import * as URI from '/javascripts/vendor/uri-js/dist/esnext/uri.js';
 
+/**
+ The class RDFEnvironment specializes the model creation functions and
+ codecs for RDF
+ */
+ 
 export class RDFEnvironment extends GraphEnvironment {
   constructor(options = {}) {
     super(options);

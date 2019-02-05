@@ -1,6 +1,7 @@
 // Copyright (c) 2019 datagraph gmbh
 
-/*
+/**
+ @overview
 The classes
 
     GraphDatabase

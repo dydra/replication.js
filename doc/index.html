@@ -187,6 +187,265 @@ GraphObject.prototype.ondelete</code></pre><p>for those instances to examine and
 
 <header>
     
+        <h2>graph-database.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">The classes
+
+    GraphDatabase
+    GDBTransaction
+    GDBObjectStore
+
+provide the javascript/graph mediation layer in a form which combines the
+IndexedDB and JDO APIs. It support the standard operations
+
+    open, close
+    transaction
+    createObjectStore
+    get, put, delete
+
+Additional operators extend IndexedDB semantics to accommodate basic JDO/JPA
+behaviour:
+    attach, detach
+    commit
+
+The application-thread API operators transform between native javascript
+objects and graphs to be exchanged as websockets/fetch requests with a remote
+graph store which acts as the Graph storage service.
+The object<->graph transformation relies on the GraphObject state tracking
+and the field<->term mapping mechanisms which a GDBObjectStore delegates
+to a GraphEnvironment.
+
+The IndexedDB transaction behaviour is combined with that of JDO.
+The former recommendation specifies that, once no further operation is
+possible, a transaction commits.
+
+    http://blog.nparashuram.com/2011/11/indexeddb-apis-javascriptnext.html
+    https://w3c.github.io/IndexedDB/#async-execute-request
+
+As per the w3c IndexedDB description, operations are queued as requests and
+each is run asynchronously, but in turn, in the order created. Upon completion,
+to notify the application either onerror or onsuccess is invoked for each
+request.
+Once a notification returns and no further request is pending, it is
+expected that the active transaction have dynamic extent only, that is, the
+main thread maintains no control flow which expect the transaction to have
+indefinite extent and to be able to an additional request. Under this
+assumption, the transaction can be be committed as soon a no request is
+pending.
+A non-local control transfer from a request notification should abort the
+transaction.
+When the transaction commits, any managed changes which happen during the
+transaction's extent are marshalled and excuted as well, after which instance
+specific onsuccess/failure invoked.
+In addition to the implicit completion, an explicit commit operation
+can apply pending request and managed changes manually.
+
+The put/get functions rely on promises to implement asynchronous behaviour.
+see
+    https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+For a put operation, the execution function marshals the object state into
+a pending request and immediately resolves the promise.
+It provides a then function which implements the IndexedDB asynchronous
+behaviour by iterating over all accumulated put requests, caching the request
+data to be transmitted when the transaction completes and invoking each
+request's onsuccess.
+For a get request, the execute function initiates the retrieval and
+resolves the promise when the response arrives, while the then function
+unmarshals the result and invokes the request's onsuccess to the the
+data to the application.
+When executing the then functions, shuld no request remain, the transaction
+is completed. but transmitting all accumulated combined put data and
+patches from managed objects.
+
+
+The default implementation uses the W3C SPARQL and Graph Store Protocols to
+communicate with a CRDT-as-RDF service. A GraphEnvironment combines JSON-LD
+term/field mapping together with graph manipulation utilites from rdflib
+to provie the default implemention of the abstract interface.</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>graph-environment.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">The GraphEnvironment class defines the abstract interface to graphs
+ and their elements.</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
         <h2>graph-object.js</h2>
         
     
@@ -393,16 +652,209 @@ For specialized GraphObject classes :
 
 
 
+
+
+
+<section>
+
+<header>
+    
+        <h2>rdf-database.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">The class RDFDatabase extends GraphDatabase to implement communication
+via RDF Graph Store and SPARQL protocols.</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="rdf-database.js.html">rdf-database.js</a>, <a href="rdf-database.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>rdf-environment.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">implement a standard RDF api, following
+   https://www.w3.org/community/rdfjs/
+   https://www.w3.org/community/rdfjs/wiki/Comparison_of_RDFJS_libraries
+   https://www.w3.org/TR/rdf-interfaces/#idl-def-RDFEnvironment
+   ceur-ws.org/Vol-1268/paper13.pdf
+   https://github.com/rdf-ext/rdf-ext
+   https://github.com/rdfjs/data-model</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphStateError.html">GraphStateError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#byteToHex">byteToHex</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li></ul><h3>Global</h3><ul><li><a href="global.html#byteToHex">byteToHex</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 05 2019 23:09:44 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 05 2019 23:19:39 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

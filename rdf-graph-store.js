@@ -1,17 +1,18 @@
 // Copyright (c) 2019 datagraph gmbh
 
-// a graph store implementation which combines
-// - fetch network operators
-// - rdflib codecs and data model
-//const fetch = require('node-fetch');
-//const $util = require('util');
-//const $rdf = require('rdflib');
-//const now = require('performance-now');
+/**
+ Implement SPARQL and Graph Store protocol operations based on
+ - fetch network operators
+ - rdf codecs and data model
+
+ The operations are defined as static function for the GSP and SPARQL classes.
+ */
 
 /*if ("function" === typeof importScripts) {
   importScripts('https://solid.github.io/releases/rdflib.js/rdflib-0.12.2.min.js');
 }
 */
+
 const now = Date.now;
 
 function logFetch(location, args) {
