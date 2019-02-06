@@ -32,12 +32,18 @@ function logFetch(location, args) {
   return (p);
 }
 
+/**
+ The GSP clas comprises the interface operators for the Graph Store Protocol
+ */
 export class GSP {
 }
 window.GSP = GSP;
 GSP.locationSuffix = "/service";
 GSP.fetchOp = logFetch;
 
+/**
+ The SPARQL class comprises the interface operators for the SPARQL Protocol
+ */
 export class SPARQL {
 }
 window.SPARQL = SPARQL;
@@ -55,6 +61,13 @@ String.prototype.encode = {
 
 // define generic protocol interface
 // graph store protocol
+
+
+/**
+ GSP.delete
+ Perform a GSP delete given the location, options for authentication and response
+ content type, and an optional continuation operator.
+ */
 
 GSP.delete = function(location, options = {}, continuation) {
   var headers = new Headers({ "Accept": GSP.delete.acceptMediaType });
@@ -78,6 +91,13 @@ GSP.delete = function(location, options = {}, continuation) {
   return (continuation ? p.then(continuation) : p);
 }
 GSP.delete.acceptMediaType = 'text/turtle';
+
+
+/**
+ GSP.get
+ Perform a GSP delete given the location, options for authentication and response
+ content type, and an optional continuation operator.
+ */
 
 GSP.get = function(location, options = {}, continuation) {
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.get.acceptMediaType) });
@@ -104,6 +124,11 @@ GSP.get = function(location, options = {}, continuation) {
 }
 GSP.get.acceptMediaType = 'application/n-quads';
 
+
+/**
+ GSP.head
+ */
+
 GSP.head = function(location, options, continuation) {
   var headers = new Headers({});
   if (options['authentication']) {
@@ -119,6 +144,11 @@ GSP.head = function(location, options, continuation) {
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
+
+
+/**
+ GSP.patch
+ */
 
 GSP.patch = function (location, content, options = {}, continuation) {
   console.log("GSP.patch", location, content, options);
@@ -157,6 +187,11 @@ GSP.patch.acceptMediaType = 'text/turtle';
 GSP.patch.contentMediaType = 'multipart/related';
 GSP.patch.locationSuffix = GSP.locationSuffix;
 
+
+/**
+ GSP.post
+ */
+
 GSP.post = function (location, content, options = {}, continuation) {
   var contentType = options["Content-Type"] || GSP.post.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.post.acceptMediaType),
@@ -181,6 +216,11 @@ GSP.post = function (location, content, options = {}, continuation) {
 }
 GSP.post.acceptMediaType = 'text/turtle';
 GSP.post.contentMediaType = 'application/n-quads';
+
+
+/**
+ GSP.put
+ */
 
 GSP.put = function (location, content, options = {}, continuation) {
   var contentType = options["Content-Type"] || GSP.put.contentMediaType;
@@ -207,7 +247,18 @@ GSP.put = function (location, content, options = {}, continuation) {
 GSP.put.AcceptType = 'text/turtle';
 GSP.put.ContentType = 'application/n-quads';
 
+
+
 // sparql protocol
+
+
+/**
+ SPARQL.get
+ Execute a SPARQL query given a location and a query text, arrange to 
+ execute the query and handle the results.
+ A promise is created.
+ Given a continuation, that is applied, otherwise the active promise is returned.
+ */
 
 SPARQL.get = function(location, query, options = {}, continuation) {
   console.log("SPARQL.get ", query, options);
@@ -221,16 +272,27 @@ SPARQL.get = function(location, query, options = {}, continuation) {
   var args = { method: "GET",
                cache: "no-cache",
                headers: headers  };
-  var queryArgument = (query ? ("query=" + encodeURIComponent(query)) : null);
-  location = location + SPARQL.locationSuffix;
-  if ( queryArgument ) {
+  if (query) {
+    var queryArgument = (query ? ("query=" + encodeURIComponent(query)) : null);
+    location = location + SPARQL.locationSuffix;
     location += "?" + queryArgument;
+  } else {
+    throw (new Error(`SPARQL.get: a query text is required: '${location}'`));
   }
   var p = SPARQL.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
 SPARQL.get.contentMediaType = null;
 SPARQL.get.acceptMediaType = 'application/sparql-results+json';
+
+
+/**
+ SPARQL.view
+ Execute a SPARQL query given a location and a view name, arrange to 
+ execute the query and handle the results.
+ A promise is created.
+ Given a continuation, that is applied, otherwise the active promise is returned.
+ */
 
 SPARQL.view = function(location, viewName, options = {}, continuation) {
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.view.acceptMediaType)});
@@ -243,16 +305,25 @@ SPARQL.view = function(location, viewName, options = {}, continuation) {
   var args = { method: "GET",
                cache: "no-cache",
                headers: headers  };
-  var queryArgument = (query ? ("query=" + encodeURIComponent(query)) : null);
-  location = location + "/" + viewName
-  if ( queryArgument ) {
-    location += "?" + queryArgument;
+  if (viewName) {
+    location = location + "/" + viewName
+  } else {
+    throw (new Error(`SPARQL.view: a view name is required: '${location}'`));
   }
   var p = SPARQL.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
 SPARQL.view.contentMediaType = null;
 SPARQL.view.acceptMediaType = 'application/sparql-results+json';
+
+
+/**
+ SPARQL.post
+ Execute a SPARQL query given a location and a query text, arrange to 
+ execute the query and handle the results.
+ A promise is created.
+ Given a continuation, that is applied, otherwise the active promise is returned.
+ */
 
 SPARQL.post = function(location, query, options = {}, continuation) {
   var contentType = options["Content-Type"] || SPARQL.post.contentMediaType;
@@ -262,7 +333,12 @@ SPARQL.post = function(location, query, options = {}, continuation) {
                cache: "no-cache",
                headers: headers,
                body: query };
-  location = location + SPARQL.locationSuffix;
+  if (query) {
+    location = location + SPARQL.locationSuffix;
+  } else {
+    throw (new Error(`SPARQL.get: a query text is required: '${location}'`));
+  }
+
   var p = SPARQL.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
