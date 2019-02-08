@@ -1,10 +1,10 @@
 // Copyright (c) 2019 datagraph gmbh
 
-/*
- * GraphEnvironment
- *
- * The GraphEnvironment class defines the abstract interface to graphs
- * and their elements.
+/**
+ @overview
+
+ The GraphEnvironment class defines the abstract interface to graphs
+ and their elements.
  */
 
 export class GraphEnvironment {

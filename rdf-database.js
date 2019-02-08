@@ -1,6 +1,7 @@
 // Copyright (c) 2019 datagraph gmbh
 
-/*
+/**
+ @overview
 The class RDFDatabase extends GraphDatabase to implement communication
 via RDF Graph Store and SPARQL protocols.
 */
@@ -12,6 +13,9 @@ import * as RDFEnvironment from './rdf-environment.js';
 // console.log('rdf-database.js: start');
 // console.log(GraphDatabase);
 
+/**
+ @extends GraphDatabase
+ */
 export class RDFDatabase extends GraphDatabase {
   constructor(name, location, authentication, options = {}) {
     super(name, location, authentication, options);

@@ -2,6 +2,4 @@
 .gz
 .tmp
 *~
-
-
-.vs/WebApplication1/DesignTimeBuild/.dtbcache
+.vs/*
