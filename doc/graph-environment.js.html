@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>JSDoc: graph-environment.js</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="https://fonts.googleapis.com/css?family=Muli:100,400,700|Oswald:300|Inconsolata,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+</head>
+
+<body>
+    <div id="stickyNavbarOverlay"></div>
+    <div class="top-navbar">
+        <div class="container">
+            <nav class="navbar" role="navigation" aria-label="main navigation">
+                <div class="navbar-brand">
+                    
+                    
+                        <h1 class="navbar-item">Documentation</h1>
+                    
+                    <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                    </a>
+                </div>
+                
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <div class="columns">
+            <div class="column is-3" id="sidebarNav">
+                <div class="sidebar">
+                    <nav>
+                        <h2><a href="index.html">Home</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="BlankNode.html">BlankNode</a></li><li><a href="Graph.html">Graph</a></li><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="GSP.html">GSP</a></li><li><a href="LangString.html">LangString</a></li><li><a href="Literal.html">Literal</a></li><li><a href="NamedNode.html">NamedNode</a></li><li><a href="Node.html">Node</a></li><li><a href="Patch.html">Patch</a></li><li><a href="Quad.html">Quad</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li><li><a href="SimpleString.html">SimpleString</a></li><li><a href="SPARQL.html">SPARQL</a></li><li><a href="Statement.html">Statement</a></li><li><a href="Term.html">Term</a></li><li><a href="Triple.html">Triple</a></li><li><a href="UUID.html">UUID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#byteToHex">byteToHex</a></li><li><a href="global.html#createBlankNode">createBlankNode</a></li><li><a href="global.html#createGraph">createGraph</a></li><li><a href="global.html#createLiteral">createLiteral</a></li><li><a href="global.html#createNamedNode">createNamedNode</a></li><li><a href="global.html#createPatch">createPatch</a></li><li><a href="global.html#createQuad">createQuad</a></li><li><a href="global.html#createTriple">createTriple</a></li><li><a href="global.html#createUUID">createUUID</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li></ul></div>
+                    </nav>
+                </div>
+            </div>
+            <div class="column is-9-desktop">
+                <div class="content" id="main-content-wrapper">
+                    <header class="page-title">
+                        <p>Source</p>
+                        <h1>graph-environment.js</h1>
+                    </header>
+                    
+                    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// Copyright (c) 2019 datagraph gmbh
+
+/**
+ @overview
+
+ The GraphEnvironment class defines the abstract interface to graphs
+ and their elements.
+ */
+
+export class GraphEnvironment {
+  constructor(options) {
+    //this.context = null;
+    this.resolveContext(options['context']);
+    this.module = options['module'] || {};
+  }
+
+  get baseIRI() {
+    return (this.context['@base'] || null);
+  }
+
+  resolveContext(context) {
+    var thisEnv = this;
+    var expandContext = function(context) {
+      var base = context['@base'];
+      Object.values(context).forEach(function(def) {
+        var uri = def['@id'];
+        if (uri) {
+          def['@id'] = (base ? new URL(uri, base).href: new URL(uri).href);
+        }
+      });
+      return (context);
+    }
+    var fetchContext = function(context) {
+      fetch(context).then(function(response) {
+        thisEnv.context = expandContext(response.json());
+      })
+    }
+    if (context) {
+      switch (typeof(context)) {
+      case 'object':
+        if (context instanceof URL) {
+          fetchContext(context.href);
+        } else {
+          this.context = expandContext(context);
+        }
+        break;
+      case 'string':
+        fetchContext(context);
+        break;
+      default:
+        throw (new TypeError(`resolveContext: invalid context: ${context}` ) );
+      }
+    } else {
+      this.context = {};
+    }
+  }
+
+  // return the identifier for the root node of the graph
+  graphResourceID (graph) {
+    throw (new Error('GraphEnvironment.fieldResourceID must be implemented'));
+  }
+
+  // return the identifers for all nodes in the graph
+  graphResourceIDs (graph) {
+    throw (new Error('GraphEnvironment.fieldResourceIDs must be implemented'));
+  }
+
+  fieldDefinition(identifier) {
+    var def;
+    switch (typeof(identifier)) {
+    case 'string': // field name
+      return (this.context[name] || null);
+    case 'object': // url
+      var namestring = identifier.lexicalForm;
+      def = this.context[namestring];
+      if (def) {
+        return (def);
+      } else {
+        var localPart = identifier.localPart();
+        def = this.context[localPart];
+        if (def) {
+          this.context[namestring] = def;
+          return (def);
+        } else {
+          return (this.context[namestring] = {});
+        }
+      }
+    }
+  }
+  fieldType(identifier) {
+    var def = this.fieldDefinition(identifier);
+    return (def ? def['@type'] : null)
+  }
+
+
+  findIdentifierName(uri) {
+    // console.log("fin", uri);
+    var uriNamestring = uri.lexicalForm;
+    var fieldName = this.context[uriNamestring];
+    if (! fieldName) {
+      for (var name in this.context) {
+        var def = this.context[name];
+        var id = def['@id'];
+        if (id == uriNamestring) {
+          fieldName = name;
+          this.context[uriNamestring] = name;
+          break;
+        }
+      }
+    }
+    if (! fieldName) {
+      fieldName = this.context[uriNamestring] = predicateLeaf(uri);
+    }
+
+    // console.log("fin=", fieldName);
+    return ( fieldName );
+  }
+
+  findNameIdentifier(name) {
+    // console.log('fni');
+    // console.log(this);
+    // console.log(this.context);
+    var uri = null;
+    var def = this.context[name];
+    // console.log('fni: ' + name);
+    if (def) {
+      uri = def['@id'];
+      // console.log(uri);
+      return (uri || null);
+    }
+    // console.log(uri);
+    return (uri);
+  }
+
+  computeGraphObject(graph, identifier) {
+    throw (new Error('GraphEnvironment.computeGraphObject must be implemented'));
+  }
+  computeGraphObjects(graph, identifiers) {
+    throw (new Error('GraphEnvironment.computeGraphObjects must be implemented'));
+  }
+  computeObjectGraph(object) {
+    throw (new Error('GraphEnvironment.computeObjectGraph must be implemented'));
+  }
+
+  createStatement(subject, predicate, object, context) {
+    throw (new Error('GraphEnvironment.createStatement must be implemented'));
+  }
+  createGraph(statements, options) {
+    throw (new Error('GraphEnvironment.createGraph must be implemented'));
+  }
+  createLiteral(value, options) {
+    throw (new Error('GraphEnvironment.createLiteral must be implemented'));
+  }
+  createAnonymousNode(label) {
+    throw (new Error('GraphEnvironment.createAnonymousNode must be implemented'));
+  }
+  createNamedNode(identifier) {
+    throw (new Error('GraphEnvironment.createIdentifiedNode must be implemented'));
+  }
+
+  createObject(className, identifier, state = {}) {
+    console.log('createObject', className)
+    // console.log('prototype', className.prototype)
+    // console.log('type', typeof(className))
+    // console.log('module', this.module);
+    var classInstance = this.module[className];
+    // console.log('class', classInstance);
+    // console.log('state', state);
+    var defs = {};
+    if (classInstance) {
+      var instance = Object.create(classInstance.prototype, defs);
+      // console.log("instance", instance);
+      instance.identifier = identifier;
+      instance.initializeState(instance.stateClean);
+      // console.log("initialized", instance);
+      // apply state after initialization
+      Object.entries(state).forEach(function([entryKey, entryValue]) {
+        instance[entryKey] = entryValue;
+      });
+      var proxy = instance.createProxy();  // do not test, just require the operator
+      // console.log('graph-environment.createObject: instance', typeof(instance), instance);
+      // console.log('graph-environment.createObject: proxy', typeof(proxy), proxy);
+      // console.log('graph-environment.createObject: instance.constructor', instance.constructor);
+      // console.log('graph-environment.createObject: instance.constructor', proxy.constructor);
+      // console.log('graph-environment.createObject: state', instance._state);
+      return( proxy );
+    } else {
+      console.log(`graph-environment.createObject: class not found '${className}'`);
+      return (state);
+    }
+  } 
+}
+
+export function predicateLeaf(url) {
+  var asURL = ( (url instanceof URL) ? url : new URL(url.toString()))
+  return ( (asURL.hash.length > 0) ? asURL.hash.slice(1) : asURL.pathname.split('/').pop() );
+}
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<footer class="footer">
+    <div class="content has-text-centered">
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat Feb 09 2019 21:39:55 GMT+0100 (Central European Standard Time)</p>
+        <p class="sidebar-created-by">
+            <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+            <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>
+        </p>
+    </div>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/app.min.js"></script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

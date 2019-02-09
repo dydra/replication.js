@@ -1,0 +1,561 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>JSDoc: rdf-graph-store.js</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="https://fonts.googleapis.com/css?family=Muli:100,400,700|Oswald:300|Inconsolata,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+</head>
+
+<body>
+    <div id="stickyNavbarOverlay"></div>
+    <div class="top-navbar">
+        <div class="container">
+            <nav class="navbar" role="navigation" aria-label="main navigation">
+                <div class="navbar-brand">
+                    
+                    
+                        <h1 class="navbar-item">Documentation</h1>
+                    
+                    <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                    </a>
+                </div>
+                
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <div class="columns">
+            <div class="column is-3" id="sidebarNav">
+                <div class="sidebar">
+                    <nav>
+                        <h2><a href="index.html">Home</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="BlankNode.html">BlankNode</a></li><li><a href="Graph.html">Graph</a></li><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="GSP.html">GSP</a></li><li><a href="LangString.html">LangString</a></li><li><a href="Literal.html">Literal</a></li><li><a href="NamedNode.html">NamedNode</a></li><li><a href="Node.html">Node</a></li><li><a href="Patch.html">Patch</a></li><li><a href="Quad.html">Quad</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li><li><a href="SimpleString.html">SimpleString</a></li><li><a href="SPARQL.html">SPARQL</a></li><li><a href="Statement.html">Statement</a></li><li><a href="Term.html">Term</a></li><li><a href="Triple.html">Triple</a></li><li><a href="UUID.html">UUID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#byteToHex">byteToHex</a></li><li><a href="global.html#createBlankNode">createBlankNode</a></li><li><a href="global.html#createGraph">createGraph</a></li><li><a href="global.html#createLiteral">createLiteral</a></li><li><a href="global.html#createNamedNode">createNamedNode</a></li><li><a href="global.html#createPatch">createPatch</a></li><li><a href="global.html#createQuad">createQuad</a></li><li><a href="global.html#createTriple">createTriple</a></li><li><a href="global.html#createUUID">createUUID</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li></ul></div>
+                    </nav>
+                </div>
+            </div>
+            <div class="column is-9-desktop">
+                <div class="content" id="main-content-wrapper">
+                    <header class="page-title">
+                        <p>Source</p>
+                        <h1>rdf-graph-store.js</h1>
+                    </header>
+                    
+                    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// Copyright (c) 2019 datagraph gmbh
+
+/**
+ Implement SPARQL and Graph Store protocol operations based on
+ - fetch network operators
+ - rdf codecs and data model
+
+ The operations are defined as static function for the GSP and SPARQL classes.
+ */
+
+/*if ("function" === typeof importScripts) {
+  importScripts('https://solid.github.io/releases/rdflib.js/rdflib-0.12.2.min.js');
+}
+*/
+
+const now = Date.now;
+
+function logFetch(location, args) {
+  console.log('fetch:', location, args);
+  var headers = args.headers;
+  // for (var [k,v] of headers.entries()) {console.log('fetch:', [k,v])};
+  var p = fetch(location, args);
+  p.location = location;
+  p = p.then(function(response) {
+        if (response.ok) {
+          return (response);
+        } else {
+          throw response;
+        }
+      });
+  // console.log(p);
+  return (p);
+}
+
+/**
+ The GSP clas comprises the interface operators for the Graph Store Protocol
+ */
+export class GSP {
+}
+window.GSP = GSP;
+GSP.locationSuffix = "/service";
+GSP.fetchOp = logFetch;
+
+/**
+ The SPARQL class comprises the interface operators for the SPARQL Protocol
+ */
+export class SPARQL {
+}
+window.SPARQL = SPARQL;
+SPARQL.locationSuffix = "/sparql";
+SPARQL.fetchOp = logFetch;
+
+// provide default encoding functions
+String.prototype.encode = {
+ 'application/n-quads': function(object) { return( object ); },
+ 'text/turtle': function(object) { return( object ); },
+ 'application/n-quads': function(object) { return( object ); }
+};
+
+
+
+// define generic protocol interface
+// graph store protocol
+
+
+/**
+ GSP.delete
+ Perform a GSP delete given the location, options for authentication and response
+ content type, and an optional continuation operator.
+ */
+
+GSP.delete = function(location, options = {}, continuation) {
+  var headers = new Headers({ "Accept": GSP.delete.acceptMediaType });
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
+  var args = { method: "DELETE",
+               cache: "no-cache",
+               headers: headers };
+  var constraint = options['graph'];
+  location = location + GSP.locationSuffix;
+  if (constraint) {
+    location = location + '?graph=' + encodeURIComponent(constraint);
+  }
+  var p = GSP.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+GSP.delete.acceptMediaType = 'text/turtle';
+
+
+/**
+ GSP.get
+ Perform a GSP delete given the location, options for authentication and response
+ content type, and an optional continuation operator.
+ */
+
+GSP.get = function(location, options = {}, continuation) {
+  var headers = new Headers({ "Accept": (options["Accept"] || GSP.get.acceptMediaType) });
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  var args = { method: "GET",
+               cache: "no-cache",
+               headers: headers };
+  var constraintCount = 0;
+  location = location + GSP.locationSuffix;
+  ['subject', 'predicate', 'object', 'graph'].forEach(function(term) {
+    var constraint = options[term];
+    if (constraint) {
+      location = location + ( (0 == constraintCount) ? '?' : '&amp;') + term + '=';
+      location = location + encodeURIComponent(constraint);
+    }
+  });
+  var p = GSP.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+GSP.get.acceptMediaType = 'application/n-quads';
+
+
+/**
+ GSP.head
+ */
+
+GSP.head = function(location, options, continuation) {
+  var headers = new Headers({});
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  var args = { method: "HEAD",
+               cache: "no-cache",
+               headers: headers };
+  location = location + GSP.locationSuffix;
+  var p = GSP.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+
+
+/**
+ GSP.patch
+ */
+
+GSP.patch = function (location, content, options = {}, continuation) {
+  console.log("GSP.patch", location, content, options);
+  var contentType = options["Content-Type"] || GSP.patch.contentMediaType;
+  var headers = new Headers({ "Accept": (options["Accept"] || GSP.patch.acceptMediaType),
+                              "Content-Type": contentType,});
+  var contentEncoded = ""
+  var boundary = null;
+  //console.log("GSP.patch");
+  //console.log(options);
+  if (options['authentication']) {
+    headers.set("Authorization",'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
+  //console.log(headers);
+  //console.log(content);
+  //console.log(contentType);
+  content.encode(contentType, function(e, options ={}) {
+    contentEncoded = e;
+    boundary = options.boundary
+  });
+  if (boundary) {
+    headers.set("Content-Type", headers.get("Content-Type") + `; boundary=${boundary}`);
+  }
+  var args = { method: "PATCH",
+               headers: headers,
+               body: contentEncoded };
+  var httpURL = location + GSP.patch.locationSuffix;
+  var p = GSP.fetchOp(httpURL, args);
+  return (continuation ? p.then(continuation) : p);
+}
+GSP.patch.acceptMediaType = 'text/turtle';
+GSP.patch.contentMediaType = 'multipart/related';
+GSP.patch.locationSuffix = GSP.locationSuffix;
+
+
+/**
+ GSP.post
+ */
+
+GSP.post = function (location, content, options = {}, continuation) {
+  var contentType = options["Content-Type"] || GSP.post.contentMediaType;
+  var headers = new Headers({ "Accept": (options["Accept"] || GSP.post.acceptMediaType),
+                              "Content-Type": contentType });
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
+  var contentEncoded = "";
+  content.encode(contentType, function(e) { contentEncoded = e; });
+
+  var args = { method: "POST",
+               headers: headers,
+               body: contentEncoded };
+  location = location + GSP.locationSuffix;
+  var p = GSP.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+GSP.post.acceptMediaType = 'text/turtle';
+GSP.post.contentMediaType = 'application/n-quads';
+
+
+/**
+ GSP.put
+ */
+
+GSP.put = function (location, content, options = {}, continuation) {
+  var contentType = options["Content-Type"] || GSP.put.contentMediaType;
+  var headers = new Headers({ "Accept": (options["Accept"] || GSP.put.acceptMediaType),
+                              "Content-Type": contentType });
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  if (options.etag) { headers.set("ETag", options.etag) }
+  if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
+  var contentEncoded = "";
+  content.encode(contentType, function(e) { contentEncoded = e; });
+
+  var args = { method: "PUT",
+               headers: headers,
+               body: contentEncoded };
+  location = location + GSP.locationSuffix;
+  var p = GSP.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+GSP.put.AcceptType = 'text/turtle';
+GSP.put.ContentType = 'application/n-quads';
+
+
+
+// sparql protocol
+
+
+/**
+ SPARQL.get
+ Execute a SPARQL query given a location and a query text, arrange to 
+ execute the query and handle the results.
+ A promise is created.
+ Given a continuation, that is applied, otherwise the active promise is returned.
+ */
+
+SPARQL.get = function(location, query, options = {}, continuation) {
+  console.log("SPARQL.get ", query, options);
+  var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.get.acceptMediaType) });
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  var args = { method: "GET",
+               cache: "no-cache",
+               headers: headers  };
+  if (query) {
+    var queryArgument = (query ? ("query=" + encodeURIComponent(query)) : null);
+    location = location + SPARQL.locationSuffix;
+    location += "?" + queryArgument;
+  } else {
+    throw (new Error(`SPARQL.get: a query text is required: '${location}'`));
+  }
+  var p = SPARQL.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+SPARQL.get.contentMediaType = null;
+SPARQL.get.acceptMediaType = 'application/sparql-results+json';
+
+
+/**
+ SPARQL.view
+ Execute a SPARQL query given a location and a view name, arrange to 
+ execute the query and handle the results.
+ A promise is created.
+ Given a continuation, that is applied, otherwise the active promise is returned.
+ */
+
+SPARQL.view = function(location, viewName, options = {}, continuation) {
+  var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.view.acceptMediaType)});
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['authentication']));
+  } else {
+    headers.delete("Authorization");
+  }
+  var args = { method: "GET",
+               cache: "no-cache",
+               headers: headers  };
+  if (viewName) {
+    location = location + "/" + viewName
+  } else {
+    throw (new Error(`SPARQL.view: a view name is required: '${location}'`));
+  }
+  var p = SPARQL.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+SPARQL.view.contentMediaType = null;
+SPARQL.view.acceptMediaType = 'application/sparql-results+json';
+
+
+/**
+ SPARQL.post
+ Execute a SPARQL query given a location and a query text, arrange to 
+ execute the query and handle the results.
+ A promise is created.
+ Given a continuation, that is applied, otherwise the active promise is returned.
+ */
+
+SPARQL.post = function(location, query, options = {}, continuation) {
+  var contentType = options["Content-Type"] || SPARQL.post.contentMediaType;
+  var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.post.acceptMediaType),
+                              "Content-Type": contentType });
+  var args = { method: "POST",
+               cache: "no-cache",
+               headers: headers,
+               body: query };
+  if (query) {
+    location = location + SPARQL.locationSuffix;
+  } else {
+    throw (new Error(`SPARQL.get: a query text is required: '${location}'`));
+  }
+
+  var p = SPARQL.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+SPARQL.post.acceptMediaType = 'text/turtle';
+SPARQL.post.contentMediaType = 'application/sparql';
+
+////////////////////////////////////////////////////////////////////////////////
+
+/*parseRDF = function(document, continuation) {
+  var graph = $rdf.graph();
+  $rdf.parse(document, graph, undefined, 'application/n-quads',
+    function(err, store) {
+      var triples = store.statementsMatching(undefined, undefined, undefined);
+      continuation(triples);
+    });
+  return ( graph );
+}
+
+import * as nquadsGrammar from './n-quads-grammar.js';
+
+getResponse = function(url,continuation) {
+  var store = $rdf.graph();
+  $rdf.parse(document, store, url, 'application/n-quads',
+    function(err, store) {
+      var triples = store.statementsMatching(undefined, undefined, undefined);
+      continuation(triples);
+    });
+  return ( store );
+
+}
+*/
+
+function logTriples(e, graph) {
+  console.log("logTriples");
+  if ( e ) { console.log(e); };
+  //console.log($util.inspect(graph.statements));
+  console.log(graph.statements);
+  return( graph );
+}
+
+function compareSPOG(s1, s2) {
+ // console.log(s1.subject.compareTerm(s2.subject) + '.' +
+//              s1.predicate.compareTerm(s2.predicate) + '.' +
+//              s1.object.compareTerm(s2.object) + '.' +
+//              s1.why.compareTerm(s2.why));
+
+  return ( s1.subject.compareTerm(s2.subject) ||
+           s1.predicate.compareTerm(s2.predicate) ||
+           s1.object.compareTerm(s2.object) ||
+           s1.why.compareTerm(s2.why) );
+}
+
+
+/*
+
+
+//var quads = getGSP('http://public.dydra.com/james/foaf/service');
+var quads = getGSP('http://public.dydra.com/james/testload/service');
+//console.log('quads');
+//console.log(quads);
+
+quads.then(function(response) { parseResponse(response.body, testDifference); });
+
+function testDifference(quads) {
+  console.log('testDifference');
+  console.log(quads.length);
+  var oldstmts = quads.slice(100);
+  var newstmts = quads.slice(0,-100);
+//  console.log(oldstmts);
+//  console.log(newstmts);
+  var oldGraph = graph(oldstmts);
+  var newGraph = graph(newstmts);
+  console.log('graphs');
+  //console.log($util.inspect(oldGraph));
+  //console.log($util.inspect(newGraph));
+
+  var time1 = now();
+  result = oldGraph.difference(newGraph);
+  var time2 = now();
+  // console.log( $util.inspect(result) );
+  console.log( 'diffd' );
+ // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['added']));
+ // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['removed']));
+  console.log('time: ' + (time2 - time1));
+}
+
+var oldGraph = $rdf.graph();
+var newGraph = $rdf.graph();
+var oldDocument = "&lt;http://example.org/subject> &lt;http://example.org/predicate1> \"object1\" &lt;http://graph>.\
+&lt;http://example.org/subject> &lt;http://example.org/predicate2> \"object2\" .";
+var newDocument = '&lt;http://example.org/subject> &lt;http://example.org/predicate1> "object1" &lt;http://graph> .\
+&lt;http://example.org/subject> &lt;http://example.org/predicate3> "object3" .';
+$rdf.parse(oldDocument, oldGraph, undefined, 'application/n-quads',
+           function() {
+             console.log('parsed old');
+             $rdf.parse(newDocument, newGraph, undefined, 'application/n-quads',
+                        function() {
+                          console.log('parsed new');
+                          result = oldGraph.difference(newGraph);
+                         // console.log( $util.inspect(result) );
+                          console.log( 'diffd' );
+                         // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['added']));
+                         // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['removed']));
+                          var time2 = now();
+                          console.log('time: ' + (time2 - time1));
+                         }) });
+//console.log(getSPARQL);
+
+//getResponse('http://dydra.com/james/test2/sparql', logTriples);
+//console.log('+++++++++++');
+result = getSPARQL('http://dydra.com/james/test2/sparql',
+                   function(response){
+                     //console.log('response: ' + $util.inspect(response, {showHidden: true}));
+                     console.log('response: ');
+                     console.log('response);
+                     console.log('status: ' + response.status);
+                     //console.log('headers: ' + $util.inspect(response.headers, {showHidden: true}));
+                     console.log('headers:);
+                     console.log(response.headers);
+                     response.text().then(function(text) {parseResponse(text, logTriples);})
+                     console.log('-----------');
+                     getResponse(response.url, logTriples);
+                   },
+                   'construct {?s ?p ?o} where {?s ?p ?o}');
+
+// console.log(result);
+*/
+console.log('rdf-graph-store: loaded');
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<footer class="footer">
+    <div class="content has-text-centered">
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat Feb 09 2019 21:39:55 GMT+0100 (Central European Standard Time)</p>
+        <p class="sidebar-created-by">
+            <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+            <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>
+        </p>
+    </div>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/app.min.js"></script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
