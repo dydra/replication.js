@@ -24,7 +24,9 @@ import * as nearley from '/javascripts/vendor/nearley/lib/nearley.js';
 
 /**
  The class RDFEnvironment specializes the model creation functions and
- codecs for RDF
+ codecs for RDF.
+ An environment instance provides model element creation operations in a mode which
+ provides defaults from environment properties
  */
  
 export class RDFEnvironment extends GraphEnvironment {
@@ -33,8 +35,10 @@ export class RDFEnvironment extends GraphEnvironment {
     this.location = (options.location ? options.location.toString() : null);
   }
 
-  // an instance provides model element creation operations in a mode which
-  // may depend on environment properties
+  /**
+   Create a statement with provisions from translation from curie terms and
+   completion of relative iri.
+   */
   createStatement(subject, predicate, object, graph = null) {
     //console.log({op: 'createStatement', subject: subject, predicate: predicate, object: object, graph: graph});
     if (typeof(subject) == 'string' || subject instanceof String) {
@@ -58,15 +62,33 @@ export class RDFEnvironment extends GraphEnvironment {
     }
     return (createStatement(subject, predicate, object, graph));
   }
+  /**
+   */
+  createQuad(subject, predicate, object, graph = this.location) {
+    return (this.createStatement(subject, predicate, object, graph));
+  }
+  /**
+   */
+  createTriple(subject, predicate, object) {
+    return (this.createStatement(subject, predicate, object));
+  }
+  /**
+   */
   createLiteral(value, language, datatype) {
     return (createLiteral(value, language, datatype));
   }
+  /**
+   */
   createAnonymousNode(label) {
     return (createBlankNode(label));
   }
+  /**
+   */
   createBlankNode(label) {
-    return (new BlankNode(label));
+    return (createBlankNode(label));
   }
+  /**
+   */
   createNamedNode(lexicalForm) {
     // allow for three case
     // - absolute url : encapsulate as is
@@ -96,12 +118,8 @@ export class RDFEnvironment extends GraphEnvironment {
     }
     return (createNamedNode(lexicalForm, this.baseIRI));
   }
-  createQuad(subject, predicate, object, graph = this.location) {
-    return (this.createStatement(subject, predicate, object, graph));
-  }
-  createTriple(subject, predicate, object) {
-    return (this.createStatement(subject, predicate, object));
-  }
+  /**
+   */
   createGraph(statements, options = {}) {
     var thisEnv = this;
     var coerceToStatement = function(datum) {
@@ -118,6 +136,8 @@ export class RDFEnvironment extends GraphEnvironment {
     }
     return (new Graph(statements, options));
   }
+  /**
+   */
   createPatch(options) {
     //console.log('RDFEnvironment.createPatch');
     //console.log(this);
@@ -249,7 +269,8 @@ export class RDFEnvironment extends GraphEnvironment {
   }
 
   /**
-   The function toValue accepts a {@link Term}
+   The function toValue accepts a {@link Term} and converts it to a native value
+   */
   toValue(term, predicate) {
     var datatype = term.datatype || this.fieldType(predicate);
     // console.log('toValue', term, predicate, datatype);
@@ -367,7 +388,7 @@ export class NamedNode extends Node {
   /**
    The function encode formats the NamedNode as a string and returns it or
    delegate to the optional continuation.
-   It implementes this by retrieving the respective encoder and delegating the operation
+   It implements this by retrieving the respective encoder and delegating the operation
    to that function.
    */
   encode(mediaType, continuation) {
@@ -376,6 +397,8 @@ export class NamedNode extends Node {
 }
 
 /**
+ @param {string} lexicalForm
+ @param {string} [baseIRI] - The IRI to combine with a laxicalForm which is relative.
  */
 export function createNamedNode(lexicalForm, baseIRI = null) {
   if (baseIRI) {
@@ -386,6 +409,8 @@ export function createNamedNode(lexicalForm, baseIRI = null) {
 }
 
 /**
+ The class UUID represented universally unique identifiers as the 
+ hex-encoded string.
  */
 export class UUID extends NamedNode {
   constructor(lexicalForm) {
@@ -427,21 +452,45 @@ NamedNode.xsd = {
 
 
 /**
+ A BlankNode is a Node which is identified local to a Surface by a string label.
+ @extends Node
  */
 export class BlankNode extends Node{
+  /**
+   @param {string} [label]
+   */
   constructor(label) {
     super();
-    this.label = label;
+    /**
+     The local identifier
+     @type string
+     */
+    this.label = label || `node_${BlankNode.nodeIndex++}`;
   }
+
+  /**
+   Returns true for a BlankNode with the same label
+   @param {any}
+   @return {boolean}
+   */
   equals(other) {
     return (!!other && other.termType === this.termType && other.label.equals(this.label));
   }
+
+  /**
+   Given a media type, encode the blank node's lexical form as a string and
+   return that value or delegate to the continuation.
+   @param {string} mediaType
+   @param {function} [continuation] If present, invoke with the encoded value and return that result.
+   */
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
   }
 }
 
 /**
+ Create a new BlankNode
+ @param {string} [label]
  */
 export function createBlankNode (label) {
   return (new BlankNode(label));
@@ -451,23 +500,49 @@ BlankNode.prototype.encode['application/n-quads'] = function(object, continuatio
   return (continuation('_:' + object.lexicalForm));
 }
 
+BlankNode.nodeIndex = 0;
+
 
 /**
+ The class Graph encapsulates a statement sequence with a location url,
+ to augment {@link Triple} content, and a base IRI to extend relative IRI to absolute.
  */
 export class Graph {
+  /**
+   @param {array} statements
+   @param {Object} [options]
+   */
   constructor(statements, options = {}) {
-    this.statements = statements || [];
+    /**
+     the location URL
+     @member {string}
+     */
     this.location = options['location'];
+    /** 
+     the base url for operation which complete a relative iri argument
+     @member {string}
+     */
     this.baseIRI = options['baseIRI'];
+    /** @member {array} */
+    this.statements = statements || [];
   }
 
   /**
+   Given a media type, encode the graph as a document string which represents each statement
+   with its lexical form.
+   return that value or delegate to the continuation.
+   @param {string} mediaType
+   @param {function} [continuation] If present, invoke with the encoded value and return that result.
    */
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
   }
 
   /**
+   Compute a set of identified deltas from the graph content.
+   Each entry is an array of which the first element is the lexical identifier of a subject
+   and the second is an array of roll-forward deltas.
+   That is, the first value is set to a JavaScript value and the second is left undefined.
    */
   computeDeltas(environment) {
     // console.log('computeDeltas', this, environment);
@@ -522,12 +597,17 @@ export class Graph {
     return (Array.from(allDeltas.values()));
   }
 
+  /**
+   Delegate a forEach operation to the graph's statements.
+   */
   forEach(op) {
     return (this.statements.forEach(op));
   }
 }
 
 /**
+ @param {array} statements
+ @param {Object} [options]
  */
 export function createGraph(statements, options = {}) {
   return (new Graph(statements, options));
@@ -544,15 +624,26 @@ Graph.prototype.encode['application/n-quads'] = function(object, continuation) {
 
 
 /**
+ The abstract class Statement comprises Triple and Quad speciaizations
  */
 export class Statement {
+  /**
+   @param {Node} subject
+   @param {NamedNode} predicate
+   @param {Term} object
+   @param {Node} [graph]
+   */
   constructor(subject, predicate, object, graph = null) {
     this.subject = subject;
     this.predicate = predicate;
     this.object = object;
     this.graph = graph;
   }
+
   /**
+   Returns true for a Statement with equal terms
+   @param {any}
+   @return {boolean}
    */
   equals(other) {
     return (!!other && other.subject.equals(this.subject) && other.predicate.equals(this.predicate) &&
@@ -560,6 +651,11 @@ export class Statement {
   }
 
   /**
+   Given a media type, encode the statement as a string which represents each term
+   with its lexical form.
+   return that value or delegate to the continuation.
+   @param {string} mediaType
+   @param {function} [continuation] If present, invoke with the encoded value and return that result.
    */
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
@@ -567,6 +663,12 @@ export class Statement {
 
 }
 
+/**
+ @param {Node} subject
+ @param {NamedNode} predicate
+ @param {Term} object
+ @param {Node} [graph]
+ */
 export function createStatement(subject, predicate, object, graph) {
   return (graph ? createQuad(subject, predicate, object, graph) : createTriple(subject, predicate, object));
 }
@@ -586,14 +688,24 @@ Statement.prototype.encode['application/n-quads'] = function(object, continuatio
 
 
 /**
+ The class Triple specializes {@link Statement} for those with just subject, predicate, and
+ object terms.
  */
 export class Triple extends Statement {
+  /**
+   @param {Node} subject
+   @param {NamedNode} predicate
+   @param {Term} object
+   */
   constructor(subject, predicate, object) {
     super(subject, predicate, object, null);
   }
 }
 
 /**
+ @param {Node} subject
+ @param {NamedNode} predicate
+ @param {Term} object
  */
 export function createTriple(subject, predicate, object) {
   return (new Triple(subject, predicate, object));
@@ -601,14 +713,27 @@ export function createTriple(subject, predicate, object) {
 
 
 /**
+ The class Quad specializes {@link Statement} for those with subject, predicate,
+ object, and graph terms.
  */
 export class Quad extends Statement {
+  /**
+   @param {Node} subject
+   @param {NamedNode} predicate
+   @param {Term} object
+   @param {Node} [graph]
+   */
   constructor(subject, predicate, object, graph) {
     super(subject, predicate, object, graph);
   }
 }
 
 /**
+ The function createQuad combines terms into a Quad instance.
+ @param {Node} subject
+ @param {NamedNode} predicate
+ @param {Term} object
+ @param {Node} [graph]
  */
 export function createQuad(subject, predicate, object, graph) {
   return (new Quad(subject, predicate, object, graph));
@@ -616,6 +741,9 @@ export function createQuad(subject, predicate, object, graph) {
 
 
 /**
+ The class Literal represents an RDF literal.
+ The specializations LangString and SimpleString provide for cases where
+ a language tag or no datatyoe is provided
  */
 export class Literal extends Term {
   constructor(lexicalForm, language, datatype) {
@@ -653,7 +781,9 @@ Literal.prototype.encode['application/n-quads'] = function(object, continuation)
   }
 }
 
-
+/**
+ A dictionary of function to convert native data to an RDF Term
+ */
 Literal.toLiteral = {};
 
 Literal.toLiteral['Date'] = function fromDate(value) {
@@ -684,6 +814,9 @@ Literal.toLiteral['string'] = function fromString(value) {
   return (createLiteral(value, null, null));
 }
 
+/**
+ A dictionary of functions to convert an RDF Term to native data.
+ */
 Literal.toValue = {};
 Literal.toValue[NamedNode.xsd.boolean.lexicalForm] = function(lexicalForm) { return (Boolean(lexicalForm)); };
 Literal.toValue[NamedNode.xsd.dateTime.lexicalForm] = function(lexicalForm) { return (new Date(lexicalForm)); };
@@ -693,6 +826,11 @@ Literal.toValue[NamedNode.xsd.integer.lexicalForm] = function(lexicalForm) { ret
 Literal.toValue[NamedNode.xsd.string.lexicalForm] = function(lexicalForm) { return (lexicalForm); };
 
 /**
+ Create a Literal instance. Given the appropriate arguments creates either a LangString
+ a typed Literal or a SimpleString
+ @param {string} value
+ @param {(string|null)} language
+ @param {(string|null)} datatype
  */
 export function createLiteral(value, language, datatype) {
   if (language) {
@@ -728,9 +866,22 @@ export class LangString extends Literal {
 }
 
 /**
+ The class Patch encapsulates delete, post and put constituents.
+ Each is provided as a Graph or graph designator.
+ As the latter a statement sequence is wrapped as Graph while
+ a string is decoded.
  */
 export class Patch {
-  constructor(options) {
+  /**
+   @param {Object} options
+   @param {string} options.contentType - The patch section media type
+   @param {Graph} [options.delete]
+   @param {Graph} [options.post]
+   @param {Graph} [options.put]
+   */
+  constructor(options = {}) {
+    this.contentType = options.contentType || 'application/n-quads';
+    var thisContentType = this.contentType;
     var whenGraph = function (statements) {
       //console.log('Patch.constructor');
       //console.log(statements);
@@ -743,6 +894,8 @@ export class Patch {
         } else {
           return (null);
         }
+      case 'string':
+        return(decode(statements, thisContentType, null));
       default:
         return (null);
       }
@@ -750,7 +903,6 @@ export class Patch {
     this.put = whenGraph(options.put);
     this.post = whenGraph(options.post);
     this.delete = whenGraph(options.delete);
-    this.contentType = options.contentType || 'application/n-quads';
   }
 
   encode(mediaType, continuation) {
@@ -798,11 +950,17 @@ export class Patch {
 }
 
 /**
+ Instantiate a new Patch given the delete, post, and put constituents.
+ @param {Object} [options] Provide delete, post, and put constituent arrays.
  */
-export function createPatch(options) {
+export function createPatch(options = {}) {
   return (new Patch(options));
 }
 
+/**
+ Encode a patch as multipart/related with one section for each of the
+ delete, put , and post constituents of the patch.
+ */
 Patch.prototype.encode['multipart/related'] = function(object, continuation) {
     //console.log('Patch.prototype.encode[multipart/related]');
     //console.log(object);
@@ -815,6 +973,8 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
       //console.log('Patch.prototype.encode: ' + method);
       //console.log('Patch.prototype.encode: ' + content);
       if (content) {
+        // encode each section as per the patch content type with
+        // appropriate section headers
         content.encode(object.contentType, function(e) {
           if (e && e.length > 0) {
             body += separator + crlf;
@@ -834,6 +994,11 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
 
 
 /**
+ The static function decode accepts a document string, a media type, and a
+ continuation.
+ It decodes the string as n RDF term and delegates to the continuation.
+ The implementation are indexed bx media type in the dictionary which is bound
+ to the decode symbol.
  */
 export function decode(object, contentType, continuation) {
   if (match = contentType.match(/([^;]+)(?:;.*)?/)) {
@@ -919,6 +1084,9 @@ decode['multipart/related'] = function(document, contentType, continuation) {
 }
 
 /**
+ The static function encode accepts an object, a media type, and a continuation.
+ It encodes the data as a string and delegates to the continuation.
+ Numbers and strings are encoded in-line while objects delegate to the respective method.
  */
 export function encode(object, mediaType, continuation) {
   return (encode[mediaType](object, continuation))
