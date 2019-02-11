@@ -238,6 +238,18 @@ GSP.head = function(location, options, continuation) {
 
 /**
  GSP.patch
+ Perform a GSP patch given the location, content, options for authentication and section
+ content type, and an optional continuation operator.
+ The content is first encoded as per the given content type and a request is issued
+ with the given headers.
+ @param {string} location - the host and target repository name
+ @param {Patch} content - the request content
+ @param {Object} [options]
+ @param {string} options.etag - the client revision identifer to identify the transaction
+ @param {string} options.authorization - the basic authentication string
+ @param {string} options.accept - the media type for the response document
+ @param {string} options.contentDisposition - the replication disposition route
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
  */
 
 GSP.patch = function (location, content, options = {}, continuation) {
@@ -280,6 +292,17 @@ GSP.patch.locationSuffix = GSP.locationSuffix;
 
 /**
  GSP.post
+ Perform a GSP post given the location, content, options for authentication, and an optional continuation operator.
+ The content is first encoded as per the given content type and a request is issued
+ with the given headers.
+ @param {string} location - the host and target repository name
+ @param {Graph} content - the request content
+ @param {Object} [options]
+ @param {string} options.etag - the client revision identifer to identify the transaction
+ @param {string} options.authorization - the basic authentication string
+ @param {string} options.accept - the media type for the response document
+ @param {string} options.contentDisposition - the replication disposition route
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
  */
 
 GSP.post = function (location, content, options = {}, continuation) {
@@ -310,6 +333,17 @@ GSP.post.contentMediaType = 'application/n-quads';
 
 /**
  GSP.put
+ Perform a GSP put given the location, content, options for authentication, and an optional continuation operator.
+ The content is first encoded as per the given content type and a request is issued
+ with the given headers.
+ @param {string} location - the host and target repository name
+ @param {Graph} content - the request content
+ @param {Object} [options]
+ @param {string} options.etag - the client revision identifer to identify the transaction
+ @param {string} options.authorization - the basic authentication string
+ @param {string} options.accept - the media type for the response document
+ @param {string} options.contentDisposition - the replication disposition route
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
  */
 
 GSP.put = function (location, content, options = {}, continuation) {
@@ -344,14 +378,20 @@ GSP.put.ContentType = 'application/n-quads';
 
 /**
  SPARQL.get
- Execute a SPARQL query given a location and a query text, arrange to 
- execute the query and handle the results.
- A promise is created.
- Given a continuation, that is applied, otherwise the active promise is returned.
+ Execute a SPARQL query given a location and a query text.
+ The request URL combines the location, the SPARQL endpoint suffix and the url-encoded query text.
+ A promise is created. Given a continuation, it is supplied to the promise,
+ otherwise the active promise is returned.
+ @param {string} location - the host and target repository name
+ @param {string} query - the request content
+ @param {Object} [options]
+ @param {string} options.authorization - the basic authentication string
+ @param {string} options.accept - the media type for the response document
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
  */
 
 SPARQL.get = function(location, query, options = {}, continuation) {
-  console.log("SPARQL.get ", query, options);
+  // console.log("SPARQL.get ", query, options);
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.get.acceptMediaType) });
   if (options['authentication']) {
     headers.set("Authorization",
@@ -378,10 +418,10 @@ SPARQL.get.acceptMediaType = 'application/sparql-results+json';
 
 /**
  SPARQL.view
- Execute a SPARQL query given a location and a view name, arrange to 
- execute the query and handle the results.
- A promise is created.
- Given a continuation, that is applied, otherwise the active promise is returned.
+ Execute a SPARQL query given a location and a view name
+ The request URL combines the location, the SPARQL endpoint suffix and the view name.
+ A promise is created. Given a continuation, it is supplied to the promise,
+ otherwise the active promise is returned.
  */
 
 SPARQL.view = function(location, viewName, options = {}, continuation) {
@@ -409,10 +449,12 @@ SPARQL.view.acceptMediaType = 'application/sparql-results+json';
 
 /**
  SPARQL.post
- Execute a SPARQL query given a location and a query text, arrange to 
- execute the query and handle the results.
+ Execute a SPARQL query given a location and a query text.
+ The request URL combines the location and the SPARQL endpoint suffix.
+The query txt is sent a the request body.
  A promise is created.
- Given a continuation, that is applied, otherwise the active promise is returned.
+ Given a continuation, it is supplied to the promise,
+ otherwise the active promise is returned.
  */
 
 SPARQL.post = function(location, query, options = {}, continuation) {
@@ -433,129 +475,10 @@ SPARQL.post = function(location, query, options = {}, continuation) {
   return (continuation ? p.then(continuation) : p);
 }
 SPARQL.post.acceptMediaType = 'text/turtle';
-SPARQL.post.contentMediaType = 'application/sparql';
+SPARQL.post.contentMediaType = 'application/sparql-query';
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/*parseRDF = function(document, continuation) {
-  var graph = $rdf.graph();
-  $rdf.parse(document, graph, undefined, 'application/n-quads',
-    function(err, store) {
-      var triples = store.statementsMatching(undefined, undefined, undefined);
-      continuation(triples);
-    });
-  return ( graph );
-}
-
-import * as nquadsGrammar from './n-quads-grammar.js';
-
-getResponse = function(url,continuation) {
-  var store = $rdf.graph();
-  $rdf.parse(document, store, url, 'application/n-quads',
-    function(err, store) {
-      var triples = store.statementsMatching(undefined, undefined, undefined);
-      continuation(triples);
-    });
-  return ( store );
-
-}
-*/
-
-function logTriples(e, graph) {
-  console.log("logTriples");
-  if ( e ) { console.log(e); };
-  //console.log($util.inspect(graph.statements));
-  console.log(graph.statements);
-  return( graph );
-}
-
-function compareSPOG(s1, s2) {
- // console.log(s1.subject.compareTerm(s2.subject) + '.' +
-//              s1.predicate.compareTerm(s2.predicate) + '.' +
-//              s1.object.compareTerm(s2.object) + '.' +
-//              s1.why.compareTerm(s2.why));
-
-  return ( s1.subject.compareTerm(s2.subject) ||
-           s1.predicate.compareTerm(s2.predicate) ||
-           s1.object.compareTerm(s2.object) ||
-           s1.why.compareTerm(s2.why) );
-}
-
-
-/*
-
-
-//var quads = getGSP('http://public.dydra.com/james/foaf/service');
-var quads = getGSP('http://public.dydra.com/james/testload/service');
-//console.log('quads');
-//console.log(quads);
-
-quads.then(function(response) { parseResponse(response.body, testDifference); });
-
-function testDifference(quads) {
-  console.log('testDifference');
-  console.log(quads.length);
-  var oldstmts = quads.slice(100);
-  var newstmts = quads.slice(0,-100);
-//  console.log(oldstmts);
-//  console.log(newstmts);
-  var oldGraph = graph(oldstmts);
-  var newGraph = graph(newstmts);
-  console.log('graphs');
-  //console.log($util.inspect(oldGraph));
-  //console.log($util.inspect(newGraph));
-
-  var time1 = now();
-  result = oldGraph.difference(newGraph);
-  var time2 = now();
-  // console.log( $util.inspect(result) );
-  console.log( 'diffd' );
- // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['added']));
- // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['removed']));
-  console.log('time: ' + (time2 - time1));
-}
-
-var oldGraph = $rdf.graph();
-var newGraph = $rdf.graph();
-var oldDocument = "&lt;http://example.org/subject> &lt;http://example.org/predicate1> \"object1\" &lt;http://graph>.\
-&lt;http://example.org/subject> &lt;http://example.org/predicate2> \"object2\" .";
-var newDocument = '&lt;http://example.org/subject> &lt;http://example.org/predicate1> "object1" &lt;http://graph> .\
-&lt;http://example.org/subject> &lt;http://example.org/predicate3> "object3" .';
-$rdf.parse(oldDocument, oldGraph, undefined, 'application/n-quads',
-           function() {
-             console.log('parsed old');
-             $rdf.parse(newDocument, newGraph, undefined, 'application/n-quads',
-                        function() {
-                          console.log('parsed new');
-                          result = oldGraph.difference(newGraph);
-                         // console.log( $util.inspect(result) );
-                          console.log( 'diffd' );
-                         // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['added']));
-                         // console.log($rdf.Serializer(newGraph).statementsToNTriples(result['removed']));
-                          var time2 = now();
-                          console.log('time: ' + (time2 - time1));
-                         }) });
-//console.log(getSPARQL);
-
-//getResponse('http://dydra.com/james/test2/sparql', logTriples);
-//console.log('+++++++++++');
-result = getSPARQL('http://dydra.com/james/test2/sparql',
-                   function(response){
-                     //console.log('response: ' + $util.inspect(response, {showHidden: true}));
-                     console.log('response: ');
-                     console.log('response);
-                     console.log('status: ' + response.status);
-                     //console.log('headers: ' + $util.inspect(response.headers, {showHidden: true}));
-                     console.log('headers:);
-                     console.log(response.headers);
-                     response.text().then(function(text) {parseResponse(text, logTriples);})
-                     console.log('-----------');
-                     getResponse(response.url, logTriples);
-                   },
-                   'construct {?s ?p ?o} where {?s ?p ?o}');
-
-// console.log(result);
-*/
 console.log('rdf-graph-store: loaded');
 
 </code></pre>
@@ -572,7 +495,7 @@ console.log('rdf-graph-store: loaded');
 
 <footer class="footer">
     <div class="content has-text-centered">
-        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 02:35:44 GMT+0100 (Central European Standard Time)</p>
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 22:12:35 GMT+0100 (Central European Standard Time)</p>
         <p class="sidebar-created-by">
             <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
             <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>
