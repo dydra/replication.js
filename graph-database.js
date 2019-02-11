@@ -4,26 +4,27 @@
  @overview
 The classes
 
-    GraphDatabase
-    GDBTransaction
-    GDBObjectStore
+ -   GraphDatabase
+ -   GDBTransaction
+ -   GDBObjectStore
 
 provide the javascript/graph mediation layer in a form which combines the
 IndexedDB and JDO APIs. It support the standard operations
 
-    open, close
-    transaction
-    createObjectStore
-    get, put, delete
+ -   open, close
+ -   transaction
+ -   createObjectStore
+ -   get, put, delete
 
 Additional operators extend IndexedDB semantics to accommodate basic JDO/JPA
 behaviour:
-    attach, detach
-    commit
+
+ -   attach, detach
+ -   commit
 
 The application-thread API operators transform between native javascript
 objects and graphs to be exchanged as websockets/fetch requests with a remote
-graph store which acts as the Graph storage service.
+graph store which acts as the Graph storage service.  
 The object<->graph transformation relies on the GraphObject state tracking
 and the field<->term mapping mechanisms which a GDBObjectStore delegates
 to a GraphEnvironment.
@@ -38,15 +39,15 @@ possible, a transaction commits.
 As per the w3c IndexedDB description, operations are queued as requests and
 each is run asynchronously, but in turn, in the order created. Upon completion,
 to notify the application either onerror or onsuccess is invoked for each
-request.
+request.  
 Once a notification returns and no further request is pending, it is
 expected that the active transaction have dynamic extent only, that is, the
 main thread maintains no control flow which expect the transaction to have
 indefinite extent and to be able to an additional request. Under this
 assumption, the transaction can be be committed as soon a no request is
-pending.
+pending.  
 A non-local control transfer from a request notification should abort the
-transaction.
+transaction.  
 When the transaction commits, any managed changes which happen during the
 transaction's extent are marshalled and excuted as well, after which instance
 specific onsuccess/failure invoked.

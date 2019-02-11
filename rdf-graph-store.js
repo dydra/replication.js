@@ -33,7 +33,7 @@ function logFetch(location, args) {
 }
 
 /**
- The GSP clas comprises the interface operators for the Graph Store Protocol
+ The GSP class comprises the interface operators for the Graph Store Protocol
  */
 export class GSP {
 }
@@ -67,6 +67,15 @@ String.prototype.encode = {
  GSP.delete
  Perform a GSP delete given the location, options for authentication and response
  content type, and an optional continuation operator.
+ @param {string} location - the host and target repository name
+ @param {Object} [options]
+ @param {string} options.etag - the client revision identifer to identify the transaction
+ @param {string} options.authorization - the basic authoentication string
+ @param {string} options.accept - the media type for the confirmation response
+ @param {string} options.contentDisposition - the replication disposition route
+ @param {string} options.graph - the target graph
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
+ @returns {Promise}
  */
 
 GSP.delete = function(location, options = {}, continuation) {
@@ -90,6 +99,9 @@ GSP.delete = function(location, options = {}, continuation) {
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
+/**
+ The default accept media type for delete requests
+ */
 GSP.delete.acceptMediaType = 'text/turtle';
 
 
@@ -97,6 +109,16 @@ GSP.delete.acceptMediaType = 'text/turtle';
  GSP.get
  Perform a GSP delete given the location, options for authentication and response
  content type, and an optional continuation operator.
+ @param {string} location - the host and target repository name
+ @param {Object} [options]
+ @param {string} options.etag - the client revision identifer to identify the transaction
+ @param {string} options.authorization - the basic authoentication string
+ @param {string} options.accept - the media type for the response document
+ @param {string} options.subject - a subject constraint
+ @param {string} options.predicate - a predicate constraint
+ @param {string} options.object - an object constraint
+ @param {string} options.graph - a graph constraint
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
  */
 
 GSP.get = function(location, options = {}, continuation) {
@@ -127,6 +149,10 @@ GSP.get.acceptMediaType = 'application/n-quads';
 
 /**
  GSP.head
+ @param {string} location - the host and target repository name
+ @param {Object} [options]
+ @param {string} options.authorization - the basic authoentication string
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
  */
 
 GSP.head = function(location, options, continuation) {

@@ -843,7 +843,7 @@ export function createLiteral(value, language, datatype) {
 }
 
 /**
- The class SimpleString specializes {@link Literal} for thos strings without language tag.
+ The class SimpleString specializes {@link Literal} for those strings without a language tag.
  @extends Literal
  */
 export class SimpleString extends Literal {

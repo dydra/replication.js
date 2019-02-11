@@ -230,58 +230,50 @@ GraphObject.prototype.ondelete</code></pre><p>for those instances to examine and
     <div class="container-overview">
     
         
-            <div class="description">The classes
-
-    GraphDatabase
-    GDBTransaction
-    GDBObjectStore
-
-provide the javascript/graph mediation layer in a form which combines the
-IndexedDB and JDO APIs. It support the standard operations
-
-    open, close
-    transaction
-    createObjectStore
-    get, put, delete
-
-Additional operators extend IndexedDB semantics to accommodate basic JDO/JPA
-behaviour:
-    attach, detach
-    commit
-
-The application-thread API operators transform between native javascript
+            <div class="description"><p>The classes</p>
+<ul>
+<li>GraphDatabase</li>
+<li>GDBTransaction</li>
+<li>GDBObjectStore</li>
+</ul>
+<p>provide the javascript/graph mediation layer in a form which combines the
+IndexedDB and JDO APIs. It support the standard operations</p>
+<ul>
+<li>open, close</li>
+<li>transaction</li>
+<li>createObjectStore</li>
+<li>get, put, delete</li>
+</ul>
+<p>Additional operators extend IndexedDB semantics to accommodate basic JDO/JPA
+behaviour:</p>
+<ul>
+<li>attach, detach</li>
+<li>commit</li>
+</ul>
+<p>The application-thread API operators transform between native javascript
 objects and graphs to be exchanged as websockets/fetch requests with a remote
-graph store which acts as the Graph storage service.
-The object<->graph transformation relies on the GraphObject state tracking
+graph store which acts as the Graph storage service.<br>The object<->graph transformation relies on the GraphObject state tracking
 and the field<->term mapping mechanisms which a GDBObjectStore delegates
-to a GraphEnvironment.
-
-The IndexedDB transaction behaviour is combined with that of JDO.
+to a GraphEnvironment.</p>
+<p>The IndexedDB transaction behaviour is combined with that of JDO.
 The former recommendation specifies that, once no further operation is
-possible, a transaction commits.
-
-    http://blog.nparashuram.com/2011/11/indexeddb-apis-javascriptnext.html
-    https://w3c.github.io/IndexedDB/#async-execute-request
-
-As per the w3c IndexedDB description, operations are queued as requests and
+possible, a transaction commits.</p>
+<pre class="prettyprint source"><code>http://blog.nparashuram.com/2011/11/indexeddb-apis-javascriptnext.html
+https://w3c.github.io/IndexedDB/#async-execute-request</code></pre><p>As per the w3c IndexedDB description, operations are queued as requests and
 each is run asynchronously, but in turn, in the order created. Upon completion,
 to notify the application either onerror or onsuccess is invoked for each
-request.
-Once a notification returns and no further request is pending, it is
+request.<br>Once a notification returns and no further request is pending, it is
 expected that the active transaction have dynamic extent only, that is, the
 main thread maintains no control flow which expect the transaction to have
 indefinite extent and to be able to an additional request. Under this
 assumption, the transaction can be be committed as soon a no request is
-pending.
-A non-local control transfer from a request notification should abort the
-transaction.
-When the transaction commits, any managed changes which happen during the
+pending.<br>A non-local control transfer from a request notification should abort the
+transaction.<br>When the transaction commits, any managed changes which happen during the
 transaction's extent are marshalled and excuted as well, after which instance
 specific onsuccess/failure invoked.
 In addition to the implicit completion, an explicit commit operation
-can apply pending request and managed changes manually.
-
-The put/get functions rely on promises to implement asynchronous behaviour.
+can apply pending request and managed changes manually.</p>
+<p>The put/get functions rely on promises to implement asynchronous behaviour.
 see
     https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 For a put operation, the execution function marshals the object state into
@@ -296,13 +288,11 @@ unmarshals the result and invokes the request's onsuccess to the the
 data to the application.
 When executing the then functions, shuld no request remain, the transaction
 is completed. but transmitting all accumulated combined put data and
-patches from managed objects.
-
-
-The default implementation uses the W3C SPARQL and Graph Store Protocols to
+patches from managed objects.</p>
+<p>The default implementation uses the W3C SPARQL and Graph Store Protocols to
 communicate with a CRDT-as-RDF service. A GraphEnvironment combines JSON-LD
 term/field mapping together with graph manipulation utilites from rdflib
-to provie the default implemention of the abstract interface.</div>
+to provie the default implemention of the abstract interface.</p></div>
         
 
         
@@ -396,8 +386,8 @@ to provie the default implemention of the abstract interface.</div>
     <div class="container-overview">
     
         
-            <div class="description">The GraphEnvironment class defines the abstract interface to graphs
- and their elements.</div>
+            <div class="description"><p>The GraphEnvironment class defines the abstract interface to graphs
+ and their elements.</p></div>
         
 
         
@@ -491,34 +481,32 @@ to provie the default implemention of the abstract interface.</div>
     <div class="container-overview">
     
         
-            <div class="description">The class GraphObject is an abstract class which wraps each concrete
+            <div class="description"><p>The class GraphObject is an abstract class which wraps each concrete
 instance in a proxy to mediate property access and implement a jdo/jpa-like
 state machine to control instance.
 The logic distinguished detached/attached situations wrt a ReplicaObjectStore
 and, for attached objects, constrcts for them a delta map and uses that cache
 upon tranaction completion to propagate changes to the respective remote
-storage service.
-
-The state graph is a reduced version of the JDO space which corresponds to
+storage service.</p>
+<p>The state graph is a reduced version of the JDO space which corresponds to
 that model's 'persistent' states, and the 'transient' realm of that JDO space
-does not figure in this implementation.
-
-That is, the reduced space includes just
+does not figure in this implementation.</p>
+<p>That is, the reduced space includes just
     new
     clean
     dirty
     deleted
 with which the attachment/transaction status combines to yield the JDO
-equivalents.
-
-see:
+equivalents.</p>
+<p>see:
     https://db.apache.org/jdo/state_transition.html,
-    https://en.wikipedia.org/wiki/Java_Persistence_API
-  
-For specialized GraphObject classes :
-  - writes to managed properties side-effect the state.
-  - attached objects also generate delta maps during a transaction.
-  - transactional reads from managed properties require a valid state.</div>
+    https://en.wikipedia.org/wiki/Java_Persistence_API</p>
+<p>For specialized GraphObject classes :</p>
+<ul>
+<li>writes to managed properties side-effect the state.</li>
+<li>attached objects also generate delta maps during a transaction.</li>
+<li>transactional reads from managed properties require a valid state.</li>
+</ul></div>
         
 
         
@@ -612,7 +600,7 @@ For specialized GraphObject classes :
     <div class="container-overview">
     
         
-            <div class="description">Provide a means to prefetch everything of interest</div>
+            <div class="description"><p>Provide a means to prefetch everything of interest</p></div>
         
 
         
@@ -706,8 +694,8 @@ For specialized GraphObject classes :
     <div class="container-overview">
     
         
-            <div class="description">The class RDFDatabase extends GraphDatabase to implement communication
-via RDF Graph Store and SPARQL protocols.</div>
+            <div class="description"><p>The class RDFDatabase extends GraphDatabase to implement communication
+via RDF Graph Store and SPARQL protocols.</p></div>
         
 
         
@@ -801,13 +789,13 @@ via RDF Graph Store and SPARQL protocols.</div>
     <div class="container-overview">
     
         
-            <div class="description">implement a standard RDF api, following
-   https://www.w3.org/community/rdfjs/
-   https://www.w3.org/community/rdfjs/wiki/Comparison_of_RDFJS_libraries
-   https://www.w3.org/TR/rdf-interfaces/#idl-def-RDFEnvironment
+            <div class="description"><p>implement a standard RDF api, following
+   https://<a href="http://www.w3.org/community/rdfjs/">www.w3.org/community/rdfjs/</a>
+   https://<a href="http://www.w3.org/community/rdfjs/wiki/Comparison_of_RDFJS_libraries">www.w3.org/community/rdfjs/wiki/Comparison_of_RDFJS_libraries</a>
+   https://<a href="http://www.w3.org/TR/rdf-interfaces/#idl-def-RDFEnvironment">www.w3.org/TR/rdf-interfaces/#idl-def-RDFEnvironment</a>
    ceur-ws.org/Vol-1268/paper13.pdf
    https://github.com/rdf-ext/rdf-ext
-   https://github.com/rdfjs/data-model</div>
+   https://github.com/rdfjs/data-model</p></div>
         
 
         
@@ -892,7 +880,7 @@ via RDF Graph Store and SPARQL protocols.</div>
 
 <footer class="footer">
     <div class="content has-text-centered">
-        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 00:01:30 GMT+0100 (Central European Standard Time)</p>
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 02:35:44 GMT+0100 (Central European Standard Time)</p>
         <p class="sidebar-created-by">
             <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
             <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>

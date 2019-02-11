@@ -64,7 +64,7 @@
     
         <h2><span class="attribs"><span class="type-signature"></span></span>GSP<span class="signature">()</span><span class="type-signature"></span></h2>
         
-            <div class="class-description">The GSP clas comprises the interface operators for the Graph Store Protocol</div>
+            <div class="class-description"><p>The GSP class comprises the interface operators for the Graph Store Protocol</p></div>
         
     
 </header>
@@ -199,7 +199,7 @@
             
         
         <span class="code-name">
-            delete<span class="signature">()</span><span class="type-signature"></span>
+            delete<span class="signature">(location, options<span class="signature-attributes">opt</span>, continuation<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span>
         </span>
     </h4>
     
@@ -207,9 +207,9 @@
     
     
     <div class="description">
-        GSP.delete
+        <p>GSP.delete
  Perform a GSP delete given the location, options for authentication and response
- content type, and an optional continuation operator.
+ content type, and an optional continuation operator.</p>
     </div>
     
 
@@ -220,6 +220,294 @@
 
 
 
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>location</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the host and target repository name</p></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>options</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">Object</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+  
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>etag</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the client revision identifer to identify the transaction</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>authorization</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the basic authoentication string</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>accept</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the media type for the confirmation response</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>contentDisposition</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the replication disposition route</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>graph</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the target graph</p></td>
+</tr>
+
+  
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>continuation</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">function</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>if supplied, used to invoke the fetch promise.</p></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
 
 
 
@@ -260,7 +548,7 @@
         <p class="tag-source">
             <a href="rdf-graph-store.js.html" class="button">View Source</a>
             <span>
-                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line72">line 72</a>
+                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line81">line 81</a>
             </span>
         </p>
     
@@ -283,6 +571,29 @@
 
 
 
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<span class="param-type">Promise</span>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
 
 
 
@@ -298,7 +609,7 @@
             
         
         <span class="code-name">
-            get<span class="signature">()</span><span class="type-signature"></span>
+            get<span class="signature">(location, options<span class="signature-attributes">opt</span>, continuation<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span>
         </span>
     </h4>
     
@@ -306,9 +617,9 @@
     
     
     <div class="description">
-        GSP.get
+        <p>GSP.get
  Perform a GSP delete given the location, options for authentication and response
- content type, and an optional continuation operator.
+ content type, and an optional continuation operator.</p>
     </div>
     
 
@@ -319,6 +630,356 @@
 
 
 
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>location</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the host and target repository name</p></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>options</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">Object</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+  
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>etag</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the client revision identifer to identify the transaction</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>authorization</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the basic authoentication string</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>accept</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the media type for the response document</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>subject</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>a subject constraint</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>predicate</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>a predicate constraint</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>object</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>an object constraint</p></td>
+</tr>
+
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>graph</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>a graph constraint</p></td>
+</tr>
+
+  
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>continuation</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">function</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>if supplied, used to invoke the fetch promise.</p></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
 
 
 
@@ -359,7 +1020,7 @@
         <p class="tag-source">
             <a href="rdf-graph-store.js.html" class="button">View Source</a>
             <span>
-                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line102">line 102</a>
+                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line124">line 124</a>
             </span>
         </p>
     
@@ -397,7 +1058,7 @@
             
         
         <span class="code-name">
-            head<span class="signature">()</span><span class="type-signature"></span>
+            head<span class="signature">(location, options<span class="signature-attributes">opt</span>, continuation<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span>
         </span>
     </h4>
     
@@ -405,7 +1066,7 @@
     
     
     <div class="description">
-        GSP.head
+        <p>GSP.head</p>
     </div>
     
 
@@ -416,6 +1077,170 @@
 
 
 
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>location</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the host and target repository name</p></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>options</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">Object</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+  
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>authorization</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>the basic authoentication string</p></td>
+</tr>
+
+  
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>continuation</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">function</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"><p>if supplied, used to invoke the fetch promise.</p></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
 
 
 
@@ -456,7 +1281,7 @@
         <p class="tag-source">
             <a href="rdf-graph-store.js.html" class="button">View Source</a>
             <span>
-                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line132">line 132</a>
+                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line158">line 158</a>
             </span>
         </p>
     
@@ -502,7 +1327,7 @@
     
     
     <div class="description">
-        GSP.patch
+        <p>GSP.patch</p>
     </div>
     
 
@@ -553,7 +1378,7 @@
         <p class="tag-source">
             <a href="rdf-graph-store.js.html" class="button">View Source</a>
             <span>
-                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line153">line 153</a>
+                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line179">line 179</a>
             </span>
         </p>
     
@@ -599,7 +1424,7 @@
     
     
     <div class="description">
-        GSP.post
+        <p>GSP.post</p>
     </div>
     
 
@@ -650,7 +1475,7 @@
         <p class="tag-source">
             <a href="rdf-graph-store.js.html" class="button">View Source</a>
             <span>
-                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line195">line 195</a>
+                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line221">line 221</a>
             </span>
         </p>
     
@@ -696,7 +1521,7 @@
     
     
     <div class="description">
-        GSP.put
+        <p>GSP.put</p>
     </div>
     
 
@@ -747,7 +1572,7 @@
         <p class="tag-source">
             <a href="rdf-graph-store.js.html" class="button">View Source</a>
             <span>
-                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line225">line 225</a>
+                <a href="rdf-graph-store.js.html">rdf-graph-store.js</a>, <a href="rdf-graph-store.js.html#line251">line 251</a>
             </span>
         </p>
     
@@ -796,7 +1621,7 @@
 
 <footer class="footer">
     <div class="content has-text-centered">
-        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 00:01:30 GMT+0100 (Central European Standard Time)</p>
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 02:35:44 GMT+0100 (Central European Standard Time)</p>
         <p class="sidebar-created-by">
             <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
             <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>
