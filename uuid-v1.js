@@ -4,15 +4,15 @@
  *    /usr/local/bin/browserify node-uuid/v1.js -o v1-uuid.js
  */
 
-/**
- * Convert array of 16 byte values to UUID string format of the form:
- * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
- */
 var byteToHex = [];
 for (var i = 0; i < 256; ++i) {
   byteToHex[i] = (i + 0x100).toString(16).substr(1);
 }
 
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
 export function bytesToUuid(buf, offset) {
   var i = offset || 0;
   var bth = byteToHex;
@@ -76,6 +76,12 @@ var _lastMSecs = 0;
 var _lastNSecs = 0;
 
 // See https://github.com/broofa/node-uuid for API details
+/**
+ Compute a v1 UUID
+ Given a buffer use that to construct the value and return it.
+ Absent a buffer, create a temporarx for construction, but translate
+ the result into hex-encoded-string and return that.
+ */
 export function v1(options, buf, offset) {
   var i = buf && offset || 0;
   var b = buf || [];

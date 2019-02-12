@@ -253,9 +253,9 @@ export class GraphObject {
             || this.constructor.transactionalProperties());
   }
 
-  /* asPatch
-   * compute the put/patch/delete patch given the object state
-   * implement as properties of the base function to permit extension
+  /**
+   compute the put/patch/delete patch given the object state
+   implement as properties of the base function to permit extension
    */
   asPatch() {
     //console.log('GraphObject.asPatch');

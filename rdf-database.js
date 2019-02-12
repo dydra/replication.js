@@ -17,17 +17,37 @@ import * as RDFEnvironment from './rdf-environment.js';
  @extends GraphDatabase
  */
 export class RDFDatabase extends GraphDatabase {
+  /**
+   @param {string} name
+   @param {string} location - The connection url namestring
+   @param {string} authentication - The authentication string
+   @param {Object} [options]
+   */
   constructor(name, location, authentication, options = {}) {
     super(name, location, authentication, options);
   }
 
-  head(options, continuation) {
+  /**
+   Perform a GSP head request.
+   Return the promise or its then result depending on the given continuation.
+   @param {Object} options - The request headers
+   @param {(function|null)} [continuation]
+   */ 
+  head(options, continuation = null) {
     // console.log("RDFDatabase.head");
     options = Object.assign({}, options, {authentication: this.authentication});
     var p = GSP.head(this.location, options, continuation);
     return (p);
   }
 
+  /**
+   Perform a GSP patch request.
+   Return the promise or its then result depending on the given continuation.
+   The given patch is encoded as a patch document and sent as the request body.
+   @param {Patch} patch - the patch content
+   @param {Object} options - The request headers
+   @param {(function|null)} [continuation]
+   */
   patch(content, options, continuation) {
     console.log("RDFDatabase.patch", content, options);
     super.patch(content, options, null);
@@ -39,17 +59,33 @@ export class RDFDatabase extends GraphDatabase {
                       continuation);
     return (p);
   }
+
+  /**
+   Perform a GSP get request.
+   Decode the response content as per its content type.
+   Return the continuation result, if supplied or the decoded cotent itself.
+   @param {Object} options - The request headers
+   @param {(function|null)} [continuation]
+   @todo Allow an option to override the response content.
+   */
   get(options, continuation) {
     console.log("RDFDatabase.get");
     var decodeGetContent = function(response) {
       // yields a graph or a patch depending on arriving media type
       var content = this.environment.decode(response.headers.get('Content-Type'), response.body);
-      return (continuation(content));
+      return (continuation ? continuation(content) : content);
     };
     options = Object.assign({}, options, {authentication: this.authentication});
     return (GSP.get(this.location, options,
                     decodeGetContent));
   }
+
+  /**
+   Perform a SPARQL get on a describe query minted to reflect the state of the given key object.
+   @param {Object} keyObject
+   @param {Object} options
+   @param {(function|null)} [continuation]
+   */
   describe(keyObject, options, continuation) {
     console.log("RDFDatabase.describe");
     console.log(keyObject);

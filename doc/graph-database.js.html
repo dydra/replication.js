@@ -44,7 +44,7 @@
             <div class="column is-3" id="sidebarNav">
                 <div class="sidebar">
                     <nav>
-                        <h2><a href="index.html">Home</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="BlankNode.html">BlankNode</a></li><li><a href="Graph.html">Graph</a></li><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="GSP.html">GSP</a></li><li><a href="LangString.html">LangString</a></li><li><a href="Literal.html">Literal</a></li><li><a href="NamedNode.html">NamedNode</a></li><li><a href="Node.html">Node</a></li><li><a href="Patch.html">Patch</a></li><li><a href="Quad.html">Quad</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li><li><a href="SimpleString.html">SimpleString</a></li><li><a href="SPARQL.html">SPARQL</a></li><li><a href="Statement.html">Statement</a></li><li><a href="Term.html">Term</a></li><li><a href="Triple.html">Triple</a></li><li><a href="UUID.html">UUID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#byteToHex">byteToHex</a></li><li><a href="global.html#createBlankNode">createBlankNode</a></li><li><a href="global.html#createGraph">createGraph</a></li><li><a href="global.html#createLiteral">createLiteral</a></li><li><a href="global.html#createNamedNode">createNamedNode</a></li><li><a href="global.html#createPatch">createPatch</a></li><li><a href="global.html#createQuad">createQuad</a></li><li><a href="global.html#createStatement">createStatement</a></li><li><a href="global.html#createTriple">createTriple</a></li><li><a href="global.html#createUUID">createUUID</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li></ul></div>
+                        <h2><a href="index.html">Home</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="BlankNode.html">BlankNode</a></li><li><a href="GDBObjectStore.html">GDBObjectStore</a></li><li><a href="GDBTransaction.html">GDBTransaction</a></li><li><a href="Graph.html">Graph</a></li><li><a href="GraphDatabase.html">GraphDatabase</a></li><li><a href="GraphEnvironment.html">GraphEnvironment</a></li><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="GSP.html">GSP</a></li><li><a href="LangString.html">LangString</a></li><li><a href="Literal.html">Literal</a></li><li><a href="NamedNode.html">NamedNode</a></li><li><a href="Node.html">Node</a></li><li><a href="Patch.html">Patch</a></li><li><a href="Quad.html">Quad</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li><li><a href="SimpleString.html">SimpleString</a></li><li><a href="SPARQL.html">SPARQL</a></li><li><a href="Statement.html">Statement</a></li><li><a href="Term.html">Term</a></li><li><a href="Triple.html">Triple</a></li><li><a href="UUID.html">UUID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#bytesToUuid">bytesToUuid</a></li><li><a href="global.html#copyUUID">copyUUID</a></li><li><a href="global.html#createBlankNode">createBlankNode</a></li><li><a href="global.html#createGraph">createGraph</a></li><li><a href="global.html#createLiteral">createLiteral</a></li><li><a href="global.html#createNamedNode">createNamedNode</a></li><li><a href="global.html#createPatch">createPatch</a></li><li><a href="global.html#createQuad">createQuad</a></li><li><a href="global.html#createStatement">createStatement</a></li><li><a href="global.html#createTriple">createTriple</a></li><li><a href="global.html#createUUID">createUUID</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li><li><a href="global.html#formatUUID">formatUUID</a></li><li><a href="global.html#isDeleteUUID">isDeleteUUID</a></li><li><a href="global.html#isInsertUUID">isInsertUUID</a></li><li><a href="global.html#makeUUID">makeUUID</a></li><li><a href="global.html#makeUUIDString">makeUUIDString</a></li><li><a href="global.html#onmessage">onmessage</a></li><li><a href="global.html#predicateLeaf">predicateLeaf</a></li><li><a href="global.html#resetUUIDState">resetUUIDState</a></li><li><a href="global.html#setUUIDState">setUUIDState</a></li><li><a href="global.html#UUIDState">UUIDState</a></li><li><a href="global.html#UUIDTimestamp">UUIDTimestamp</a></li><li><a href="global.html#v1">v1</a></li></ul></div>
                     </nav>
                 </div>
             </div>
@@ -273,6 +273,20 @@ function onmessage_parse(document, options = {hasResponseLine: true}) {
 var resp = onmessage_parse("HTTP/1.1 200 OK\r\nContent-Type: application/n-quads\r\n\r\n&lt;http://x.o/s> &lt;http://x.o/p> 'o' .")
 */
 
+/**
+ a GraphDatabase provides the base implementation for object replication to a remote store.
+ It follows the pattern exemplified by an IndexedDB database (IDBDatabase), but adds
+ logic to support state replication to a graph store
+ @abstract
+ @property nodeAddress {string} - The V1 UUID stem which identifies this node serves to filter
+  out mirrired replication requests
+ @property {string} location - The connection string for request to the remote store
+ @property {string} authentication - The authentication string for remote requests
+ @property {GDBObjectStore} objectStores - A map of object store by name
+ @property {string} disposition - The replication route name
+ @property {GraphEnvironment} environment - The environment to be used to translate between
+  remote representation and namte objects.
+ */
 export class GraphDatabase { // extends IDBDatabase {
   constructor(name, location, authentication, options = {}) {
     //super();
@@ -386,6 +400,9 @@ export class GraphDatabase { // extends IDBDatabase {
     return( this.revision );
   }
 
+  /**
+   Given an name, create an object store and register it with that name
+   */
   createObjectStore(name, options = {}) {
     //console.log('in gdb createObjectStore');
     //console.log(name);
@@ -407,6 +424,9 @@ export class GraphDatabase { // extends IDBDatabase {
     }
   }
 
+  /**
+   Returned the object store registerd with that name
+   */
   findObjectStore(name) {
     // console.log('findObjectStore', name);
     var store = this.objectStores[name];
@@ -441,6 +461,9 @@ export class GraphDatabase { // extends IDBDatabase {
     }
   }
 
+  /**
+   Create and return an new transaction associated with the given object store(s)
+   */
   transaction(names = this.objectStoreNames(), mode) {
     var transaction = new GDBTransaction(this, names, mode);
     transaction.environment = this.environment;
@@ -451,22 +474,38 @@ export class GraphDatabase { // extends IDBDatabase {
     return ($uuid.makeUUIDString());
   }
 
+  /**
+   @abstract
+   */
   describe(keyObject, options, continuation) {
     throw (new Error(`${this.constructor.name}.describe must be defined`));
   }
+  /**
+   @abstract
+   */
   get(options, continuation) {
     throw (new Error(`${this.constructor.name}.get must be defined`));
   }
+  /**
+   @abstract
+   */
   head(options, continuation) {
     throw (new Error(`${this.constructor.name}.get must be defined`));
   }
+  /**
+   The base method caches the patch with time and regision tags.
+   @param {Object} content
+   @param {Array} content.delete
+   */
   patch(content, options, continuation) {
     // the state manipulation aspect, but without the transport
-    var patch = this.environment.createPatch(content)
-    patch.date = Date.now;
-    patch.revision = options.etag;
-    this.revisions.push(patch);
+    var revision = {patch: patch, name: Date.now(), revision: options.etag};
+    this.revisions.push(revision);
+    return (revision);
   }
+  /**
+   @abstract
+   */
   put(content, options, continuation) {
     throw (new Error(`${this.constructor.name}.put must be defined`));
   }
@@ -497,6 +536,10 @@ GraphDatabase.open = function(name, location, authentication, options = {}) {
 GraphDatabase.graphDatabaseClass = GraphDatabase;
 GraphDatabase.graphEnvironmentClass = GraphEnvironment;
 
+/**
+ Define the handlers for Websocket messages specific to the message content type
+ @todo Shift these to the instance property
+ */
 export var onmessage = {};
 
 onmessage['*/*'] = function(db, response) {
@@ -547,6 +590,8 @@ onmessage['multipart/related'] = function(db, response) {
 }
 
 
+/**
+ */
 export class GDBTransaction { // extends IDBTransaction {
   constructor(database, names = [], mode = "readonly", options = {}) {
     //console.log('transaction.constructor: names');
@@ -676,7 +721,11 @@ export class GDBTransaction { // extends IDBTransaction {
 
 }
 
-
+/**
+ Implement put, get, delete, attach, and detach operationswhich mediate between
+ JavaScript instances and the remote store.
+ Support transactional behaviour with asPatch.
+ */
 export class GDBObjectStore { // extends IDBObjectStore {
   constructor(name, options = {}) {
     // super(name);
@@ -690,6 +739,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     this.database = null;
   }
 
+  /**
+   */
   put(object, key = this.computeKey(object)) {  // single level
     var thisStore = this;
     var request = new PutRequest(this, this.transaction);
@@ -723,6 +774,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
   //   no: there is no relation between get object id and cached managed objects.
   // needs to be qualified by revision, allowing HEAD, HEAD^^, etc as well as uuid
   // in order to implement roll-back/forward
+  /**
+   */
   get(key) {
     console.log("GDBObjectStore.get", key, this);
     var thisStore = this;
@@ -788,8 +841,9 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (request);
   }
 
-  /* if the object is attached, just marks its closure
-   * otherwise, generate just the single-level patch.
+  /**
+    if the object is attached, just marks its closure
+    otherwise, generate just the single-level patch.
    */
   delete(object) {
     var thisStore = this;
@@ -835,6 +889,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return( request );
   }
 
+  /**
+   */
   attach(object) {
     // attach the instance to a store
     var thisStore = this;
@@ -867,6 +923,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (object);
   }
 
+  /**
+   */
   detach(object) {
     var thisStore = this;
     var objects = this.objects;
@@ -887,6 +945,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (object);
   }
 
+  /**
+   */
   abort() {
     // revert all attached objects
     this.objects.forEach(function(object, id) {
@@ -900,11 +960,18 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (this);
   }
 
+  /**
+   collect and return all accumulated patches
+   in the process, convert from abstract form
+   
+     {put: [], post: [], delete: []}
+   
+   where each array entry is 
+   
+     [identifier, propertyName, value]
+   to capture the respective operation on the identifier object
+   */
   asPatch() {
-    // collect and return all accumulated patches
-    // in the process, convert from abstract form
-    //    {put: [[s,p,o] ... ] ...}
-    // the encoding specific to the store implementation
     var thisStore = this;
     var posts = [];
     var puts = [];
@@ -929,6 +996,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (patch);
   }
 
+  /**
+   */
   cleanObjects() {
     var cleanObject = function(object) {
       if (object instanceof GraphObject) {
@@ -994,7 +1063,7 @@ GSP.head('https://de8.dydra.com/jhacker/test/service', {},
 
 <footer class="footer">
     <div class="content has-text-centered">
-        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Feb 11 2019 22:12:35 GMT+0100 (Central European Standard Time)</p>
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 12 2019 05:34:06 GMT+0100 (Central European Standard Time)</p>
         <p class="sidebar-created-by">
             <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
             <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>

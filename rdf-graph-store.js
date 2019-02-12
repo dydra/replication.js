@@ -387,12 +387,11 @@ SPARQL.view.acceptMediaType = 'application/sparql-results+json';
  SPARQL.post
  Execute a SPARQL query given a location and a query text.
  The request URL combines the location and the SPARQL endpoint suffix.
-The query txt is sent a the request body.
+ The query text is sent a the request body.
  A promise is created.
  Given a continuation, it is supplied to the promise,
  otherwise the active promise is returned.
  */
-
 SPARQL.post = function(location, query, options = {}, continuation) {
   var contentType = options["Content-Type"] || SPARQL.post.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.post.acceptMediaType),
@@ -415,5 +414,5 @@ SPARQL.post.contentMediaType = 'application/sparql-query';
 
 ////////////////////////////////////////////////////////////////////////////////
 
-console.log('rdf-graph-store: loaded');
+// console.log('rdf-graph-store: loaded');
 

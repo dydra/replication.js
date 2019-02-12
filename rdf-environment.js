@@ -27,6 +27,7 @@ import * as nearley from '/javascripts/vendor/nearley/lib/nearley.js';
  codecs for RDF.
  An environment instance provides model element creation operations in a mode which
  provides defaults from environment properties
+ @extends GraphEnvironment
  */
  
 export class RDFEnvironment extends GraphEnvironment {
@@ -38,6 +39,10 @@ export class RDFEnvironment extends GraphEnvironment {
   /**
    Create a statement with provisions from translation from curie terms and
    completion of relative iri.
+   @param {Node} subject
+   @param {NamedNode} predicate
+   @param {Term} object
+   @param {Node} [graph]
    */
   createStatement(subject, predicate, object, graph = null) {
     //console.log({op: 'createStatement', subject: subject, predicate: predicate, object: object, graph: graph});
@@ -63,11 +68,22 @@ export class RDFEnvironment extends GraphEnvironment {
     return (createStatement(subject, predicate, object, graph));
   }
   /**
+   Create a Quad with provisions from translation from curie terms and
+   completion of relative iri. Use the environment's location as the default graph name
+   @param {Node} subject
+   @param {NamedNode} predicate
+   @param {Term} object
+   @param {Node} [graph]
    */
   createQuad(subject, predicate, object, graph = this.location) {
     return (this.createStatement(subject, predicate, object, graph));
   }
   /**
+   Create a Triple with provisions from translation from curie terms and
+   completion of relative iri.
+   @param {Node} subject
+   @param {NamedNode} predicate
+   @param {Term} object
    */
   createTriple(subject, predicate, object) {
     return (this.createStatement(subject, predicate, object));
@@ -664,6 +680,7 @@ export class Statement {
 }
 
 /**
+ Given subject, predicate, object and graph terns, construct and return a statement
  @param {Node} subject
  @param {NamedNode} predicate
  @param {Term} object

@@ -3,21 +3,43 @@
 /**
  @overview
 
- The GraphEnvironment class defines the abstract interface to graphs
+ @typedef {Object} Context
+ */
+
+
+/**
+ The abstract GraphEnvironment class defines the interface to graphs
  and their elements.
+ @abstract
+ @property context - A dictionary which maps bi-directionally  between property names and IRI
+ @property module - A dictionary which maps class names to classes.
  */
 
 export class GraphEnvironment {
-  constructor(options) {
+  /**
+   @param {Object} options
+   @param {(string|URL|Context)} options.context
+   @param {Object} options.module
+   */
+  constructor(options = {}) {
     //this.context = null;
     this.resolveContext(options['context']);
     this.module = options['module'] || {};
   }
 
+  /**
+   Return the base IRI from this environment's context.
+   @return {string} - the base IRI
+   */
   get baseIRI() {
     return (this.context['@base'] || null);
   }
 
+  /**
+   Accept a context designator, retrieve if necessary, expand all definitions,
+   and bind the environment's context property to it.
+   @param {(string|URL|Context)} context - The context to resolve.
+   */
   resolveContext(context) {
     var thisEnv = this;
     var expandContext = function(context) {
@@ -55,16 +77,29 @@ export class GraphEnvironment {
     }
   }
 
-  // return the identifier for the root node of the graph
+  /**
+   Return the identifier for the root node of the given Graph.
+   @param {Graph} graph
+   */
   graphResourceID (graph) {
     throw (new Error('GraphEnvironment.fieldResourceID must be implemented'));
   }
 
-  // return the identifers for all nodes in the graph
+  /**
+   Return the identifers for all nodes in the given Graph.
+   @param {Graph} graph
+   */
   graphResourceIDs (graph) {
     throw (new Error('GraphEnvironment.fieldResourceIDs must be implemented'));
   }
 
+  /**
+   Given a property identifier, return the definition from the environment's context.
+   @param {(string|URL)} identifier - An identifier present in the context
+   @return {PropertyDefinition}
+   @todo The definition should be a standard JavaScript property descriptor
+   @todo Change name to getPropertyDescriptor
+   */
   fieldDefinition(identifier) {
     var def;
     switch (typeof(identifier)) {
@@ -85,17 +120,40 @@ export class GraphEnvironment {
           return (this.context[namestring] = {});
         }
       }
+    default:
+      return (null);
     }
   }
+
+  /**
+   Given a property identifier, return the type from its definition 
+   @todo Change name to getPropertyType
+   */
   fieldType(identifier) {
     var def = this.fieldDefinition(identifier);
     return (def ? def['@type'] : null)
   }
 
-
+  /**
+   Given an IRI, return the property name associated with it in the environment.
+   If none is present in the context, add a definition which specifies the IRI leaf as the name.
+   The first probe searches the context for a property definition which specifies the iri as its @id.
+   That result is then cached for future references.
+   @oaram {(string|URL)} uri
+   */
   findIdentifierName(uri) {
     // console.log("fin", uri);
-    var uriNamestring = uri.lexicalForm;
+    var uriNamestring = null;
+    switch (typeof(uri)) {
+    case 'string': // iri as string
+      uriNamestring = uri;
+      break;
+    case 'object': // url
+      uriNamestring = uri.lexicalForm;
+      break;
+    default:
+      return (null);
+    }
     var fieldName = this.context[uriNamestring];
     if (! fieldName) {
       for (var name in this.context) {
@@ -116,6 +174,10 @@ export class GraphEnvironment {
     return ( fieldName );
   }
 
+  /**
+   Given a property name, return the IRI associated with it in the environment.
+   @param {string} name
+   */
   findNameIdentifier(name) {
     // console.log('fni');
     // console.log(this);
@@ -132,48 +194,84 @@ export class GraphEnvironment {
     return (uri);
   }
 
+  /**
+   Given a Graph, extract the first subject term, extract its description and instantiate it.
+   @abstract
+   */
   computeGraphObject(graph, identifier) {
     throw (new Error('GraphEnvironment.computeGraphObject must be implemented'));
   }
+  /**
+   Given a Graph and a list of identifiers, extract their descriptions and instantiate them.
+   @param {Graph} graph
+   @param {Array} identifiers - The sought identifiers
+   @abstract
+   */
   computeGraphObjects(graph, identifiers) {
     throw (new Error('GraphEnvironment.computeGraphObjects must be implemented'));
   }
+  /**
+   @param {Object} object
+   @abstract
+   */
   computeObjectGraph(object) {
     throw (new Error('GraphEnvironment.computeObjectGraph must be implemented'));
   }
 
+  /**
+   Given subject, predicate, object and graph terns, construct and return a statement
+   @abstract
+   @param {Node} subject
+   @param {NamedNode} predicate
+   @param {Term} object
+   @param {Node} [graph]
+   */
   createStatement(subject, predicate, object, context) {
     throw (new Error('GraphEnvironment.createStatement must be implemented'));
   }
+  /**
+   @abstract
+   */
   createGraph(statements, options) {
     throw (new Error('GraphEnvironment.createGraph must be implemented'));
   }
+  /**
+   @abstract
+   */
   createLiteral(value, options) {
     throw (new Error('GraphEnvironment.createLiteral must be implemented'));
   }
+  /**
+   @abstract
+   */
   createAnonymousNode(label) {
     throw (new Error('GraphEnvironment.createAnonymousNode must be implemented'));
   }
+  /**
+   @abstract
+   */
   createNamedNode(identifier) {
     throw (new Error('GraphEnvironment.createIdentifiedNode must be implemented'));
   }
 
+  /**
+   Given a class name, the instance identifier and an initial state,
+   instantiate the object, assign the initial state, create its proxy and return that.
+   @param {string} className
+   @param {string} identifier
+   @param {Object} [state]
+   */
   createObject(className, identifier, state = {}) {
-    console.log('createObject', className)
-    // console.log('prototype', className.prototype)
-    // console.log('type', typeof(className))
-    // console.log('module', this.module);
+    // console.log('createObject', className, 'prototype', className.prototype)
     var classInstance = this.module[className];
     // console.log('class', classInstance);
     // console.log('state', state);
     var defs = {};
     if (classInstance) {
       var instance = Object.create(classInstance.prototype, defs);
-      // console.log("instance", instance);
       instance.identifier = identifier;
       instance.initializeState(instance.stateClean);
-      // console.log("initialized", instance);
-      // apply state after initialization
+      // apply state after initialization, but before proyxing
       Object.entries(state).forEach(function([entryKey, entryValue]) {
         instance[entryKey] = entryValue;
       });
@@ -191,6 +289,11 @@ export class GraphEnvironment {
   } 
 }
 
+/**
+ Given an IRI return the last element of its path.
+ @param {(string|URL)} url
+ @returns {string}
+ */
 export function predicateLeaf(url) {
   var asURL = ( (url instanceof URL) ? url : new URL(url.toString()))
   return ( (asURL.hash.length > 0) ? asURL.hash.slice(1) : asURL.pathname.split('/').pop() );

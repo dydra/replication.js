@@ -209,6 +209,20 @@ function onmessage_parse(document, options = {hasResponseLine: true}) {
 var resp = onmessage_parse("HTTP/1.1 200 OK\r\nContent-Type: application/n-quads\r\n\r\n<http://x.o/s> <http://x.o/p> 'o' .")
 */
 
+/**
+ a GraphDatabase provides the base implementation for object replication to a remote store.
+ It follows the pattern exemplified by an IndexedDB database (IDBDatabase), but adds
+ logic to support state replication to a graph store
+ @abstract
+ @property nodeAddress {string} - The V1 UUID stem which identifies this node serves to filter
+  out mirrired replication requests
+ @property {string} location - The connection string for request to the remote store
+ @property {string} authentication - The authentication string for remote requests
+ @property {GDBObjectStore} objectStores - A map of object store by name
+ @property {string} disposition - The replication route name
+ @property {GraphEnvironment} environment - The environment to be used to translate between
+  remote representation and namte objects.
+ */
 export class GraphDatabase { // extends IDBDatabase {
   constructor(name, location, authentication, options = {}) {
     //super();
@@ -322,6 +336,9 @@ export class GraphDatabase { // extends IDBDatabase {
     return( this.revision );
   }
 
+  /**
+   Given an name, create an object store and register it with that name
+   */
   createObjectStore(name, options = {}) {
     //console.log('in gdb createObjectStore');
     //console.log(name);
@@ -343,6 +360,9 @@ export class GraphDatabase { // extends IDBDatabase {
     }
   }
 
+  /**
+   Returned the object store registerd with that name
+   */
   findObjectStore(name) {
     // console.log('findObjectStore', name);
     var store = this.objectStores[name];
@@ -377,6 +397,9 @@ export class GraphDatabase { // extends IDBDatabase {
     }
   }
 
+  /**
+   Create and return an new transaction associated with the given object store(s)
+   */
   transaction(names = this.objectStoreNames(), mode) {
     var transaction = new GDBTransaction(this, names, mode);
     transaction.environment = this.environment;
@@ -387,22 +410,38 @@ export class GraphDatabase { // extends IDBDatabase {
     return ($uuid.makeUUIDString());
   }
 
+  /**
+   @abstract
+   */
   describe(keyObject, options, continuation) {
     throw (new Error(`${this.constructor.name}.describe must be defined`));
   }
+  /**
+   @abstract
+   */
   get(options, continuation) {
     throw (new Error(`${this.constructor.name}.get must be defined`));
   }
+  /**
+   @abstract
+   */
   head(options, continuation) {
     throw (new Error(`${this.constructor.name}.get must be defined`));
   }
+  /**
+   The base method caches the patch with time and regision tags.
+   @param {Object} content
+   @param {Array} content.delete
+   */
   patch(content, options, continuation) {
     // the state manipulation aspect, but without the transport
-    var patch = this.environment.createPatch(content)
-    patch.date = Date.now;
-    patch.revision = options.etag;
-    this.revisions.push(patch);
+    var revision = {patch: patch, name: Date.now(), revision: options.etag};
+    this.revisions.push(revision);
+    return (revision);
   }
+  /**
+   @abstract
+   */
   put(content, options, continuation) {
     throw (new Error(`${this.constructor.name}.put must be defined`));
   }
@@ -433,6 +472,10 @@ GraphDatabase.open = function(name, location, authentication, options = {}) {
 GraphDatabase.graphDatabaseClass = GraphDatabase;
 GraphDatabase.graphEnvironmentClass = GraphEnvironment;
 
+/**
+ Define the handlers for Websocket messages specific to the message content type
+ @todo Shift these to the instance property
+ */
 export var onmessage = {};
 
 onmessage['*/*'] = function(db, response) {
@@ -483,6 +526,8 @@ onmessage['multipart/related'] = function(db, response) {
 }
 
 
+/**
+ */
 export class GDBTransaction { // extends IDBTransaction {
   constructor(database, names = [], mode = "readonly", options = {}) {
     //console.log('transaction.constructor: names');
@@ -612,7 +657,11 @@ export class GDBTransaction { // extends IDBTransaction {
 
 }
 
-
+/**
+ Implement put, get, delete, attach, and detach operationswhich mediate between
+ JavaScript instances and the remote store.
+ Support transactional behaviour with asPatch.
+ */
 export class GDBObjectStore { // extends IDBObjectStore {
   constructor(name, options = {}) {
     // super(name);
@@ -626,6 +675,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     this.database = null;
   }
 
+  /**
+   */
   put(object, key = this.computeKey(object)) {  // single level
     var thisStore = this;
     var request = new PutRequest(this, this.transaction);
@@ -659,6 +710,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
   //   no: there is no relation between get object id and cached managed objects.
   // needs to be qualified by revision, allowing HEAD, HEAD^^, etc as well as uuid
   // in order to implement roll-back/forward
+  /**
+   */
   get(key) {
     console.log("GDBObjectStore.get", key, this);
     var thisStore = this;
@@ -724,8 +777,9 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (request);
   }
 
-  /* if the object is attached, just marks its closure
-   * otherwise, generate just the single-level patch.
+  /**
+    if the object is attached, just marks its closure
+    otherwise, generate just the single-level patch.
    */
   delete(object) {
     var thisStore = this;
@@ -771,6 +825,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return( request );
   }
 
+  /**
+   */
   attach(object) {
     // attach the instance to a store
     var thisStore = this;
@@ -803,6 +859,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (object);
   }
 
+  /**
+   */
   detach(object) {
     var thisStore = this;
     var objects = this.objects;
@@ -823,6 +881,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (object);
   }
 
+  /**
+   */
   abort() {
     // revert all attached objects
     this.objects.forEach(function(object, id) {
@@ -836,11 +896,18 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (this);
   }
 
+  /**
+   collect and return all accumulated patches
+   in the process, convert from abstract form
+   
+     {put: [], post: [], delete: []}
+   
+   where each array entry is 
+   
+     [identifier, propertyName, value]
+   to capture the respective operation on the identifier object
+   */
   asPatch() {
-    // collect and return all accumulated patches
-    // in the process, convert from abstract form
-    //    {put: [[s,p,o] ... ] ...}
-    // the encoding specific to the store implementation
     var thisStore = this;
     var posts = [];
     var puts = [];
@@ -865,6 +932,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return (patch);
   }
 
+  /**
+   */
   cleanObjects() {
     var cleanObject = function(object) {
       if (object instanceof GraphObject) {
