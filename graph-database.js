@@ -527,12 +527,15 @@ onmessage['multipart/related'] = function(db, response) {
 
 
 /**
+ Manage a transaction over an ObjectStore collection
+ @property {string} revisionID
+ @property {string} disposition
+ @property {Array} stores
+ @property {GraphDatabase} database
  */
 export class GDBTransaction { // extends IDBTransaction {
   constructor(database, names = [], mode = "readonly", options = {}) {
-    //console.log('transaction.constructor: names');
-    //console.log(names);
-   
+    //console.log("new Transaction", names);
     if (typeof(names) == 'string') {
       names = [names];
     }
@@ -664,8 +667,8 @@ export class GDBTransaction { // extends IDBTransaction {
 }
 
 /**
- Implement put, get, delete, attach, and detach operationswhich mediate between
- JavaScript instances and the remote store.
+ Implement the IndexedDB interface (put, get, delete) and the JDO interface(attach, detach)
+ with respect to JavaScript instances and the remote store.
  Support transactional behaviour with asPatch.
  */
 export class GDBObjectStore { // extends IDBObjectStore {
@@ -683,10 +686,11 @@ export class GDBObjectStore { // extends IDBObjectStore {
 
   /**
    Transfer an object's state to the remote store.
-   The state is staged as a a patch in a request, which is collected in this object store
+   The state is staged as a patch in a GraphRequest, which is added to this store's collection
    and returned to the application.
    Once control returns to the promise, the patch is collected and once all requests
    are processed, the collected patched are commited.
+   @param {Object} object
    */
   put(object) {  // single level
     var thisStore = this;
@@ -793,8 +797,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
-    If the object is attached, just mark its closure
-    otherwise, generate just the single-level patch.
+    Generate a deletion patch for the object and its reachable children
+    @param {GraphObject} object
    */
   delete(object) {
     var thisStore = this;
@@ -915,7 +919,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
-   collect and return all accumulated patches
+   Collect and return all accumulated patches
    in the process, convert from abstract form
    
      {put: [], post: [], delete: []}
@@ -923,6 +927,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
    where each array entry is 
    
      [identifier, propertyName, value]
+
    to capture the respective operation on the identifier object
    */
   asPatch() {
@@ -951,7 +956,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
-   Assert the all attached objects are clean
+   Set the state of all attached objects to clean.
    */
   cleanObjects() {
     var cleanObject = function(object) {
@@ -968,11 +973,19 @@ export class GDBObjectStore { // extends IDBObjectStore {
 
 }
 
+/**
+ Combine the object store context and the transaction active at the point when an
+ operation was performed to return to the calling application as a handle.
+ As the operation progresses, include the patch which serves as the intermediate result.
+ @abstract
+ @property {(function|null)} onerror - Allows the application to set the error handler
+ @property {(function|null)} onsuccess - Allows the application to set the success handler
+ */
 class GraphRequest extends IDBRequest {
   constructor(objectStore, transaction) {
     var r = Object.create(GraphRequest.prototype,
-                          {error: {value: GraphRequest.prototype.noErrorProvided},
-                           success: {value: GraphRequest.prototype.noSuccessProvided},
+                          {onerror: {value: GraphRequest.prototype.noErrorProvided},
+                           onsuccess: {value: GraphRequest.prototype.noSuccessProvided},
                            source: {value: objectStore},
                            readyState: {value: "pending"},
                            transaction: {value: transaction},
@@ -984,23 +997,22 @@ class GraphRequest extends IDBRequest {
   noSuccessProvided() {};
 }
 
+/** */
 export class GetRequest extends GraphRequest {
 }
+/** */
 export class PostRequest extends GraphRequest {
 }
+/** */
 export class PutRequest extends GraphRequest {
 }
+/** */
 export class DeleteRequest extends GraphRequest {
 }
+/** */
 export class CommitRequest extends GraphRequest {
 }
 
 
-console.log('graph-database.js: loaded');
-
-/*
-GSP.head('https://de8.dydra.com/jhacker/test/service', {},
-         function(response) { for (var [k,v] of response.headers.entries()) {console.log([k,v])}})
-
-*/
+// console.log('graph-database.js: loaded');
 
