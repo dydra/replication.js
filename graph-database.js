@@ -575,14 +575,22 @@ export class GDBTransaction { // extends IDBTransaction {
     throw(new NotFoundError(`store not found: '${name}'.`));
   }
 
-  /* commmit
-   * generates no additional asynchronous control thread as it is
-   * either already in one, as a promise's then function, or
-   * an explicit invocation from the application thread should be able
-   * to assume that any communication has occurred when the call has returned.
+  /**
+   Commmit accumulated changes to the remote store.
+   Iterate over the owned object stores, collect their delete/post/put patches,
+   delegate to the database with this collected patch.
+   When that completes, clear the state on all registered objects and
+   record the new revision id in the database.
+
+   This returns no additional asynchronous control thread as, when invoked from
+   a control thread in the database, this invocation is either already in an
+   asynchronous, as a promise's then function.
+   For an explicit invocation from the application thread return a request
+   instance which can bind an onsuccess property to recieve control when the
+   patch request completes.
    */
   commit() {
-    console.log(`GDBTransaction.commit @${this.revisionID} complete`, this);
+    console.log(`GDBTransaction.commit @${this.revisionID}`, this);
     // iterate over the owned stores;
     // for each, get its delta graph
     var posts = [];
@@ -619,6 +627,12 @@ export class GDBTransaction { // extends IDBTransaction {
     return (request);
   }
 
+  /**
+   Invoked as the final step in promise chains for transaction-scoped operations, such as get
+   and put. Iff no request is still pending, then there is no pending control in the
+   application which xcould add to the transaction and it should be completed
+   by delegating th ecommit to the remote store in the form of a patch.
+   */
   commitIfComplete() {
     if (! this.stores.find(function(store) {
             // if some requests is pending, cannot yet commit the transaction
@@ -630,25 +644,17 @@ export class GDBTransaction { // extends IDBTransaction {
     }
   }
 
+  /**
+   Upon commit completion, set all attached objects to clean.
+   *7
   cleanObjects () {
     this.stores.forEach(function (store) { store.cleanObjects(); });
   }
 
-/*
-  asPatch() {
-    var posts = [];
-    var puts = [];
-    var deletes = [];
-    this.database.objects.forEach(function(object) {
-      var patch = object.asPatch();
-      deletes = deletes.concat(patch.delete || []);
-      posts = posts.concat(patch.post || []);
-      puts = puts.concat(patch.put || []);
-    });
-    return ({delete: deletes, post: posts, put: puts});
-
-  }*/
-
+  /**
+   Abort a transaction by delegating to the transaction's object stores to
+   roll back changes in all attached objects
+   */
   abort() {
     // revert all attached objects
     this.stores.forEach(function(store) { store.abort(); });
@@ -676,8 +682,13 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
+   Transfer an object's state to the remote store.
+   The state is staged as a a patch in a request, which is collected in this object store
+   and returned to the application.
+   Once control returns to the promise, the patch is collected and once all requests
+   are processed, the collected patched are commited.
    */
-  put(object, key = this.computeKey(object)) {  // single level
+  put(object) {  // single level
     var thisStore = this;
     var request = new PutRequest(this, this.transaction);
     object._state = object.stateNew;
@@ -706,11 +717,13 @@ export class GDBObjectStore { // extends IDBObjectStore {
     return( request );
   }
 
-  // intra-transaction changes are visible?
-  //   no: there is no relation between get object id and cached managed objects.
-  // needs to be qualified by revision, allowing HEAD, HEAD^^, etc as well as uuid
-  // in order to implement roll-back/forward
   /**
+   Retrieve an object's state given either an identifier, or an object prototype
+   An identifier is used as the subject constraint for a get,
+   while a prototype is used to inform a describe.
+   Use the store's revision proerty to constraint the request in order to
+   suport rollforward/rollback
+   @param {(Object|string)} key
    */
   get(key) {
     console.log("GDBObjectStore.get", key, this);
@@ -721,15 +734,17 @@ export class GDBObjectStore { // extends IDBObjectStore {
     // console.log(request);
     switch (typeof(key)) {
     case 'string' :
-      console.log("GDBObjectStore.get: as string", key);
-      p = // perform a get retrieve the single instance via from the database
-        thisStore.database.get(this.transaction.location,
-                          {subject: key, revision: thisStore.revision});
+      // console.log("GDBObjectStore.get: as string", key);
+      p = // perform a get to retrieve the single instance via from the database
+        thisStore.database.get({subject: key,
+                                revision: thisStore.revision,
+                                "Accept": 'application/n-quads'});
       break;
     case 'object' :
-      console.log("GDBObjectStore.get: as object", key);
+      // console.log("GDBObjectStore.get: as object", key);
       p = // construct a describe to retrieve the single instance via from the database
-        thisStore.database.describe(key, {revision: thisStore.revision, "Accept": 'application/n-quads'});
+        thisStore.database.describe(key, {revision: thisStore.revision,
+                                          "Accept": 'application/n-quads'});
       break;
     default :
       return (null);
@@ -778,7 +793,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
-    if the object is attached, just marks its closure
+    If the object is attached, just mark its closure
     otherwise, generate just the single-level patch.
    */
   delete(object) {
@@ -826,6 +841,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
+   Register an object - and its reachability graph, to cause any changes within a
+   transaction to propagate to the remote store when the transaction commits.
    */
   attach(object) {
     // attach the instance to a store
@@ -860,6 +877,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
+   Unregister an object
    */
   detach(object) {
     var thisStore = this;
@@ -882,9 +900,9 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
+   Roll back changes in all attached objects.
    */
   abort() {
-    // revert all attached objects
     this.objects.forEach(function(object, id) {
       if (object._transaction) { // allow for multiple attachments
         var target = object._self || object;
@@ -933,6 +951,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
   }
 
   /**
+   Assert the all attached objects are clean
    */
   cleanObjects() {
     var cleanObject = function(object) {
