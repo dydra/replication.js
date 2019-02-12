@@ -646,7 +646,7 @@ export class GDBTransaction { // extends IDBTransaction {
 
   /**
    Upon commit completion, set all attached objects to clean.
-   *7
+   */
   cleanObjects () {
     this.stores.forEach(function (store) { store.cleanObjects(); });
   }
