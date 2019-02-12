@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>JSDoc: GDBObjectStore</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="https://fonts.googleapis.com/css?family=Muli:100,400,700|Oswald:300|Inconsolata,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+</head>
+
+<body>
+    <div id="stickyNavbarOverlay"></div>
+    <div class="top-navbar">
+        <div class="container">
+            <nav class="navbar" role="navigation" aria-label="main navigation">
+                <div class="navbar-brand">
+                    
+                    
+                        <h1 class="navbar-item">Documentation</h1>
+                    
+                    <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                    </a>
+                </div>
+                
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <div class="columns">
+            <div class="column is-3" id="sidebarNav">
+                <div class="sidebar">
+                    <nav>
+                        <h2><a href="index.html">Home</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="BlankNode.html">BlankNode</a></li><li><a href="CommitRequest.html">CommitRequest</a></li><li><a href="DeleteRequest.html">DeleteRequest</a></li><li><a href="GDBObjectStore.html">GDBObjectStore</a></li><li><a href="GDBTransaction.html">GDBTransaction</a></li><li><a href="GetRequest.html">GetRequest</a></li><li><a href="Graph.html">Graph</a></li><li><a href="GraphDatabase.html">GraphDatabase</a></li><li><a href="GraphEnvironment.html">GraphEnvironment</a></li><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphRequest.html">GraphRequest</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="GSP.html">GSP</a></li><li><a href="LangString.html">LangString</a></li><li><a href="Literal.html">Literal</a></li><li><a href="NamedNode.html">NamedNode</a></li><li><a href="Node.html">Node</a></li><li><a href="Patch.html">Patch</a></li><li><a href="PostRequest.html">PostRequest</a></li><li><a href="PutRequest.html">PutRequest</a></li><li><a href="Quad.html">Quad</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li><li><a href="SimpleString.html">SimpleString</a></li><li><a href="SPARQL.html">SPARQL</a></li><li><a href="Statement.html">Statement</a></li><li><a href="Term.html">Term</a></li><li><a href="Triple.html">Triple</a></li><li><a href="UUID.html">UUID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#bytesToUuid">bytesToUuid</a></li><li><a href="global.html#copyUUID">copyUUID</a></li><li><a href="global.html#createBlankNode">createBlankNode</a></li><li><a href="global.html#createGraph">createGraph</a></li><li><a href="global.html#createLiteral">createLiteral</a></li><li><a href="global.html#createNamedNode">createNamedNode</a></li><li><a href="global.html#createPatch">createPatch</a></li><li><a href="global.html#createQuad">createQuad</a></li><li><a href="global.html#createStatement">createStatement</a></li><li><a href="global.html#createTriple">createTriple</a></li><li><a href="global.html#createUUID">createUUID</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li><li><a href="global.html#formatUUID">formatUUID</a></li><li><a href="global.html#isDeleteUUID">isDeleteUUID</a></li><li><a href="global.html#isInsertUUID">isInsertUUID</a></li><li><a href="global.html#makeUUID">makeUUID</a></li><li><a href="global.html#makeUUIDString">makeUUIDString</a></li><li><a href="global.html#onmessage">onmessage</a></li><li><a href="global.html#predicateLeaf">predicateLeaf</a></li><li><a href="global.html#resetUUIDState">resetUUIDState</a></li><li><a href="global.html#setUUIDState">setUUIDState</a></li><li><a href="global.html#UUIDState">UUIDState</a></li><li><a href="global.html#UUIDTimestamp">UUIDTimestamp</a></li><li><a href="global.html#v1">v1</a></li></ul></div>
+                    </nav>
+                </div>
+            </div>
+            <div class="column is-9-desktop">
+                <div class="content" id="main-content-wrapper">
+                    <header class="page-title">
+                        <p>Class</p>
+                        <h1>GDBObjectStore</h1>
+                    </header>
+                    
+                    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>GDBObjectStore<span class="signature">()</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>Implement the IndexedDB interface (put, get, delete) and the JDO interface(attach, detach)
+ with respect to JavaScript instances and the remote store.
+ Support transactional behaviour with asPatch.</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class='vertical-section'>
+                <h3 class="title"><span>Constructor</span></h3>
+                <div class="members">
+                    <div class="member">
+
+    
+    <h4 class="name" id="GDBObjectStore">
+        
+        <span class="code-name">
+            new GDBObjectStore<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line674">line 674</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+                </div>
+            </div>
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <div class='vertical-section'>
+            <h3 class="title"><span>Methods</span></h3>
+            <div class="members">
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="abort">
+        
+        <span class="code-name">
+            abort<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Roll back changes in all attached objects.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line909">line 909</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="asPatch">
+        
+        <span class="code-name">
+            asPatch<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Collect and return all accumulated patches
+   in the process, convert from abstract form</p>
+<pre class="prettyprint source"><code> {put: [], post: [], delete: []}</code></pre><p>   where each array entry is </p>
+<pre class="prettyprint source"><code> [identifier, propertyName, value]</code></pre><p>   to capture the respective operation on the identifier object</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line933">line 933</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="attach">
+        
+        <span class="code-name">
+            attach<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Register an object - and its reachability graph, to cause any changes within a
+   transaction to propagate to the remote store when the transaction commits.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line851">line 851</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="cleanObjects">
+        
+        <span class="code-name">
+            cleanObjects<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Set the state of all attached objects to clean.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line961">line 961</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="delete">
+        
+        <span class="code-name">
+            delete<span class="signature">(object)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Generate a deletion patch for the object and its reachable children</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>object</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="GraphObject.html">GraphObject</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line803">line 803</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="detach">
+        
+        <span class="code-name">
+            detach<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Unregister an object</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line886">line 886</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="get">
+        
+        <span class="code-name">
+            get<span class="signature">(key)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Retrieve an object's state given either an identifier, or an object prototype
+   An identifier is used as the subject constraint for a get,
+   while a prototype is used to inform a describe.
+   Use the store's revision proerty to constraint the request in order to
+   suport rollforward/rollback</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>key</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">Object</span>
+|
+
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line732">line 732</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="put">
+        
+        <span class="code-name">
+            put<span class="signature">(object)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Transfer an object's state to the remote store.
+   The state is staged as a patch in a GraphRequest, which is added to this store's collection
+   and returned to the application.
+   Once control returns to the promise, the patch is collected and once all requests
+   are processed, the collected patched are commited.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>object</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">Object</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-database.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-database.js.html">graph-database.js</a>, <a href="graph-database.js.html#line695">line 695</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<footer class="footer">
+    <div class="content has-text-centered">
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 12 2019 22:25:15 GMT+0100 (Central European Standard Time)</p>
+        <p class="sidebar-created-by">
+            <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+            <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>
+        </p>
+    </div>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/app.min.js"></script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
