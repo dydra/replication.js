@@ -1,7 +1,7 @@
 // Generated automatically by nearley, version 2.15.1
 // http://github.com/Hardmath123/nearley
 
-import * as moo from  '/javascripts/vendor/moo/moo.js';
+import * as moo from  './vendor/moo/moo.js';
 export {grammar};
 
 function id(x) { return x[0]; }

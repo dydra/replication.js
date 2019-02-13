@@ -28,7 +28,7 @@ nqp.feed("<http://example.org/subject><http://example.org/predicate><http://exam
 */
 
 //import * as RDFEnvironment from './rdf-environment.js';
-//import * as moo from  '/javascripts/vendor/moo/moo.js';
+//import * as moo from  './vendor/moo/moo.js';
 //export {grammar};
 /*
 var moo = require('moo');

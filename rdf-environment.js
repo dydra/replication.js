@@ -17,10 +17,10 @@ import {grammar as multipartGrammar} from './multipart-grammar.js';
 import { makeUUIDString } from './revision-identifier.js';
 import { GraphEnvironment, predicateLeaf } from './graph-environment.js';
 import { GraphObject } from './graph-object.js';
-import * as nearley from '/javascripts/vendor/nearley/lib/nearley.js';
+import * as nearley from "./vendor/nearly/lib/nearley.js";
 
 // possible alternative uri library, but wants punycode via invalid import
-// import * as URI from '/javascripts/vendor/uri-js/dist/esnext/uri.js';
+// import * as URI from './vendor/uri-js/dist/esnext/uri.js';
 
 /**
  The class RDFEnvironment specializes the model creation functions and

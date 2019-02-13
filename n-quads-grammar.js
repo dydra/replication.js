@@ -40,7 +40,7 @@ var RDFEnvironment = {
   }*/
 
 import * as RDFEnvironment from './rdf-environment.js';
-import * as moo from  '/javascripts/vendor/moo/moo.js';
+import * as moo from  './vendor/moo/moo.js';
 export {grammar};
 
 var HEXPattern = function() { return ('(?:[0-9]|[A-F]|[a-f])'); }
