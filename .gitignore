@@ -3,3 +3,4 @@
 .tmp
 *~
 .vs/*
+.vs/slnx.sqlite
