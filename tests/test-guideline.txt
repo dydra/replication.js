@@ -1,0 +1,8 @@
+
+Export a variable 
+
+in each text file you incrementally add entries named by (whatever to be test)
+
+1. Strategy 1. names which re-iterate the tests from http-api-test (and reimplements
+2. names which identify components in the corresponding source 
+	GSP.get-BLA
