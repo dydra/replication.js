@@ -91,37 +91,62 @@ class GraphUI {
     //GET - anon - srj.sh
 
 
+    
+    //#! /bin/bash
+    //# verify the accept order is observed
+    //curl_sparql_request \
+    //-H 'Accept: application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9' \
+    //'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d' \
+    //| jq '.results.bindings[] | .[].value' | fgrep - q '"1"'
+
+    GET_count_srj_plus_srx_test() {
+        const continuationGet = function (json) {
+            console.log('json ', json);
+            console.log('json.results.bindings.length', json.results.bindings.length);
+            testResults["GET_count_srj_plus_srx_test"] = (json.results.bindings.length === 1);
+            debugger;
+        }
+
+        const GET_count_srj_plus_srx_test_callback = function (response) {
+            response.json().then(continuationGet);
+        }
+
+        const location = this.location(); //same
+        const authentication = this.authentication(); //same
+        const uriEnc = 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        const uriDec = decodeURIComponent(uriEnc);
+
+        const authKVP = {
+            "authentication": authentication,
+            "Accept": "application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"
+        };
+
+        SPARQL.get(location,
+            uriDec,
+            authKVP,
+            GET_count_srj_plus_srx_test_callback
+        );
+    }
+
     //l$ cat GET-count - srj.sh
     //#! /bin/bash
-
     //curl_sparql_request \
     //-H "Accept: application/sparql-results+json" \
     //'query=select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D' \
     //| jq '.results.bindings | .[].count.value' \
     //| fgrep - q '"1"'
-    
-    getEntitiesGET_count_srj_test() {
+
+
+    GET_count_srj_test() {
+        const continuationGet = function (json) {
+            console.log('json ', json);
+            console.log('json.results.bindings.length', json.results.bindings.length);
+            testResults["GET_count_srj_test"] = (json.results.bindings.length === 1);
+            debugger;
+        }
+
         const getEntitiesGET_count_srj_test_callback = function (response) {
-            // console.log("response ", response);
-            //const json = response.JSON;
-
-            //response.text().then(function (text) {
-            //    //contentElement.value = text;
-            //    //var listElement = window.document.getElementById('entitylist');
-            //    const json = JSON.parse(text);
-            //    console.log('json ', json);
-            //    console.log('json.results.bindings.length', json.results.bindings.length);
-            //    //const bindings = json['results']['bindings'];
-            //    return (json.results.bindings.length === 1);
-            //});
-
-            response.json().then(function (json) {
-                console.log('json ', json);
-                console.log('json.results.bindings.length', json.results.bindings.length);
-                //const bindings = json['results']['bindings'];
-                testResults["GET_count_srj_test"] = (json.results.bindings.length === 1);
-            });
-
+            response.json().then(continuationGet);
         }
 
         const location = this.location(); //same
@@ -129,15 +154,16 @@ class GraphUI {
         const uriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
         const uriDec = decodeURIComponent(uriEnc);
 
-        SPARQL.get(location,
+        const authKVP = {
+            "authentication": authentication,
+            "Accept": "application/sparql-results+json"
+        };
+
+        SPARQL.get(location, 
             uriDec,
-            {
-                "authentication": authentication,
-                "Accept": "application/sparql-results+json"
-            },
+            authKVP,
             getEntitiesGET_count_srj_test_callback
         );
-        //
     }
 
     
@@ -196,10 +222,11 @@ function runSimpleGraph() {
     const clickEventHandler = function(event) {
         window.console.log('getEntitiesGET_count_srj event', event);
       //window.graphUI.getEntitiesGET_count_srj(event);
-      window.graphUI.getEntitiesGET_count_srj_test(event);
-      //console.log('getEntities', event);
-      //window.graphUI.getEntities(event);
-  };
+        window.graphUI.GET_count_srj_test(event);
+        window.graphUI.GET_count_srj_plus_srx_test(event);
+        //console.log('getEntities', event);
+        //window.graphUI.getEntities(event);
+    };
   gebi.addEventListener('click', clickEventHandler, false);
   gebi.addEventListener('touchstart', clickEventHandler, false);
 };
