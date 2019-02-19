@@ -4,9 +4,12 @@ var testResults = {};
 
 import { graphDatabase, graphObject, rdfDatabase, rdfEnvironment, GSP, SPARQL }
     from '../rdf-client.js';
+
 //import {GSP, SPARQL} from '../rdf-graph-store.js';
 
 class GraphUI {
+
+    
 
 
     location() {
@@ -95,7 +98,87 @@ class GraphUI {
     //GET - construct - rdfxml.sh
     //GET - anon - srj.sh
 
-    //generalized GET
+
+
+
+    //generalized GET -- XML 
+    //TODO pass non-encoded URL as parameter for readability
+    GET_generalized_test_XML(getTestName, paramUriEnc, acceptHeader) {
+
+        const continuationGet = function (json) {
+            window.console.log('json ', json);
+            window.console.log('json.results.bindings.length', json.results.bindings.length);
+            testResults[getTestName] = (json.results.bindings.length === 1);
+            debugger;
+        }
+
+        const getGeneralizedCallbackXML = function (response) {
+
+            // from 'https://gist.github.com/demircancelebi/f0a9c7e1f48be4ea91ca7ad81134459d.js';
+            const  xmlToJson= function (xml) {
+
+                // Create the return object
+                var obj = {};
+
+                if (xml.nodeType == 1) { // element
+                    // do attributes
+                    if (xml.attributes.length > 0) {
+                        obj["@attributes"] = {};
+                        for (var j = 0; j < xml.attributes.length; j++) {
+                            var attribute = xml.attributes.item(j);
+                            obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+                        }
+                    }
+                } else if (xml.nodeType == 3) { // text
+                    obj = xml.nodeValue;
+                }
+
+                // do children
+                // If just one text node inside
+                if (xml.hasChildNodes() && xml.childNodes.length === 1 && xml.childNodes[0].nodeType === 3) {
+                    obj = xml.childNodes[0].nodeValue;
+                }
+                else if (xml.hasChildNodes()) {
+                    for (var i = 0; i < xml.childNodes.length; i++) {
+                        var item = xml.childNodes.item(i);
+                        var nodeName = item.nodeName;
+                        if (typeof (obj[nodeName]) == "undefined") {
+                            obj[nodeName] = xmlToJson(item);
+                        } else {
+                            if (typeof (obj[nodeName].push) == "undefined") {
+                                var old = obj[nodeName];
+                                obj[nodeName] = [];
+                                obj[nodeName].push(old);
+                            }
+                            obj[nodeName].push(xmlToJson(item));
+                        }
+                    }
+                }
+                return obj;
+            }
+
+            xmlToJson(response).then(continuationGet);
+        }
+
+        const location = this.location(); //same
+        const authentication = this.authentication(); //same
+        const uriEnc = paramUriEnc;
+        const uriDec = decodeURIComponent(uriEnc);
+
+        const authKvp = {
+            "authentication": authentication,
+            "Accept": acceptHeader
+        };
+
+        SPARQL.get(location,
+            uriDec,
+            authKvp,
+            getGeneralizedCallbackXML
+        );
+    }
+
+
+    //generalized GET -- json
     //TODO pass non-encoded URL as parameter for readability
     GET_generalized_test(getTestName, paramUriEnc, acceptHeader) {
         const continuationGet = function (json) {
@@ -127,6 +210,8 @@ class GraphUI {
     }
 
 
+
+
     GET_count_srx_test() {
         //curl_sparql_request - H "Accept: application/sparql-results+xml" 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d' \
         //| xmllint--c14n11 - \
@@ -138,7 +223,7 @@ class GraphUI {
         const getTestName1 = 'GET_count_srx_test';
         const paramUriEnc1 = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
         const acceptHeader1 = 'application/sparql-results+xml';
-        this.GET_generalized_test(getTestName1, paramUriEnc1, acceptHeader1);
+        this.GET_generalized_test_XML(getTestName1, paramUriEnc1, acceptHeader1);
 
     }
     //#! /bin/bash
@@ -271,9 +356,11 @@ function runSimpleGraph() {
     const clickEventHandler = function (event) {
         window.console.log('getEntitiesGET_count_srj event', event);
         //window.graphUI.getEntitiesGET_count_srj(event);
-        window.graphUI.GET_count_srj_test(event);
-        window.graphUI.GET_count_srj_plus_srx_test(event);
+
+        //window.graphUI.GET_count_srj_test(event);
+        //window.graphUI.GET_count_srj_plus_srx_test(event);
         window.graphUI.GET_count_srx_test(event);
+
         //console.log('getEntities', event);
         //window.graphUI.getEntities(event);
     };
