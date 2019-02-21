@@ -9,11 +9,10 @@ import { graphDatabase, graphObject, rdfDatabase, rdfEnvironment, GSP, SPARQL }
 
 class GraphUI {
 
-    
-
 
     location() {
-        return (window.document.getElementById('location').value); /*value="https://de8.dydra.com/jhacker/test" defined in .html*/
+        return (window.document.getElementById('location').value
+        ); /*value="https://de8.dydra.com/jhacker/test" defined in .html*/
     }
 
     authentication() {
@@ -59,8 +58,6 @@ class GraphUI {
     }
 
 
-
-
     displaySelectedNodeByID(event) {
         var div = event.target;
         var id = div.innerText;
@@ -88,9 +85,41 @@ class GraphUI {
             });
     }
 
+}
+
+function runSimpleGraph() {
+    // ReSharper disable once InconsistentNaming
+    window.graphUI = new GraphUI();
+    window.httpTests = new HTTP_API_Tests();
+
+    window.console.log("runSimpleGraph.GraphUI", window.graphUI);
+    window.console.log("runSimpleGraph.HTTP_API_Tests", window.httpTests);
+
+
+    const gebi = window.document.getElementById('getEntities');
+    const clickEventHandler = function (event) {
+        //window.console.log('getEntitiesGET_count_srj event', event);
+        //window.graphUI.getEntitiesGET_count_srj(event);
+
+        //window.graphUI.GET_count_srj_test(event);
+        //window.graphUI.GET_count_srj_plus_srx_test(event);
+
+        window.httpTests.GET_count_srx_test(event);
+
+        //console.log('getEntities', event);
+        //window.graphUI.getEntities(event);
+    };
+    gebi.addEventListener('click', clickEventHandler, false);
+    gebi.addEventListener('touchstart', clickEventHandler, false);
+};
+
+
+class HTTP_API_Tests {
+    //refactoring...
+
     //GET-srx.sh
     //GET - count - tsv.sh
-    //GET - count - srx.sh
+    //GET - count - srx.sh -- ON IT. Not yet working. 
     //GET - count - srj.sh -- DONE. 
     //GET - count - srj + srx.sh -- DONE ++
     //GET - count - csv.sh -- ORIGINAL.
@@ -101,65 +130,7 @@ class GraphUI {
 
 
 
-    //generalized GET -- XML 
-    //TODO pass non-encoded URL as parameter for readability
-    GET_generalized_test_XML(getTestName, paramUriEnc, acceptHeader) {
 
-        const location = this.location(); //same
-        const authentication = this.authentication(); //same
-        const uriEnc = paramUriEnc;
-        const uriDec = decodeURIComponent(uriEnc);
-
-        const authKvp = {
-            "authentication": authentication,
-            "Accept": acceptHeader
-        };
-
-        const continuationGetXML = function (XML) {
-            //
-            window.console.log('json ', json);
-            window.console.log('json.results.bindings.length', json.results.bindings.length);
-            testResults[getTestName] = (json.results.bindings.length === 1);
-
-            //const parser = new DOMParser();
-            ////The parser creates a new XML DOM object using the text string:
-            //const xmlDoc = parser.parseFromString(XML, "text/xml");
-            //const x = xmlDoc.getElementsByTagName("literal datatype='http://www.w3.org/2001/XMLSchema#integer'");
-            //window.console.log('x: ', x);
-        
-            debugger;
-        }
-
-        const getGeneralizedCallbackXML = function (response) {
-            //response.toJSON().then(continuationGetXML);
-            //console.log(response);
-            //response.text.then(continuationGetXML);
-            debugger;
-        }
-
-        
-
-        SPARQL.get(location,
-            uriDec,
-            authKvp,
-            getGeneralizedCallbackXML
-        );
-    }
-
-    GET_count_srx_test() {
-        //curl_sparql_request - H "Accept: application/sparql-results+xml" 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d' \
-        //| xmllint--c14n11 - \
-        //| tr - s '\t\n\r\f' ' ' | sed 's/ +/ /g' \
-        //| fgrep - i 'variable name="count1"' \
-        //| egrep - i - q - s '<binding name="count1">.*<literal .*>1</literal>'
-
-        //GET_test_name, paramUriEnc, acceptHeader
-        const getTestName1 = 'GET_count_srx_test';
-        const paramUriEnc1 = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
-        const acceptHeader1 = 'application/sparql-results+xml';
-        this.GET_generalized_test_XML(getTestName1, paramUriEnc1, acceptHeader1);
-
-    }
 
     //generalized GET -- json
     //TODO pass non-encoded URL as parameter for readability
@@ -168,7 +139,7 @@ class GraphUI {
             window.console.log('json ', json);
             window.console.log('json.results.bindings.length', json.results.bindings.length);
             testResults[getTestName] = (json.results.bindings.length === 1);
-            debugger;
+            //debugger;
         }
 
         const getGeneralizedCallback = function (response) {
@@ -313,28 +284,92 @@ class GraphUI {
             }
         );
     }
+
+
+    //FROM HERE DOWN, INCOMPLETE. Come back!
+
+    //generalized GET -- XML 
+    //TODO pass non-encoded URL as parameter for readability
+    GET_generalized_test_XML(getTestName, paramUri, acceptHeader) {
+
+        const location = graphUI.location(); //same
+        const authentication = graphUI.authentication(); //same
+        //const uriEnc = paramUri;
+        //const uriDec = decodeURIComponent(uriEnc);
+
+        const authKvp = {
+            "authentication": authentication,
+            "Accept": acceptHeader
+        };
+
+        const continuationGetXML = function (XML) {
+            //
+            window.console.log('json ', XML);
+
+            //var json = xml.toJSON;
+            //debugger;
+            //window.console.log('json.results.bindings.length', json.results.bindings.length);
+            //testResults[getTestName] = (json.results.bindings.length === 1);
+
+            const parser = new DOMParser();
+            ////The parser creates a new XML DOM object using the text string:
+            const xmlDoc = parser.parseFromString(XML, "text/xml");
+
+            //const x = xmlDoc.getElementsByTagName(
+            //    "literal datatype='http://www.w3.org/2001/XMLSchema#integer")[0].childNodes[0].nodeValue;
+
+            const x = xmlDoc.getElementsByTagName(
+                "literal")[0].childNodes[0].nodeValue;
+
+
+            window.console.log('x: ', xmlDoc);
+            window.console.log('x: ', x);
+            debugger;
+        }
+
+        const getGeneralizedCallbackXML = function (response) {
+            //response.toJSON().then(continuationGetXML);
+            response.text().then(function(text) {
+                console.log(text);
+            })
+            //response.text.then(continuationGetXML);
+            response.text().then(continuationGetXML);
+            //debugger;
+        }
+
+        SPARQL.get(location,
+            paramUri,
+            authKvp,
+            getGeneralizedCallbackXML
+        );
+    }
+
+    GET_count_srx_test() {
+        //curl_sparql_request - H "Accept: application/sparql-results+xml" 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d' \
+        //| xmllint--c14n11 - \
+        //| tr - s '\t\n\r\f' ' ' | sed 's/ +/ /g' \
+        //| fgrep - i 'variable name="count1"' \
+        //| egrep - i - q - s '<binding name="count1">.*<literal .*>1</literal>'
+
+        //GET_test_name, paramUriEnc, acceptHeader
+        const getTestName1 = 'GET_count_srx_test';
+        /*const paramUriEnc1 =*/ 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        //const paramUriEnc1 = 'select%20(count(*)%20as%20%3Fcount1)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
+
+        const paramUri1 = 'select count(*) where {?s ?p ?o}';
+        const acceptHeader1 = 'application/sparql-results+xml';
+        this.GET_generalized_test_XML(getTestName1, paramUri1, acceptHeader1);
+
+    }
+
+
+
+
+
+
+
+
 }
-
-function runSimpleGraph() {
-    // ReSharper disable once InconsistentNaming
-    window.graphUI = new GraphUI();
-    window.console.log("runSimpleGraph.GraphUI", window.graphUI);
-    const gebi = window.document.getElementById('getEntities');
-    const clickEventHandler = function (event) {
-        window.console.log('getEntitiesGET_count_srj event', event);
-        //window.graphUI.getEntitiesGET_count_srj(event);
-
-        //window.graphUI.GET_count_srj_test(event);
-        //window.graphUI.GET_count_srj_plus_srx_test(event);
-        window.graphUI.GET_count_srx_test(event);
-
-        //console.log('getEntities', event);
-        //window.graphUI.getEntities(event);
-    };
-    gebi.addEventListener('click', clickEventHandler, false);
-    gebi.addEventListener('touchstart', clickEventHandler, false);
-};
-
 
 
 

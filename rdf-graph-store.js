@@ -261,7 +261,7 @@ GSP.put.ContentType = 'application/n-quads';
  */
 
 SPARQL.get = function(location, query, options = {}, continuation) {
-  console.log("SPARQL.get ", query, options);
+  console.log("SPARQL.get ", location, query, options);
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.get.acceptMediaType) });
   if (options['authentication']) {
     headers.set("Authorization",

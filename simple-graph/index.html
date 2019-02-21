@@ -1,24 +1,31 @@
 <!DOCTYPE HTML>
 <html>
-  <head>
+<head>
     <title>simple graph</title>
     <link rel="stylesheet" href="simple-graph.css" />
-  </head>
+</head>
 
-  <body style="width: 100%">
-    <div id="graph"/>
+<body style="width: 100%">
+    <div id="graph" />
     <div id="toolbox" style="border: 3px inset grey; position: fixed; left:10px; bottom:10px">
-     <table>
-      <tr><td>content</td><td><textarea id="content" style="width: 40em; height: 10ex;"></textarea></td></tr>
-      <tr><td>location</td><td><input type="text" id="location" style="width: 20em;" value="https://de8.dydra.com/jhacker/test"></td></tr>
-      <tr><td>authentication</td><td><input type="password" id="authentication" style="width: 20em;"></td></tr>
-      <tr><td><span id="getEntities" onmousedown="window.graphUI.getEntities()" onmouseover="style.textDecoration = 'underline'" onmouseout="style.textDecoration = 'none'">entities</span></td>
-       <td><div id="entitylist" /></td></tr>
-     </table>
-     
+        <table>
+            <tr><td>content</td><td><textarea id="content" style="width: 40em; height: 10ex;"></textarea></td></tr>
+            <tr><td>location</td><td><input type="text" id="location" style="width: 20em;" value="https://test.dydra.com/openrdf-sesame/mem-rdf"></td></tr>
+            <tr><td>authentication</td><td><input type="password" id="authentication" style="width: 20em;"></td></tr>
+            <tr>
+                <td><span id="getEntities" onmousedown="window.graphUI.getEntities()" onmouseover="style.textDecoration = 'underline'" onmouseout="style.textDecoration = 'none'">entities</span></td>
+                <td><div id="entitylist" /></td>
+            </tr>
+        </table>
+
     </div>
 
-    <script type="module", src="simple-graph.js"></script>
-  </body>
+    <script type="module" , src="not-so-simple-graph.js"></script>
+</body>
 
 </html>
+
+
+<!--export STORE_URL=""
+export STORE_ACCOUNT="openrdf-sesame"
+export STORE_REPOSITORY="mem-rdf"-->
