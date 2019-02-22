@@ -1,5 +1,10 @@
 export { HTTP_API_Tests };
 class HTTP_API_Tests {
+
+    constructor(location, authentication) {
+        this.location = location; //same
+        this.authentication = authentication; //same;
+    }
     //refactoring...
 
     //generalized GET -- json
@@ -16,17 +21,17 @@ class HTTP_API_Tests {
             response.json().then(continuationGet);
         }
 
-        const location = this.location(); //same
-        const authentication = this.authentication(); //same
+        //const location = this.location(); //same
+        //const authentication = this.authentication(); //same
         const uriEnc = paramUriEnc;
         const uriDec = decodeURIComponent(uriEnc);
 
         const authKvp = {
-            "authentication": authentication,
+            "authentication": this.authentication,
             "Accept": acceptHeader
         };
 
-        SPARQL.get(location,
+        SPARQL.get(this.location,
             uriDec,
             authKvp,
             getGeneralizedCallback
@@ -42,11 +47,14 @@ class HTTP_API_Tests {
     //| jq '.results.bindings[] | .[].value' | fgrep - q '"1"'
 
     GET_count_srj_plus_srx_test() {
-        const testName = 'GET_count_srj_plus_srx_test'; 
-        GET_generalized_test(
+        const testName = 'GET_count_srj_plus_srx_test';
+        const paramUriEnc = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        const acceptHeader = '"application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"';
+
+        this.GET_generalized_test(
             testName,
-            paramUriEnc = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d',
-            acceptHeader = '"application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"')
+            paramUriEnc,
+            acceptHeader);
     }
     //    const continuationGet = function (json) {
     //        window.console.log('json ', json);
@@ -77,10 +85,10 @@ class HTTP_API_Tests {
     //}
 
 
-    GET_generalized_test(
-        testName = 'GET_count_srj_plus_srx_test',
-        paramUriEnc = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d' ,
-        acceptHeader = '"application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"')
+    //GET_generalized_test(
+    //    testName = 'GET_count_srj_plus_srx_test',
+    //    paramUriEnc = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d' ,
+    //    acceptHeader = '"application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"')
 
     //l$ cat GET-count - srj.sh
     //#! /bin/bash
@@ -103,8 +111,8 @@ class HTTP_API_Tests {
             response.json().then(continuationGet);
         }
 
-        const location = this.location(); //same
-        const authentication = this.authentication(); //same
+        const location = this.location; //same
+        const authentication = this.authentication; //same
         const uriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
         const uriDec = decodeURIComponent(uriEnc);
 
@@ -123,8 +131,8 @@ class HTTP_API_Tests {
 
 
     getEntitiesGET_count_srj() {
-        const location = this.location(); //same
-        const authentication = this.authentication(); //same
+        const location = this.location; //same
+        const authentication = this.authentication; //same
         var contentElement = window.document.getElementById('content'); //same
         var thisGraphUi = this; //same
 
@@ -233,11 +241,11 @@ class HTTP_API_Tests {
         //GET - construct - rdfxml.sh
         //GET - anon - srj.sh
 
-        GET_count_srx_test(); //
+        this.GET_count_srx_test(); //
 
-        GET_count_srj_plus_srx_test();
+        this.GET_count_srj_plus_srx_test();
 
-        getEntitiesGET_count_srj();
+        this.getEntitiesGET_count_srj();
     }
 
 

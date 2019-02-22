@@ -90,27 +90,34 @@ class GraphUI {
 function runSimpleGraph() {
     // ReSharper disable once InconsistentNaming
     window.graphUI = new GraphUI();
-    window.httpTests = new HTTP_API_Tests();
-
+    
     window.console.log("runSimpleGraph.GraphUI", window.graphUI);
-    window.console.log("runSimpleGraph.HTTP_API_Tests", window.httpTests);
+    //window.console.log("runSimpleGraph.HTTP_API_Tests", window.httpTests);
 
 
     const gebi = window.document.getElementById('getEntities');
     const clickEventHandler = function (event) {
-        //window.console.log('getEntitiesGET_count_srj event', event);
-        //window.graphUI.getEntitiesGET_count_srj(event);
 
-        //window.graphUI.GET_count_srj_test(event);
-        //window.graphUI.GET_count_srj_plus_srx_test(event);
-
-        //window.httpTests.GET_count_srx_test(event);
-        window.httpTests.RunAll();
-        //console.log('getEntities', event);
-        //window.graphUI.getEntities(event);
+        //window.httpTests = new HTTP_API_Tests(window.graphUI.location(), window.graphUI.authentication());
+        //window.httpTests.RunAll();
+        window.console.log('getEntities', event);
+        window.graphUI.getEntities(event);
     };
     gebi.addEventListener('click', clickEventHandler, false);
     gebi.addEventListener('touchstart', clickEventHandler, false);
+
+    //const rt = window.document.getElementById('runTests');
+    //const clickEventHandler2 = function () {
+
+    //    window.httpTests = new HTTP_API_Tests(window.graphUI.location(), window.graphUI.authentication());
+    //    window.httpTests.RunAll();
+    //};
+    //rt.addEventListener('click', clickEventHandler2);
+    //rt.addEventListener('touchstart', clickEventHandler2);
+    window.httpTests = new HTTP_API_Tests(window.graphUI.location(), window.graphUI.authentication());
+    window.httpTests.RunAll();
+
+
 };
 
 
