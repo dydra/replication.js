@@ -21,8 +21,6 @@ class HTTP_API_Tests {
             response.json().then(continuationGet);
         }
 
-        //const location = this.location(); //same
-        //const authentication = this.authentication(); //same
         const uriEnc = paramUriEnc;
         const uriDec = decodeURIComponent(uriEnc);
 
@@ -56,42 +54,8 @@ class HTTP_API_Tests {
             paramUriEnc,
             acceptHeader);
     }
-    //    const continuationGet = function (json) {
-    //        window.console.log('json ', json);
-    //        window.console.log('json.results.bindings.length', json.results.bindings.length);
-    //        testResults["GET_count_srj_plus_srx_test"] = (json.results.bindings.length === 1);
-    //        debugger;
-    //    }
-
-    //    const getCountSrjPlusSrxTestCallback = function (response) {
-    //        response.json().then(continuationGet);
-    //    }
-
-    //    const location = this.location(); //same
-    //    const authentication = this.authentication(); //same
-    //    const uriEnc = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
-    //    const uriDec = decodeURIComponent(uriEnc);
-
-    //    const authKvp = {
-    //        "authentication": authentication,
-    //        "Accept": "application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"
-    //    };
-
-    //    SPARQL.get(location,
-    //        uriDec,
-    //        authKvp,
-    //        getCountSrjPlusSrxTestCallback
-    //    );
-    //}
 
 
-    //GET_generalized_test(
-    //    testName = 'GET_count_srj_plus_srx_test',
-    //    paramUriEnc = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d' ,
-    //    acceptHeader = '"application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"')
-
-    //l$ cat GET-count - srj.sh
-    //#! /bin/bash
     //curl_sparql_request \
     //-H "Accept: application/sparql-results+json" \
     //'query=select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D' \
@@ -134,7 +98,7 @@ class HTTP_API_Tests {
         const location = this.location; //same
         const authentication = this.authentication; //same
         var contentElement = window.document.getElementById('content'); //same
-        var thisGraphUi = this; //same
+        var thisGraphUi = window.graphUI; //same
 
         // var uri_enc = 'query=select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D'; the query bit was left in; WRONG!
         const uriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
