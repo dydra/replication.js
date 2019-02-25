@@ -97,10 +97,11 @@ function runSimpleGraph() {
         window.console.log('getEntities', event);
         window.graphUI.getEntities(event);
     };
-    gebi.addEventListener('click', clickEventHandler, false);
-    gebi.addEventListener('touchstart', clickEventHandler, false);
+    //gebi.addEventListener('click', clickEventHandler, false);
+    //gebi.addEventListener('touchstart', clickEventHandler, false);
 
-    window.httpTests = new HTTP_API_Tests(window.graphUI.location(), window.graphUI.authentication());
+    //window.httpTests = new HTTP_API_Tests(window.graphUI.location(), window.graphUI.authentication());
+    window.httpTests = new HTTP_API_Tests("https://test.dydra.com/openrdf-sesame/mem-rdf", "YtGwUWq1kY7nAL1ocIvl");
     window.httpTests.RunAll();
 
 

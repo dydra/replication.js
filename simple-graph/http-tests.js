@@ -4,6 +4,12 @@ class HTTP_API_Tests {
     constructor(location, authentication) {
         this.location = location; //same
         this.authentication = authentication; //same;
+        //var element = document.getElementById("testResultsTextArea");
+        //element.innerHTML += (json.results.bindings.length === 1);
+        ////var testResults = [];
+        //;
+        //.
+        //testResults;
     }
     //refactoring...
 
@@ -11,9 +17,20 @@ class HTTP_API_Tests {
     //TODO pass non-encoded URL as parameter for readability
     GET_generalized_test(getTestName, paramUriEnc, acceptHeader) {
         const continuationGet = function (json) {
+            debugger;
             window.console.log('json ', json);
             window.console.log('json.results.bindings.length', json.results.bindings.length);
-            testResults[getTestName] = (json.results.bindings.length === 1);
+
+            debugger;
+
+            var element = document.getElementById("id01");
+            element.innerHTML =+ "<li>" + getTestName + " " + json.results.bindings.length === 1 + "</li >";
+
+            debugger;
+            //var element = window.document.getElementById("testResults");
+            //element.innerHTML = ("getTestName" + " " + json.results.bindings.length === 1);
+
+            //this.testResults[getTestName] = (json.results.bindings.length === 1);
             //debugger;
         }
 
@@ -47,7 +64,7 @@ class HTTP_API_Tests {
     GET_count_srj_plus_srx_test() {
         const testName = 'GET_count_srj_plus_srx_test';
         const paramUriEnc = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
-        const acceptHeader = '"application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9"';
+        const acceptHeader = 'application/sparql-results+json,application/sparql-results+xml,*/*;q=0.9';
 
         this.GET_generalized_test(
             testName,
@@ -63,81 +80,94 @@ class HTTP_API_Tests {
     //| fgrep - q '"1"'
 
 
+
+
     GET_count_srj_test() {
-        const continuationGet = function (json) {
-            window.console.log('json ', json);
-            window.console.log('json.results.bindings.length', json.results.bindings.length);
-            testResults["GET_count_srj_test"] = (json.results.bindings.length === 1);
-            debugger;
-        }
 
-        const getEntitiesGetCountSrjTestCallback = function (response) {
-            response.json().then(continuationGet);
-        }
+        const testName = 'GET_count_srj_test';
+        const paramUriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
+        const acceptHeader = 'application/sparql-results+json';
 
-        const location = this.location; //same
-        const authentication = this.authentication; //same
-        const uriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
-        const uriDec = decodeURIComponent(uriEnc);
+        this.GET_generalized_test(
+            testName,
+            paramUriEnc,
+            acceptHeader);
 
-        const authKvp = {
-            "authentication": authentication,
-            "Accept": "application/sparql-results+json"
-        };
-
-        SPARQL.get(location,
-            uriDec,
-            authKvp,
-            getEntitiesGetCountSrjTestCallback
-        );
     }
 
+        //const continuationGet = function (json) {
+        //    window.console.log('json ', json);
+        //    window.console.log('json.results.bindings.length', json.results.bindings.length);
+        //    testResults["GET_count_srj_test"] = (json.results.bindings.length === 1);
+        //    //debugger;
+        //}
+
+        //const getEntitiesGetCountSrjTestCallback = function (response) {
+        //    response.json().then(continuationGet);
+        //}
+
+        //const location = this.location; //same
+        //const authentication = this.authentication; //same
+        //const uriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
+        //const uriDec = decodeURIComponent(uriEnc);
+
+        //const authKvp = {
+        //    "authentication": authentication,
+        //    "Accept": "application/sparql-results+json"
+        //};
+
+        //SPARQL.get(location,
+        //    uriDec,
+        //    authKvp,
+        //    getEntitiesGetCountSrjTestCallback
+        //);
+    //}
 
 
-    getEntitiesGET_count_srj() {
-        const location = this.location; //same
-        const authentication = this.authentication; //same
-        var contentElement = window.document.getElementById('content'); //same
-        var thisGraphUi = window.graphUI; //same
 
-        // var uri_enc = 'query=select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D'; the query bit was left in; WRONG!
-        const uriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
-        const uriDec = decodeURIComponent(uriEnc);
+    //getEntitiesGET_count_srj() {
+    //    const location = this.location;
+    //    const authentication = this.authentication;
+    //    var contentElement = window.document.getElementById('content'); 
+    //    var thisGraphUi = window.graphUI;
 
-        SPARQL.get(location,
-            uriDec,
-            {
-                "authentication": authentication,
-                "Accept": "application/sparql-results+json"
-            },
-            function (response) {
-                // console.log("response ", response);
-                response.text().then(function (text) {
-                    contentElement.value = text;
-                    var listElement = window.document.getElementById('entitylist');
-                    const json = JSON.parse(text);
+    //    const uriEnc = 'select%20(count(*)%20as%20%3Fcount)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
+    //    const uriDec = decodeURIComponent(uriEnc);
 
-                    window.console.log('json ', json);
-                    window.console.log('json.results.bindings.length', json.results.bindings.length);
-                    const bindings = json['results']['bindings'];
-                    listElement.innerHTML = '';
-                    bindings.forEach(function (solution) {
-                        const re = window.document.createElement('div');
-                        const id = solution['s']['value'];
-                        // console.log("addEventListener-", re, id);
-                        try {
-                            re.addEventListener('click', thisGraphUi.displaySelectedNodeByID, false);
-                        } catch (error) {
-                            window.console.log("addEventListener! ", error);
-                        }
-                        //console.log("addEventListener+");
-                        re.appendChild(window.document.createTextNode(id));
-                        listElement.appendChild(re);
-                    });
-                });
-            }
-        );
-    }
+    //    SPARQL.get(location,
+    //        uriDec,
+    //        {
+    //            "authentication": authentication,
+    //            "Accept": "application/sparql-results+json"
+    //        },
+    //        function (response) {
+    //            // console.log("response ", response);
+    //            response.text().then(function (text) {
+    //                contentElement.value = text;
+    //                var listElement = window.document.getElementById('entitylist');
+    //                const json = JSON.parse(text);
+
+    //                window.console.log('json ', json);
+    //                window.console.log('json.results.bindings.length', json.results.bindings.length);
+    //                const bindings = json['results']['bindings'];
+    //                listElement.innerHTML = '';
+    //                bindings.forEach(function (solution) {
+    //                    const re = window.document.createElement('div');
+    //                    const id = solution['s']['value'];
+    //                    // console.log("addEventListener-", re, id);
+    //                    try {
+    //                        re.addEventListener('click', thisGraphUi.displaySelectedNodeByID, false);
+    //                    } catch (error) {
+    //                        window.console.log("addEventListener! ", error);
+    //                    }
+    //                    //console.log("addEventListener+");
+    //                    re.appendChild(window.document.createTextNode(id));
+    //                    listElement.appendChild(re);
+    //                });
+    //            });
+    //        }
+    //    );
+    //}
 
 
 
@@ -165,7 +195,7 @@ class HTTP_API_Tests {
 
             window.console.log('x: ', xmlDoc);
             window.console.log('x: ', x);
-            debugger;
+            //debugger;
         }
 
         const getGeneralizedCallbackXML = function (response) {
@@ -205,11 +235,12 @@ class HTTP_API_Tests {
         //GET - construct - rdfxml.sh
         //GET - anon - srj.sh
 
-        this.GET_count_srx_test(); //
+        //this.GET_count_srx_test(); //
 
-        this.GET_count_srj_plus_srx_test();
+        
+        //this.GET_count_srj_test();
+        this.GET_count_srj_plus_srx_test(); //gives CORS error. (?)
 
-        this.getEntitiesGET_count_srj();
     }
 
 
