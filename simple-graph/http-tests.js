@@ -2,36 +2,31 @@ export { HTTP_API_Tests };
 class HTTP_API_Tests {
 
     constructor(location, authentication) {
-        this.location = location; //same
-        this.authentication = authentication; //same;
-        //var element = document.getElementById("testResultsTextArea");
-        //element.innerHTML += (json.results.bindings.length === 1);
-        ////var testResults = [];
-        //;
-        //.
-        //testResults;
+        this.location = location;
+        this.authentication = authentication; 
     }
-    //refactoring...
+
+
 
     //generalized GET -- json
     //TODO pass non-encoded URL as parameter for readability
     GET_generalized_test(getTestName, paramUriEnc, acceptHeader) {
+        const DOM_update = function (testname, result) {
+
+            var ul = document.getElementById("testResults");
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(testname + " : " + result));
+            ul.appendChild(li);
+        }
+
         const continuationGet = function (json) {
             debugger;
             window.console.log('json ', json);
             window.console.log('json.results.bindings.length', json.results.bindings.length);
 
-            debugger;
+            const testResult = json.results.bindings.length == 1;
+            DOM_update(getTestName, testResult);
 
-            var element = document.getElementById("id01");
-            element.innerHTML =+ "<li>" + getTestName + " " + json.results.bindings.length === 1 + "</li >";
-
-            debugger;
-            //var element = window.document.getElementById("testResults");
-            //element.innerHTML = ("getTestName" + " " + json.results.bindings.length === 1);
-
-            //this.testResults[getTestName] = (json.results.bindings.length === 1);
-            //debugger;
         }
 
         const getGeneralizedCallback = function (response) {
@@ -79,9 +74,6 @@ class HTTP_API_Tests {
     //| jq '.results.bindings | .[].count.value' \
     //| fgrep - q '"1"'
 
-
-
-
     GET_count_srj_test() {
 
         const testName = 'GET_count_srj_test';
@@ -94,6 +86,151 @@ class HTTP_API_Tests {
             acceptHeader);
 
     }
+
+
+
+
+    //generalized GET -- XML 
+    //TODO pass non-encoded URL as parameter for readability
+    GET_generalized_test_XML(getTestName, paramUri, acceptHeader) {
+
+        const location = graphUI.location(); //same
+        const authentication = graphUI.authentication(); //same
+        
+        const authKvp = {
+            "authentication": authentication,
+            "Accept": acceptHeader
+        };
+
+        const continuationGetXML = function (XML) {
+            //window.console.log('XML: ', XML);
+
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(XML, "text/xml");
+            const x = xmlDoc.getElementsByTagName(
+                "literal")[0].childNodes[0].nodeValue;
+
+            window.console.log('x: ', xmlDoc);
+            window.console.log('x: ', x);
+            //debugger;
+        }
+
+        const getGeneralizedCallbackXML = function (response) {
+            response.text().then(continuationGetXML);
+        }
+
+        SPARQL.get(location,
+            paramUri,
+            authKvp,
+            getGeneralizedCallbackXML
+        );
+    }
+
+    GET_count_srx_test() {
+        //curl_sparql_request - H "Accept: application/sparql-results+xml" 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d' \
+        //| xmllint--c14n11 - \
+        //| tr - s '\t\n\r\f' ' ' | sed 's/ +/ /g' \
+        //| fgrep - i 'variable name="count1"' \
+        //| egrep - i - q - s '<binding name="count1">.*<literal .*>1</literal>'
+
+        const getTestName1 = 'GET_count_srx_test';
+        const paramUri1 = 'select count(*) where {?s ?p ?o}';
+        const acceptHeader1 = 'application/sparql-results+xml';
+        this.GET_generalized_test_XML(getTestName1, paramUri1, acceptHeader1);
+
+    }
+
+
+    RunAll() {
+        //GET-srx.sh
+        //GET - count - tsv.sh
+        //GET - count - srx.sh -- DONE. 
+        //GET - count - srj.sh -- DONE. 
+        //GET - count - srj + srx.sh -- DONE ++
+        //GET - count - csv.sh -- ORIGINAL.
+        //GET - construct - srx - 406.sh
+        //GET - construct - rdfxml.sh
+        //GET - anon - srj.sh
+
+        //this.GET_count_srx_test(); //
+
+        
+        this.GET_count_srj_test();
+        this.GET_count_srj_plus_srx_test(); //gives CORS error. (?)
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         //const continuationGet = function (json) {
         //    window.console.log('json ', json);
@@ -168,82 +305,6 @@ class HTTP_API_Tests {
     //        }
     //    );
     //}
-
-
-
-
-    //generalized GET -- XML 
-    //TODO pass non-encoded URL as parameter for readability
-    GET_generalized_test_XML(getTestName, paramUri, acceptHeader) {
-
-        const location = graphUI.location(); //same
-        const authentication = graphUI.authentication(); //same
-        
-        const authKvp = {
-            "authentication": authentication,
-            "Accept": acceptHeader
-        };
-
-        const continuationGetXML = function (XML) {
-            //window.console.log('XML: ', XML);
-
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(XML, "text/xml");
-            const x = xmlDoc.getElementsByTagName(
-                "literal")[0].childNodes[0].nodeValue;
-
-
-            window.console.log('x: ', xmlDoc);
-            window.console.log('x: ', x);
-            //debugger;
-        }
-
-        const getGeneralizedCallbackXML = function (response) {
-            response.text().then(continuationGetXML);
-        }
-
-        SPARQL.get(location,
-            paramUri,
-            authKvp,
-            getGeneralizedCallbackXML
-        );
-    }
-
-    GET_count_srx_test() {
-        //curl_sparql_request - H "Accept: application/sparql-results+xml" 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d' \
-        //| xmllint--c14n11 - \
-        //| tr - s '\t\n\r\f' ' ' | sed 's/ +/ /g' \
-        //| fgrep - i 'variable name="count1"' \
-        //| egrep - i - q - s '<binding name="count1">.*<literal .*>1</literal>'
-
-        const getTestName1 = 'GET_count_srx_test';
-        const paramUri1 = 'select count(*) where {?s ?p ?o}';
-        const acceptHeader1 = 'application/sparql-results+xml';
-        this.GET_generalized_test_XML(getTestName1, paramUri1, acceptHeader1);
-
-    }
-
-
-    RunAll() {
-        //GET-srx.sh
-        //GET - count - tsv.sh
-        //GET - count - srx.sh -- DONE. 
-        //GET - count - srj.sh -- DONE. 
-        //GET - count - srj + srx.sh -- DONE ++
-        //GET - count - csv.sh -- ORIGINAL.
-        //GET - construct - srx - 406.sh
-        //GET - construct - rdfxml.sh
-        //GET - anon - srj.sh
-
-        //this.GET_count_srx_test(); //
-
-        
-        //this.GET_count_srj_test();
-        this.GET_count_srj_plus_srx_test(); //gives CORS error. (?)
-
-    }
-
-
 
 
 
