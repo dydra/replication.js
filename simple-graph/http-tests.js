@@ -30,6 +30,7 @@ class HTTP_API_Tests {
         }
 
         const getGeneralizedCallback = function (response) {
+            debugger;
             response.json().then(continuationGet);
         }
 
@@ -46,6 +47,7 @@ class HTTP_API_Tests {
             authKvp,
             getGeneralizedCallback
         );
+        debugger;
     }
 
 
@@ -102,6 +104,15 @@ class HTTP_API_Tests {
             "Accept": acceptHeader
         };
 
+        const DOM_update = function (testname, result) {
+
+            var ul = document.getElementById("testResults");
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(testname + " : " + result));
+            ul.appendChild(li);
+        }
+
+
         const continuationGetXML = function (XML) {
             //window.console.log('XML: ', XML);
 
@@ -140,6 +151,52 @@ class HTTP_API_Tests {
 
     }
 
+    GET_count_tsv_test() {
+        //#! /bin/bash
+
+        //curl_sparql_request - H "Accept: text/tab-separated-values" 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d' \
+        //| tr - s '\n' '\t' \
+        //| egrep - q - s 'COUNT1.*1'
+
+        const getTestName1 = 'GET_count_tsv_test';
+        const paramUri1 = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        const acceptHeader1 = 'text/tab-separated-values';
+        
+        const DOM_update = function (testname, result) {
+
+            var ul = document.getElementById("testResults");
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(testname + " : " + result));
+            ul.appendChild(li);
+        }
+
+        const continuationGetTSV = function (response) {
+            const testResult = /COUNT1\n\"1"/i.test(response);
+            DOM_update(getTestName1, testResult);
+        }
+        
+        const getGeneralizedCallback = function (response) {
+            debugger;
+            window.console.log(response.text);
+            response.text().then(continuationGetTSV);
+        }
+
+        const uriEnc = paramUri1;
+        const uriDec = decodeURIComponent(uriEnc);
+
+        const authKvp = {
+            "authentication": this.authentication,
+            "Accept": acceptHeader1
+        };
+
+        SPARQL.get(this.location,
+            uriDec,
+            authKvp,
+            getGeneralizedCallback
+        );
+
+    }
+
 
     RunAll() {
         //GET-srx.sh
@@ -152,11 +209,15 @@ class HTTP_API_Tests {
         //GET - construct - rdfxml.sh
         //GET - anon - srj.sh
 
-        //this.GET_count_srx_test(); //
+        this.GET_count_tsv_test();
 
         
+
+
+        this.GET_count_srx_test();
         this.GET_count_srj_test();
-        this.GET_count_srj_plus_srx_test(); //gives CORS error. (?)
+        this.GET_count_srj_plus_srx_test();
+
 
     }
 
