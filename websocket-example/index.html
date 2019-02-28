@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>d3 interactive graph</title>
+    <link rel="stylesheet" href="graph-creator.css" />
+  </head>
+
+  <body style="width 100%">
+    <div id="graph"></div>
+    <div id="entityList" style="position: absolute; top: 10px; right: 10px">
+    </div>
+    <div id="description" style="position: absolute; top: 10px; left: 10px; width: 20%; color: grey">
+     <h5>what does this do?</h5>
+     <p style='text-align: left; font-size: small'>this is an interactive demonstration of data replication through a graph store.
+      <ol style='font-size: small'>
+       <li>display a known node by selective an identifier from the list to the upper right</li>
+       <li>drag the node</li>
+       <li>all browsers which display that node on this page will move the node to the new position</li>
+      </ol>
+     </p>
+     <p style='text-align: left; font-size: small'>
+      this involves sending a patch request for each movement to sparql graph store service, storing the patch request  there
+      and replicating the request to all client browsers which display this page.
+     </p>
+    </div>
+    <table id="toolbox">
+      <tr><td>host:</td><td><input type="text" id="host" style="width: 20em; float: right; clear: both;" value="de8.dydra.com"></td></tr>
+      <tr><td>repository:</td><td><input type="text" id="repository" style="width: 20em; float: right; clear: both;" value="jhacker/test"></td></tr>
+      <tr><td>auth:</td><td><input type="password" id="authentication" style="width: 20em; float: right; clear: both;" value="XQ2LzpwYTKul1lD36FtR"></td></tr>
+    </table>
+
+    <script type="module" src="/javascripts/replication/rdf-client.js"></script>
+    <script src="//d3js.org/d3.v3.js" charset="utf-8"></script>
+    <script src="//cdn.jsdelivr.net/filesaver.js/0.1/FileSaver.min.js"></script>
+    <script type="module", src="./rdf-graph-creator.js"></script>
+    
+
+  </body>
+
+</html>

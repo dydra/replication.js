@@ -1,0 +1,3530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>JSDoc: RDFEnvironment</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="https://fonts.googleapis.com/css?family=Muli:100,400,700|Oswald:300|Inconsolata,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+</head>
+
+<body>
+    <div id="stickyNavbarOverlay"></div>
+    <div class="top-navbar">
+        <div class="container">
+            <nav class="navbar" role="navigation" aria-label="main navigation">
+                <div class="navbar-brand">
+                    
+                    
+                        <h1 class="navbar-item">Documentation</h1>
+                    
+                    <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                    </a>
+                </div>
+                
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <div class="columns">
+            <div class="column is-3" id="sidebarNav">
+                <div class="sidebar">
+                    <nav>
+                        <h2><a href="index.html">Home</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="BlankNode.html">BlankNode</a></li><li><a href="CommitRequest.html">CommitRequest</a></li><li><a href="DeleteRequest.html">DeleteRequest</a></li><li><a href="GDBObjectStore.html">GDBObjectStore</a></li><li><a href="GDBTransaction.html">GDBTransaction</a></li><li><a href="GetRequest.html">GetRequest</a></li><li><a href="Graph.html">Graph</a></li><li><a href="GraphDatabase.html">GraphDatabase</a></li><li><a href="GraphEnvironment.html">GraphEnvironment</a></li><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphRequest.html">GraphRequest</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="GSP.html">GSP</a></li><li><a href="LangString.html">LangString</a></li><li><a href="Literal.html">Literal</a></li><li><a href="NamedNode.html">NamedNode</a></li><li><a href="Node.html">Node</a></li><li><a href="Patch.html">Patch</a></li><li><a href="PostRequest.html">PostRequest</a></li><li><a href="PutRequest.html">PutRequest</a></li><li><a href="Quad.html">Quad</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li><li><a href="SimpleString.html">SimpleString</a></li><li><a href="SPARQL.html">SPARQL</a></li><li><a href="Statement.html">Statement</a></li><li><a href="Term.html">Term</a></li><li><a href="Triple.html">Triple</a></li><li><a href="UUID.html">UUID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#bytesToUuid">bytesToUuid</a></li><li><a href="global.html#copyUUID">copyUUID</a></li><li><a href="global.html#createBlankNode">createBlankNode</a></li><li><a href="global.html#createGraph">createGraph</a></li><li><a href="global.html#createLiteral">createLiteral</a></li><li><a href="global.html#createNamedNode">createNamedNode</a></li><li><a href="global.html#createPatch">createPatch</a></li><li><a href="global.html#createQuad">createQuad</a></li><li><a href="global.html#createStatement">createStatement</a></li><li><a href="global.html#createTriple">createTriple</a></li><li><a href="global.html#createUUID">createUUID</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li><li><a href="global.html#formatUUID">formatUUID</a></li><li><a href="global.html#isDeleteUUID">isDeleteUUID</a></li><li><a href="global.html#isInsertUUID">isInsertUUID</a></li><li><a href="global.html#makeUUID">makeUUID</a></li><li><a href="global.html#makeUUIDString">makeUUIDString</a></li><li><a href="global.html#onmessage">onmessage</a></li><li><a href="global.html#predicateLeaf">predicateLeaf</a></li><li><a href="global.html#resetUUIDState">resetUUIDState</a></li><li><a href="global.html#setUUIDState">setUUIDState</a></li><li><a href="global.html#UUIDState">UUIDState</a></li><li><a href="global.html#UUIDTimestamp">UUIDTimestamp</a></li><li><a href="global.html#v1">v1</a></li></ul></div>
+                    </nav>
+                </div>
+            </div>
+            <div class="column is-9-desktop">
+                <div class="content" id="main-content-wrapper">
+                    <header class="page-title">
+                        <p>Class</p>
+                        <h1>RDFEnvironment</h1>
+                    </header>
+                    
+                    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>RDFEnvironment<span class="signature">()</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>The class RDFEnvironment specializes the model creation functions and
+ codecs for RDF.
+ An environment instance provides model element creation operations in a mode which
+ provides defaults from environment properties</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class='vertical-section'>
+                <h3 class="title"><span>Constructor</span></h3>
+                <div class="members">
+                    <div class="member">
+
+    
+    <h4 class="name" id="RDFEnvironment">
+        
+        <span class="code-name">
+            new RDFEnvironment<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line33">line 33</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+                </div>
+            </div>
+        
+    
+    </div>
+
+    
+        <h3 class="subsection-title">Extends</h3>
+
+        
+
+
+    <ul>
+        <li><a href="GraphEnvironment.html">GraphEnvironment</a></li>
+    </ul>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <div class='vertical-section'>
+            <h3 class="title"><span>Members</span></h3>
+            <div class="members">
+            
+                <div class="member">
+
+<h4 class="name" id="baseIRI">
+    
+    <span class="code-name">
+        baseIRI
+    </span>
+</h4>
+
+
+
+
+<div class="description">
+    <p>Return the base IRI from this environment's context.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#baseIRI">GraphEnvironment#baseIRI</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line34">line 34</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+        <div class='vertical-section'>
+            <h3 class="title"><span>Methods</span></h3>
+            <div class="members">
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="computeGraphObject">
+        
+            
+                <span class='tag'>abstract</span>
+            
+        
+        <span class="code-name">
+            computeGraphObject<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given a Graph, extract the first subject term, extract its description and instantiate it.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#computeGraphObject">GraphEnvironment#computeGraphObject</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line201">line 201</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="computeGraphObjects">
+        
+            
+                <span class='tag'>abstract</span>
+            
+        
+        <span class="code-name">
+            computeGraphObjects<span class="signature">(graph, identifiers)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given a Graph and a list of identifiers, extract their descriptions and instantiate them.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>graph</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Graph.html">Graph</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>identifiers</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Array.html">Array</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>The sought identifiers</p></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#computeGraphObjects">GraphEnvironment#computeGraphObjects</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line210">line 210</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="computeObjectGraph">
+        
+            
+                <span class='tag'>abstract</span>
+            
+        
+        <span class="code-name">
+            computeObjectGraph<span class="signature">(object)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>object</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">Object</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#computeObjectGraph">GraphEnvironment#computeObjectGraph</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line217">line 217</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createAnonymousNode">
+        
+        <span class="code-name">
+            createAnonymousNode<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#createAnonymousNode">GraphEnvironment#createAnonymousNode</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line98">line 98</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createBlankNode">
+        
+        <span class="code-name">
+            createBlankNode<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line103">line 103</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createGraph">
+        
+        <span class="code-name">
+            createGraph<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#createGraph">GraphEnvironment#createGraph</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line139">line 139</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createLiteral">
+        
+        <span class="code-name">
+            createLiteral<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#createLiteral">GraphEnvironment#createLiteral</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line93">line 93</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createNamedNode">
+        
+        <span class="code-name">
+            createNamedNode<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#createNamedNode">GraphEnvironment#createNamedNode</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line108">line 108</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createObject">
+        
+        <span class="code-name">
+            createObject<span class="signature">(className, identifier, state<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given a class name, the instance identifier and an initial state,
+   instantiate the object, assign the initial state, create its proxy and return that.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>className</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>identifier</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>state</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">Object</span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#createObject">GraphEnvironment#createObject</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line264">line 264</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createPatch">
+        
+        <span class="code-name">
+            createPatch<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line157">line 157</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createQuad">
+        
+        <span class="code-name">
+            createQuad<span class="signature">(subject, predicate, object, graph<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Create a Quad with provisions from translation from curie terms and
+   completion of relative iri. Use the environment's location as the default graph name</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>subject</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Node.html">Node</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>predicate</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="NamedNode.html">NamedNode</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>object</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Term.html">Term</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>graph</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Node.html">Node</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line78">line 78</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createStatement">
+        
+        <span class="code-name">
+            createStatement<span class="signature">(subject, predicate, object, graph<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Create a statement with provisions from translation from curie terms and
+   completion of relative iri.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>subject</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Node.html">Node</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+      <td class="default">
+      
+      </td>
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>predicate</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="NamedNode.html">NamedNode</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+      <td class="default">
+      
+      </td>
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>object</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Term.html">Term</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+
+      
+
+      
+      </td>
+  
+
+  
+      <td class="default">
+      
+      </td>
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>graph</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Node.html">Node</a></span>
+
+
+  
+  </td>
+
+  
+      <td class="attributes">
+      
+          &lt;optional><br>
+      
+
+      
+
+      
+      </td>
+  
+
+  
+      <td class="default">
+      
+          null
+      
+      </td>
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#createStatement">GraphEnvironment#createStatement</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line47">line 47</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="createTriple">
+        
+        <span class="code-name">
+            createTriple<span class="signature">(subject, predicate, object)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Create a Triple with provisions from translation from curie terms and
+   completion of relative iri.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>subject</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Node.html">Node</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>predicate</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="NamedNode.html">NamedNode</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>object</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Term.html">Term</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line88">line 88</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="decode">
+        
+        <span class="code-name">
+            decode<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>The function decode accepts a document, a content type and an optional continuation,
+   It parses the document and returns or continues with the result, by
+   retrieving the respective decoder and delegating the operation
+   to that function.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line344">line 344</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="fieldDefinition">
+        
+        <span class="code-name">
+            fieldDefinition<span class="signature">(identifier)</span><span class="type-signature"> &rarr; {PropertyDefinition}</span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given a property identifier, return the definition from the environment's context.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>identifier</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+|
+
+<span class="param-type">URL</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>An identifier present in the context</p></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#fieldDefinition">GraphEnvironment#fieldDefinition</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>The definition should be a standard JavaScript property descriptor</li>
+        
+            <li>Change name to getPropertyDescriptor</li>
+        </ul>
+    </dd>
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line103">line 103</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<span class="param-type">PropertyDefinition</span>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="fieldType">
+        
+        <span class="code-name">
+            fieldType<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given a property identifier, return the type from its definition</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#fieldType">GraphEnvironment#fieldType</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>Change name to getPropertyType</li>
+        </ul>
+    </dd>
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line132">line 132</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="findIdentifierName">
+        
+        <span class="code-name">
+            findIdentifierName<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given an IRI, return the property name associated with it in the environment.
+   If none is present in the context, add a definition which specifies the IRI leaf as the name.
+   The first probe searches the context for a property definition which specifies the iri as its @id.
+   That result is then cached for future references.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#findIdentifierName">GraphEnvironment#findIdentifierName</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line144">line 144</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="findNameIdentifier">
+        
+        <span class="code-name">
+            findNameIdentifier<span class="signature">(name)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given a property name, return the IRI associated with it in the environment.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>name</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#findNameIdentifier">GraphEnvironment#findNameIdentifier</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line181">line 181</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="graphResourceID">
+        
+        <span class="code-name">
+            graphResourceID<span class="signature">(graph)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Return the identifier for the root node of the given Graph.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>graph</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Graph.html">Graph</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#graphResourceID">GraphEnvironment#graphResourceID</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line84">line 84</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="graphResourceIDs">
+        
+        <span class="code-name">
+            graphResourceIDs<span class="signature">(graph)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Return the identifers for all nodes in the given Graph.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>graph</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="Graph.html">Graph</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#graphResourceIDs">GraphEnvironment#graphResourceIDs</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line92">line 92</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="resolveContext">
+        
+        <span class="code-name">
+            resolveContext<span class="signature">(context)</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Accept a context designator, retrieve if necessary, expand all definitions,
+   and bind the environment's context property to it.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        
+<tr class="deep-level-0">
+  
+      <td class="name"><code>context</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+|
+
+<span class="param-type">URL</span>
+|
+
+<span class="param-type"><a href="global.html#Context">Context</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>The context to resolve.</p></td>
+</tr>
+
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="GraphEnvironment.html#resolveContext">GraphEnvironment#resolveContext</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="graph-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="graph-environment.js.html">graph-environment.js</a>, <a href="graph-environment.js.html#line43">line 43</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="toLiteral">
+        
+        <span class="code-name">
+            toLiteral<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>The function toLiteral accepts an native object and coerces it to a Literal instance.
+   It distinguishes between Object specializations and primitive data.
+   In those cases, use the type to compute a converter and delegate to that.
+   Return unmodified any data which is already a Term.</p>
+<p>   from rdflib.js
+      https://github.com/linkeddata/rdflib.js/blob/master/src/literal.js</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line312">line 312</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    
+    <h4 class="name" id="toValue">
+        
+        <span class="code-name">
+            toValue<span class="signature">()</span><span class="type-signature"></span>
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>The function toValue accepts a <a href="Term.html">Term</a> and converts it to a native value</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="rdf-environment.js.html" class="button">View Source</a>
+            <span>
+                <a href="rdf-environment.js.html">rdf-environment.js</a>, <a href="rdf-environment.js.html#line290">line 290</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<footer class="footer">
+    <div class="content has-text-centered">
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 12 2019 22:25:15 GMT+0100 (Central European Standard Time)</p>
+        <p class="sidebar-created-by">
+            <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+            <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>
+        </p>
+    </div>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/app.min.js"></script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

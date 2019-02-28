@@ -1,4 +1,68 @@
-// Copyright (c) 2019 datagraph gmbh
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>JSDoc: graph-database.js</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="https://fonts.googleapis.com/css?family=Muli:100,400,700|Oswald:300|Inconsolata,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+</head>
+
+<body>
+    <div id="stickyNavbarOverlay"></div>
+    <div class="top-navbar">
+        <div class="container">
+            <nav class="navbar" role="navigation" aria-label="main navigation">
+                <div class="navbar-brand">
+                    
+                    
+                        <h1 class="navbar-item">Documentation</h1>
+                    
+                    <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                    </a>
+                </div>
+                
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <div class="columns">
+            <div class="column is-3" id="sidebarNav">
+                <div class="sidebar">
+                    <nav>
+                        <h2><a href="index.html">Home</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="BlankNode.html">BlankNode</a></li><li><a href="CommitRequest.html">CommitRequest</a></li><li><a href="DeleteRequest.html">DeleteRequest</a></li><li><a href="GDBObjectStore.html">GDBObjectStore</a></li><li><a href="GDBTransaction.html">GDBTransaction</a></li><li><a href="GetRequest.html">GetRequest</a></li><li><a href="Graph.html">Graph</a></li><li><a href="GraphDatabase.html">GraphDatabase</a></li><li><a href="GraphEnvironment.html">GraphEnvironment</a></li><li><a href="GraphObject.html">GraphObject</a></li><li><a href="GraphRequest.html">GraphRequest</a></li><li><a href="GraphStateError.html">GraphStateError</a></li><li><a href="GSP.html">GSP</a></li><li><a href="LangString.html">LangString</a></li><li><a href="Literal.html">Literal</a></li><li><a href="NamedNode.html">NamedNode</a></li><li><a href="Node.html">Node</a></li><li><a href="Patch.html">Patch</a></li><li><a href="PostRequest.html">PostRequest</a></li><li><a href="PutRequest.html">PutRequest</a></li><li><a href="Quad.html">Quad</a></li><li><a href="RDFDatabase.html">RDFDatabase</a></li><li><a href="RDFEnvironment.html">RDFEnvironment</a></li><li><a href="SimpleString.html">SimpleString</a></li><li><a href="SPARQL.html">SPARQL</a></li><li><a href="Statement.html">Statement</a></li><li><a href="Term.html">Term</a></li><li><a href="Triple.html">Triple</a></li><li><a href="UUID.html">UUID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#bytesToUuid">bytesToUuid</a></li><li><a href="global.html#copyUUID">copyUUID</a></li><li><a href="global.html#createBlankNode">createBlankNode</a></li><li><a href="global.html#createGraph">createGraph</a></li><li><a href="global.html#createLiteral">createLiteral</a></li><li><a href="global.html#createNamedNode">createNamedNode</a></li><li><a href="global.html#createPatch">createPatch</a></li><li><a href="global.html#createQuad">createQuad</a></li><li><a href="global.html#createStatement">createStatement</a></li><li><a href="global.html#createTriple">createTriple</a></li><li><a href="global.html#createUUID">createUUID</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li><li><a href="global.html#formatUUID">formatUUID</a></li><li><a href="global.html#isDeleteUUID">isDeleteUUID</a></li><li><a href="global.html#isInsertUUID">isInsertUUID</a></li><li><a href="global.html#makeUUID">makeUUID</a></li><li><a href="global.html#makeUUIDString">makeUUIDString</a></li><li><a href="global.html#onmessage">onmessage</a></li><li><a href="global.html#predicateLeaf">predicateLeaf</a></li><li><a href="global.html#resetUUIDState">resetUUIDState</a></li><li><a href="global.html#setUUIDState">setUUIDState</a></li><li><a href="global.html#UUIDState">UUIDState</a></li><li><a href="global.html#UUIDTimestamp">UUIDTimestamp</a></li><li><a href="global.html#v1">v1</a></li></ul></div>
+                    </nav>
+                </div>
+            </div>
+            <div class="column is-9-desktop">
+                <div class="content" id="main-content-wrapper">
+                    <header class="page-title">
+                        <p>Source</p>
+                        <h1>graph-database.js</h1>
+                    </header>
+                    
+                    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// Copyright (c) 2019 datagraph gmbh
 
 /**
  @overview
@@ -25,8 +89,8 @@ behaviour:
 The application-thread API operators transform between native javascript
 objects and graphs to be exchanged as websockets/fetch requests with a remote
 graph store which acts as the Graph storage service.  
-The object<->graph transformation relies on the GraphObject state tracking
-and the field<->term mapping mechanisms which a GDBObjectStore delegates
+The object&lt;->graph transformation relies on the GraphObject state tracking
+and the field&lt;->term mapping mechanisms which a GDBObjectStore delegates
 to a GraphEnvironment.
 
 The IndexedDB transaction behaviour is combined with that of JDO.
@@ -206,7 +270,7 @@ function onmessage_parse(document, options = {hasResponseLine: true}) {
   }
 }
 /*
-var resp = onmessage_parse("HTTP/1.1 200 OK\r\nContent-Type: application/n-quads\r\n\r\n<http://x.o/s> <http://x.o/p> 'o' .")
+var resp = onmessage_parse("HTTP/1.1 200 OK\r\nContent-Type: application/n-quads\r\n\r\n&lt;http://x.o/s> &lt;http://x.o/p> 'o' .")
 */
 
 /**
@@ -302,10 +366,10 @@ export class GraphDatabase { // extends IDBDatabase {
       var contentType;
       var match;
       var etag = response.headers.get('ETag');
-      if (etag && this.revisions.find(function(p) { return (etag == p.revision); })) {
+      if (etag &amp;&amp; this.revisions.find(function(p) { return (etag == p.revision); })) {
         console.log("onmessage: reflected", etag, data);
       } else {
-        if ((contentType = response.headers.get('Content-Type')) &&
+        if ((contentType = response.headers.get('Content-Type')) &amp;&amp;
             (match = contentType.match(/([^;]+)(?:;.*)?/))) {
           var handler = onmessage[match[1]];
           // console.log("onmessage: contentType ", contentType, handler);
@@ -1016,3 +1080,30 @@ export class CommitRequest extends GraphRequest {
 
 // console.log('graph-database.js: loaded');
 
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<footer class="footer">
+    <div class="content has-text-centered">
+        <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Feb 12 2019 22:25:14 GMT+0100 (Central European Standard Time)</p>
+        <p class="sidebar-created-by">
+            <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+            <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers</a>
+        </p>
+    </div>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/app.min.js"></script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

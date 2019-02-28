@@ -21,16 +21,31 @@ var RSIDType = RSIDTypeEnum.sha1;
 var RSIDLength = 20;
 var IDNode = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06];
 
+/**
+ Encode a ZUUID given a millisecond timestamp and a buffer.
+ The current time is used as the default timestamp.
+ Given a null buffer, return a hex-string-encoded UUD.
+ @param {Object} options
+ @param {number} options.msec - the Date value to encode as millisecnds
+ @param {(Array|null)} buffer - an array into which to store the UUID
+ */
 export function makeUUID({msecs = (new Date().getTime())} = {}, buffer = []) {
   //if (msecs === undefined) { msecs = new Date().getTime(); }
   var uuid = $uuid.v1({node: IDNode, msecs: msecs}, buffer);
   return( uuid );
 }
+/**
+ Return a hex-string-encoded version 1 UUID for the current time.
+ */
 export function makeUUIDString() {
   var msecs = new Date().getTime();
   return ($uuid.v1({node: IDNode, msecs: msecs}, null));
 }
 
+/**
+ Copy a UUID
+ @param {Array} uuid
+ */
 export function copyUUID(uuid) {
   return( uuid.slice() );
 }
@@ -41,6 +56,9 @@ export function copyUUID(uuid) {
 if(Array.prototype.equals)
     console.warn("Overriding existing Array.prototype.equals. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code.");
 // attach the .equals method to Array's prototype to call it on any array
+/**
+ Define equals for arrays
+ */
 Array.prototype.equals = function (array) {
     // if the other array is a falsy value, return
     if (!array)
@@ -67,12 +85,18 @@ Array.prototype.equals = function (array) {
 // Hide method from for-in loops
 Object.defineProperty(Array.prototype, "equals", {enumerable: false});
 
-
+/**
+ Return (UUIDStateEnum.delete : UUIDStateEnum.insert ) as oer the UUID state.
+ @param {Array} uuid
+ */
 function UUIDState(uuid) {
   return( (uuid[6] & 0x80) ? UUIDStateEnum.delete : UUIDStateEnum.insert );
 }
 
 // https://github.com/krassif/node-uuid/commit/a9aac0e56f6c78b80454e9686e2eebcbbf724d45
+/**
+ Extract the uuid timestamp
+ */
 function UUIDTimestamp(b) {
     var msec = 0, nsec = 0;
     var i = 0;
@@ -111,7 +135,11 @@ function UUIDTimestamp(b) {
     return msec;
 }
 
-function setUUIDState(uuid, state) {
+/**
+ @param {Array} uuid
+ @param {UUIDStateEnun} state
+ */
+export function setUUIDState(uuid, state) {
   switch(state) {
     case UUIDStateEnum.insert : uuid[6] = (uuid[6] & 0x7f); break;
     case UUIDStateEnum.delete : uuid[6] = (uuid[6] | 0x80); break;
@@ -119,19 +147,27 @@ function setUUIDState(uuid, state) {
   return( uuid );
 }
 
-function resetUUIDState(uuid) {
+/**
+ */
+export function resetUUIDState(uuid) {
   setUUIDState(uuid, UUIDStateEnum.insert);
 }
 
-function isInsertUUID(uuid) {
+/**
+ */
+export function isInsertUUID(uuid) {
   return( UUIDState(uuid) == UUIDStateEnum.insert );
 }
 
-function isDeleteUUID(uuid) {
+/**
+ */
+export function isDeleteUUID(uuid) {
   return( UUIDState(uuid) == UUIDStateEnum.delete );
 }
 
-function formatUUID(uuid) {
+/**
+ */
+export function formatUUID(uuid) {
   var isInsert = isInsertUUID(uuid);
   var cleanUUID = setUUIDState(copyUUID(uuid), UUIDStateEnum.insert);
   var timestamp = UUIDTimestamp(uuid);
