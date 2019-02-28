@@ -25,7 +25,8 @@ function logFetch(location, args) {
         if (response.ok) {
           return (response);
         } else {
-          throw response;
+          console.log("fetch response: ${response.status}");
+          return (response);
         }
       });
   // console.log(p);

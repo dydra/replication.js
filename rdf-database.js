@@ -68,7 +68,7 @@ export class RDFDatabase extends GraphDatabase {
    @param {(function|null)} [continuation]
    @todo Allow an option to override the response content.
    */
-  get(options, continuation) {
+  get(options, continuation = null) {
     console.log("RDFDatabase.get");
     var decodeGetContent = function(response) {
       // yields a graph or a patch depending on arriving media type
@@ -86,7 +86,7 @@ export class RDFDatabase extends GraphDatabase {
    @param {Object} options
    @param {(function|null)} [continuation]
    */
-  describe(keyObject, options, continuation) {
+  describe(keyObject, options, continuation = null) {
     console.log("RDFDatabase.describe");
     console.log(keyObject);
     var thisDatabase = this;
