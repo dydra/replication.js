@@ -151,6 +151,7 @@ class HTTP_API_Tests {
 
     }
 
+    //TODO needs refactor, Copypaste from prev.
     GET_count_tsv_test() {
         //#! /bin/bash
 
@@ -163,7 +164,6 @@ class HTTP_API_Tests {
         const acceptHeader1 = 'text/tab-separated-values';
         
         const DOM_update = function (testname, result) {
-
             var ul = document.getElementById("testResults");
             var li = document.createElement("li");
             li.appendChild(document.createTextNode(testname + " : " + result));
@@ -176,7 +176,6 @@ class HTTP_API_Tests {
         }
         
         const getGeneralizedCallback = function (response) {
-            debugger;
             window.console.log(response.text);
             response.text().then(continuationGetTSV);
         }
@@ -198,9 +197,102 @@ class HTTP_API_Tests {
     }
 
 
+    GET_srx() {
+        //#! /bin/bash
+
+        //curl_sparql_request \
+        //    -H "Accept: application/sparql-results+xml" \
+        //'query=select%20(count(*)%20as%20%3Fcount1)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D' \
+        //    | xmllint--c14n11 - \
+        //    | tr - s '\t\n\r\f' ' ' | sed 's/ +/ /g' | sed 's/></> </g' \
+        //    | fgrep 'variable name="count1"' \
+        //    | egrep - q - s '<binding name="count1"> <literal .*>1</literal>'
+
+
+        const getTestName1 = 'GET_srx';
+        const paramUri1 = 'select%20(count(*)%20as%20%3Fcount1)%20where%20%7B%3Fs%20%3Fp%20%3Fo%7D';
+        const acceptHeader1 = 'application/sparql-results+xml';
+
+        const uriEnc = paramUri1;
+        const uriDec = decodeURIComponent(uriEnc);
+
+        const authKvp = {
+            "authentication": this.authentication,
+            "Accept": acceptHeader1
+        };
+
+        const DOM_update = function (testname, result) {
+            var ul = document.getElementById("testResults");
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(testname + " : " + result));
+            ul.appendChild(li);
+        }
+
+        const continuationGetSRX = function (XML) {
+
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(XML, "text/xml");
+            const x = xmlDoc.getElementsByTagName(
+                "literal")[0].childNodes[0].nodeValue;
+
+            window.console.log('x: ', xmlDoc);
+            window.console.log('x: ', x);
+
+            const testResult = xmlDoc.getElementsByTagName(
+                    "literal")[0].childNodes[0].nodeValue ==
+                1;
+                ///COUNT1\n\"1"/i.test(response);
+            DOM_update(getTestName1, testResult);
+            debugger;
+        }
+
+        const getSRXCallback = function (response) {
+            window.console.log(response.text);
+            response.text().then(continuationGetSRX);
+        }
+
+        SPARQL.get(this.location,
+            uriDec,
+            authKvp,
+            getSRXCallback
+        );
+
+
+    }
+
+    GET_anon_srj() {
+        //#! /bin/bash
+
+        //curl_sparql_request--repository "$STORE_REPOSITORY_PUBLIC" \
+        //    -H "Accept: application/sparql-results+json" \
+        //'query=select%20count(*)%20where%20%7bgraph%20?g%20%7b?s%20?p%20?o%7d%7d' \
+        //    | jq '.results.bindings[] | .[].datatype' | fgrep - q 'integer'
+
+        const getTestName1 = 'GET_anon_srj';
+        const paramUri1 = 'select%20count(*)%20where%20%7bgraph%20?g%20%7b?s%20?p%20?o%7d%7d';
+        const acceptHeader1 = 'application/sparql-results+json';
+
+        //GET_generalized_test()
+        const location_temp = this.location; 
+        // comes from define.sh 
+        // export STORE_REPOSITORY_PUBLIC = "public"
+        const host = "https://test.dydra.com";
+        const user = "openrdf-sesame";
+        const repo = "public";
+        const location_public = host + "/" + user + "/" + repo;
+        this.location = location_public;
+        this.GET_generalized_test(
+            getTestName1,
+            paramUri1,
+            acceptHeader1);
+
+        this.location = location_temp ; //restore value so that the object can be reused 
+    }
+
+
     RunAll() {
-        //GET-srx.sh
-        //GET - count - tsv.sh
+        //GET-srx.sh  -- DONE
+        //GET - count - tsv.sh -- DONE
         //GET - count - srx.sh -- DONE. 
         //GET - count - srj.sh -- DONE. 
         //GET - count - srj + srx.sh -- DONE ++
@@ -209,14 +301,15 @@ class HTTP_API_Tests {
         //GET - construct - rdfxml.sh
         //GET - anon - srj.sh
 
-        this.GET_count_tsv_test();
+        this.GET_srx();
+        this.GET_anon_srj();
 
-        
+        //this.GET_count_tsv_test();
 
 
-        this.GET_count_srx_test();
-        this.GET_count_srj_test();
-        this.GET_count_srj_plus_srx_test();
+        //this.GET_count_srx_test();
+        //this.GET_count_srj_test();
+        //this.GET_count_srj_plus_srx_test();
 
 
     }

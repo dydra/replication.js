@@ -101,7 +101,11 @@ function runSimpleGraph() {
     //gebi.addEventListener('touchstart', clickEventHandler, false);
 
     //window.httpTests = new HTTP_API_Tests(window.graphUI.location(), window.graphUI.authentication());
-    window.httpTests = new HTTP_API_Tests("https://test.dydra.com/openrdf-sesame/mem-rdf", "YtGwUWq1kY7nAL1ocIvl");
+    const host = "https://test.dydra.com";
+    const user = "openrdf-sesame";
+    const repo = "mem-rdf";
+    const location = host + "/" + user + "/" + repo;
+    window.httpTests = new HTTP_API_Tests(location, "YtGwUWq1kY7nAL1ocIvl");
     window.httpTests.RunAll();
 
 
