@@ -1,5 +1,5 @@
-export { HTTP_API_Tests };
-class HTTP_API_Tests {
+export { HTTP_API_GET_Tests };
+class HTTP_API_GET_Tests {
 
     constructor(location, authentication) {
         this.location = location;
@@ -302,37 +302,39 @@ class HTTP_API_Tests {
         const paramUri1 = 'construct%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20where%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20';
         const acceptHeader1 = 'application/sparql-results+xml';
 
-        const continuationGetXML = function (XML) {
-            //window.console.log('XML: ', XML);
-            debugger;
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(XML, "text/xml");
-            const x = xmlDoc.getElementsByTagName(
-                "rdf:Description")[0].childNodes[0].nodeValue;
+        const uriEnc = paramUri1;
+        const uriDec = decodeURIComponent(uriEnc);
 
-            window.console.log('x: ', xmlDoc);
-            window.console.log('x: ', x);
-            debugger;
-        }
+        const authKvp = {
+            "authentication": this.authentication,
+            "Accept": acceptHeader1
+        };
 
-        const continuationGetXMLRejection = function (rejreason) {
-            //window.console.log('XML: ', XML);
-            debugger;
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(XML, "text/xml");
-            const x = xmlDoc.getElementsByTagName(
-                "rdf:Description")[0].childNodes[0].nodeValue;
+        SPARQL.get(this.location,
+            uriDec,
+            authKvp,
+            function(response) {
+                const testResult = (response.status == 406);
+                debugger;
+                //TODO update DOM and return testResult
+            }
+        );
 
-            window.console.log('x: ', xmlDoc);
-            window.console.log('x: ', x);
-            debugger;
-        }
+    }
 
-        const getGeneralizedCallbackXML = function (response) {
-            response.text().then((continuationGetXML)
-            ,continuationGetXMLRejection(rejreason));
-        }
+    GET_construct_rdfxml() {
+        //#! /bin/bash
 
+        //curl_sparql_request \
+        //    -H "Accept: application/rdf+xml" \
+        //'query=construct%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20where%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20' \
+        //    | rapper - q--input rdfxml--output nquads / dev / stdin - \
+        //    | fgrep - q "default object"
+
+        const getTestName1 = 'GET_construct_rdfxml';
+        //TODO can I use introspection to find this function name? (one less parameter to set)
+        const paramUri1 = 'construct%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20where%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20';
+        const acceptHeader1 = 'application/rdf+xml';
 
         const uriEnc = paramUri1;
         const uriDec = decodeURIComponent(uriEnc);
@@ -342,12 +344,35 @@ class HTTP_API_Tests {
             "Accept": acceptHeader1
         };
 
-        window.console.log('this.authentication: ', this.authentication);
-        debugger;
+        const continuationGetXML = function (XML) {
+            //window.console.log('XML: ', XML);
+
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(XML, "text/xml");
+            //debugger;
+            const x = xmlDoc.getElementsByTagName("rdf:Description")[0].childNodes[0].firstChild;
+
+            const testResult = (x.data == "default object");
+            //debugger;
+
+            window.console.log('x: ', xmlDoc);
+            window.console.log('x: ', x);
+            
+        }
+
+        const getGeneralizedCallbackXML = function (response) {
+            response.text().then(continuationGetXML);
+        }
+
         SPARQL.get(this.location,
             uriDec,
             authKvp,
             getGeneralizedCallbackXML
+            //function (response) {
+            //    const testResult = (response.status == 406);
+            //    debugger;
+            //    //TODO update DOM and return testResult
+            //}
         );
 
     }
@@ -365,7 +390,7 @@ class HTTP_API_Tests {
         //GET - anon - srj.sh
 
         this.GET_construct_srx_406();
-
+        this.GET_construct_rdfxml();
 
         //this.GET_srx();
         //this.GET_anon_srj();
