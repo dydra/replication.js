@@ -1,4 +1,7 @@
+
 export { HTTP_API_GET_Tests };
+
+
 class HTTP_API_GET_Tests {
 
     constructor(location, authentication) {

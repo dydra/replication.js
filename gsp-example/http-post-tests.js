@@ -1,4 +1,5 @@
 export { HTTP_API_POST_Tests };
+import { print_r } from './var_dump.js';
 
 class HTTP_API_POST_Tests {
 
@@ -85,7 +86,7 @@ class HTTP_API_POST_Tests {
         //    EOF
 
         const testName1 = 'POST_tsv_test';
-        const paramUriEnc1 = 'select%20(count(*)%20as%20?count)%20where%20%7b?s%20?p%20?o%7d';
+        const paramUriEnc1 = 'query=select%20(count(*)%20as%20?count)%20where%20%7b?s%20?p%20?o%7d';
         const acceptHeader1 = 'text/tab-separated-values';
         const contentType1 = "application/x-www-form-urlencoded";
 
@@ -109,11 +110,12 @@ class HTTP_API_POST_Tests {
 
         const tsvTestContinuation = function (response) {
             window.console.log(response.text);
+            debugger;
             response.text().then(continuationGetTSV);
         }
 
 
-
+        debugger; 
         SPARQL.post(this.location, paramUriEnc1, optionsParam, tsvTestContinuation);
 
 

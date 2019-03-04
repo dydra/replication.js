@@ -400,13 +400,15 @@ SPARQL.post = function(location, query, options = {}, continuation) {
   var args = { method: "POST",
                cache: "no-cache",
                headers: headers,
-               body: query };
+        body: query
+    };
+    debugger;
   if (query) {
     location = location + SPARQL.locationSuffix;
   } else {
     throw (new Error(`SPARQL.get: a query text is required: '${location}'`));
   }
-
+  debugger;
   var p = SPARQL.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
