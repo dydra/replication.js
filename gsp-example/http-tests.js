@@ -1,6 +1,7 @@
 
 export { HTTP_API_GET_Tests };
 
+import { DOM_update } from './global-functions.js'
 
 class HTTP_API_GET_Tests {
 
@@ -14,13 +15,7 @@ class HTTP_API_GET_Tests {
     //generalized GET -- json
     //TODO pass non-encoded URL as parameter for readability
     GET_generalized_test(getTestName, paramUriEnc, acceptHeader) {
-        const DOM_update = function (testname, result) {
-
-            var ul = document.getElementById("testResults");
-            var li = document.createElement("li");
-            li.appendChild(document.createTextNode(testname + " : " + result));
-            ul.appendChild(li);
-        }
+        
 
         const continuationGet = function (json) {
             window.console.log('json ', json);
@@ -104,13 +99,13 @@ class HTTP_API_GET_Tests {
             "Accept": acceptHeader
         };
 
-        const DOM_update = function (testname, result) {
+        //const DOM_update = function (testname, result) {
 
-            var ul = document.getElementById("testResults");
-            var li = document.createElement("li");
-            li.appendChild(document.createTextNode(testname + " : " + result));
-            ul.appendChild(li);
-        }
+        //    var ul = document.getElementById("testResults");
+        //    var li = document.createElement("li");
+        //    li.appendChild(document.createTextNode(testname + " : " + result));
+        //    ul.appendChild(li);
+        //}
 
 
         const continuationGetXML = function (XML) {
@@ -163,12 +158,12 @@ class HTTP_API_GET_Tests {
         const paramUri1 = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
         const acceptHeader1 = 'text/tab-separated-values';
         
-        const DOM_update = function (testname, result) {
-            var ul = document.getElementById("testResults");
-            var li = document.createElement("li");
-            li.appendChild(document.createTextNode(testname + " : " + result));
-            ul.appendChild(li);
-        }
+        //const DOM_update = function (testname, result) {
+        //    var ul = document.getElementById("testResults");
+        //    var li = document.createElement("li");
+        //    li.appendChild(document.createTextNode(testname + " : " + result));
+        //    ul.appendChild(li);
+        //}
 
         const continuationGetTSV = function (response) {
             const testResult = /COUNT1\n\"1"/i.test(response);
@@ -221,12 +216,12 @@ class HTTP_API_GET_Tests {
             "Accept": acceptHeader1
         };
 
-        const DOM_update = function (testname, result) {
-            var ul = document.getElementById("testResults");
-            var li = document.createElement("li");
-            li.appendChild(document.createTextNode(testname + " : " + result));
-            ul.appendChild(li);
-        }
+        //const DOM_update = function (testname, result) {
+        //    var ul = document.getElementById("testResults");
+        //    var li = document.createElement("li");
+        //    li.appendChild(document.createTextNode(testname + " : " + result));
+        //    ul.appendChild(li);
+        //}
 
         const continuationGetSRX = function (XML) {
 
@@ -348,15 +343,11 @@ class HTTP_API_GET_Tests {
         };
 
         const continuationGetXML = function (XML) {
-            //window.console.log('XML: ', XML);
-
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(XML, "text/xml");
-            //debugger;
             const x = xmlDoc.getElementsByTagName("rdf:Description")[0].childNodes[0].firstChild;
 
             const testResult = (x.data == "default object");
-            //debugger;
 
             window.console.log('x: ', xmlDoc);
             window.console.log('x: ', x);
@@ -370,13 +361,7 @@ class HTTP_API_GET_Tests {
         SPARQL.get(this.location,
             uriDec,
             authKvp,
-            getGeneralizedCallbackXML
-            //function (response) {
-            //    const testResult = (response.status == 406);
-            //    debugger;
-            //    //TODO update DOM and return testResult
-            //}
-        );
+            getGeneralizedCallbackXML);
 
     }
 
@@ -395,15 +380,15 @@ class HTTP_API_GET_Tests {
         this.GET_construct_srx_406();
         this.GET_construct_rdfxml();
 
-        //this.GET_srx();
-        //this.GET_anon_srj();
+        this.GET_srx();
+        this.GET_anon_srj();
 
-        //this.GET_count_tsv_test();
+        this.GET_count_tsv_test();
 
 
-        //this.GET_count_srx_test();
-        //this.GET_count_srj_test();
-        //this.GET_count_srj_plus_srx_test();
+        this.GET_count_srx_test();
+        this.GET_count_srj_test();
+        this.GET_count_srj_plus_srx_test();
 
 
     }

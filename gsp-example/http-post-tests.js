@@ -1,6 +1,8 @@
 export { HTTP_API_POST_Tests };
 import { print_r } from './var_dump.js';
 
+import { DOM_update } from './global-functions.js'
+
 class HTTP_API_POST_Tests {
 
     constructor(location, authentication) {
@@ -95,27 +97,16 @@ class HTTP_API_POST_Tests {
             ["Accept"]: acceptHeader1
         };
 
-
-        const DOM_update = function (testname, result) {
-            var ul = document.getElementById("testResults");
-            var li = document.createElement("li");
-            li.appendChild(document.createTextNode(testname + " : " + result));
-            ul.appendChild(li);
-        }
-
         const continuationGetTSV = function (response) {
-            const testResult = /COUNT1\n\"1"/i.test(response);
+            const testResult = /count\n\"1"/i.test(response);
             DOM_update(testName1, testResult);
         }
 
         const tsvTestContinuation = function (response) {
             window.console.log(response.text);
-            debugger;
             response.text().then(continuationGetTSV);
         }
-
-
-        debugger; 
+ 
         SPARQL.post(this.location, paramUriEnc1, optionsParam, tsvTestContinuation);
 
 

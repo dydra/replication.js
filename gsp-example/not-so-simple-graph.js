@@ -107,8 +107,8 @@ function runSimpleGraph() {
     const user = "openrdf-sesame";
     const repo = "mem-rdf";
     const location = host + "/" + user + "/" + repo;
-    //window.httpTests = new HTTP_API_GET_Tests(location, "YtGwUWq1kY7nAL1ocIvl");
-    //window.httpTests.RunAll();
+    window.httpTests = new HTTP_API_GET_Tests(location, "YtGwUWq1kY7nAL1ocIvl");
+    window.httpTests.RunAll();
     window.httpPostTests = new HTTP_API_POST_Tests(location, "YtGwUWq1kY7nAL1ocIvl");
     window.httpPostTests.RunAll();
 
