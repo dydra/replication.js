@@ -76,7 +76,7 @@ class HTTP_API_POST_Tests {
 
     //}
 
-    POST_tsv_test() {
+    POST_count_tsv_test() {
         //#! /bin/bash
         //# check text / tab - separated - values
 
@@ -203,13 +203,37 @@ class HTTP_API_POST_Tests {
         //query = select % 20count(*) % 20where % 20 % 7b ? s % 20 ? p % 20 ? o % 7d
         //    EOF
 
+        const testName1 = 'POST_count_srx_test';
+        const paramUriEnc1 = 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        const acceptHeader1 = 'application/sparql-results+xml';
+        const contentType1 = "application/x-www-form-urlencoded";
+
+        const optionsParam = {
+            ["Content-Type"]: contentType1,
+            ["Accept"]: acceptHeader1
+        };
+
+        const continuationGetTSV = function (response) {
+            const testResult = /count\n\"1"/i.test(response);
+            DOM_update(testName1, testResult);
+        }
+
+        const tsvTestContinuation = function (response) {
+            window.console.log(response.text);
+            response.text().then(continuationGetTSV);
+        }
+
+        SPARQL.post(this.location, paramUriEnc1, optionsParam, tsvTestContinuation);
+
 
     }
 
     RunAll() {
-        this.POST_update_srj_test();
+      
+        this.POST_count_tsv_test();
+        this.POST_count_srx_test();
 
-        this.POST_tsv_test();
+        this.POST_update_srj_test();
 
         this.POST_srj_test();
 
@@ -217,7 +241,7 @@ class HTTP_API_POST_Tests {
 
         this.POST_csv_test();
 
-        this.POST_count_srx_test();
+        
         
 
     }

@@ -10,8 +10,6 @@ class HTTP_API_GET_Tests {
         this.authentication = authentication; 
     }
 
-
-
     //generalized GET -- json
     //TODO pass non-encoded URL as parameter for readability
     GET_generalized_test(getTestName, paramUriEnc, acceptHeader) {
@@ -99,15 +97,6 @@ class HTTP_API_GET_Tests {
             "Accept": acceptHeader
         };
 
-        //const DOM_update = function (testname, result) {
-
-        //    var ul = document.getElementById("testResults");
-        //    var li = document.createElement("li");
-        //    li.appendChild(document.createTextNode(testname + " : " + result));
-        //    ul.appendChild(li);
-        //}
-
-
         const continuationGetXML = function (XML) {
             //window.console.log('XML: ', XML);
 
@@ -157,13 +146,6 @@ class HTTP_API_GET_Tests {
         const getTestName1 = 'GET_count_tsv_test';
         const paramUri1 = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
         const acceptHeader1 = 'text/tab-separated-values';
-        
-        //const DOM_update = function (testname, result) {
-        //    var ul = document.getElementById("testResults");
-        //    var li = document.createElement("li");
-        //    li.appendChild(document.createTextNode(testname + " : " + result));
-        //    ul.appendChild(li);
-        //}
 
         const continuationGetTSV = function (response) {
             const testResult = /COUNT1\n\"1"/i.test(response);
@@ -215,13 +197,6 @@ class HTTP_API_GET_Tests {
             "authentication": this.authentication,
             "Accept": acceptHeader1
         };
-
-        //const DOM_update = function (testname, result) {
-        //    var ul = document.getElementById("testResults");
-        //    var li = document.createElement("li");
-        //    li.appendChild(document.createTextNode(testname + " : " + result));
-        //    ul.appendChild(li);
-        //}
 
         const continuationGetSRX = function (XML) {
 
@@ -367,25 +342,13 @@ class HTTP_API_GET_Tests {
 
 
     RunAll() {
-        //GET-srx.sh  -- DONE
-        //GET - count - tsv.sh -- DONE
-        //GET - count - srx.sh -- DONE. 
-        //GET - count - srj.sh -- DONE. 
-        //GET - count - srj + srx.sh -- DONE ++
-        //GET - count - csv.sh -- ORIGINAL.
-        //GET - construct - srx - 406.sh
-        //GET - construct - rdfxml.sh
-        //GET - anon - srj.sh
-
         this.GET_construct_srx_406();
         this.GET_construct_rdfxml();
 
         this.GET_srx();
         this.GET_anon_srj();
 
-        this.GET_count_tsv_test();
-
-
+        this.GET_count_tsv_test();   
         this.GET_count_srx_test();
         this.GET_count_srj_test();
         this.GET_count_srj_plus_srx_test();
