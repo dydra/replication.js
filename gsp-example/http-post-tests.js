@@ -1,7 +1,12 @@
+import { graphDatabase, graphObject, rdfDatabase, rdfEnvironment, GSP, SPARQL }
+    from '../rdf-client.js';
+
+
 export { HTTP_API_POST_Tests };
 import { print_r } from './var_dump.js';
 
 import { DOM_update } from './global-functions.js'
+import { CONSTANT_STRINGS } from "./constant-strings.js"
 
 class HTTP_API_POST_Tests {
 
@@ -9,18 +14,6 @@ class HTTP_API_POST_Tests {
         this.location = location;
         this.authentication = authentication;
     }
-
-
-    //sparql-protocol / POST - update - srj.sh
-    //sparql - protocol / POST - tsv.sh
-    //sparql - protocol / POST - srj.sh
-    //sparql - protocol / POST - move - graph.sh
-    //sparql - protocol / POST - csv.sh
-    //sparql - protocol / POST - count - srx.sh
-
-
-
-
 
     POST_update_srj_test() {
 //POST - update - srj.sh
@@ -35,46 +28,12 @@ class HTTP_API_POST_Tests {
 //    INSERT { GRAPH : g2 { ? s ? p 'r' } } WHERE { ?s ? p ? o }
         //EOF
 
+
+
     }
 
 
-    //POST_generalized_test(
-    //testName,
-    //paramUriEnc,
-    //acceptHeader) {
 
-    //    const DOM_update = function (testname, result) {
-    //        var ul = document.getElementById("testResults");
-    //        var li = document.createElement("li");
-    //        li.appendChild(document.createTextNode(testname + " : " + result));
-    //        ul.appendChild(li);
-    //    }
-
-    //    const continuationGetTSV = function (response) {
-    //        const testResult = /COUNT1\n\"1"/i.test(response);
-    //        DOM_update(getTestName1, testResult);
-    //    }
-
-    //    const getGeneralizedCallback = function (response) {
-    //        window.console.log(response.text);
-    //        response.text().then(continuationGetTSV);
-    //    }
-
-    //    const uriEnc = paramUri1;
-    //    const uriDec = decodeURIComponent(uriEnc);
-
-    //    const authKvp = {
-    //        "authentication": this.authentication,
-    //        "Accept": acceptHeader1
-    //    };
-
-    //    SPARQL.post(this.location
-    //    ,uriDec,
-    //    //    authKvp,
-    //    //    getGeneralizedCallback
-    //    //);
-
-    //}
 
     POST_count_tsv_test() {
         //#! /bin/bash
@@ -86,7 +45,6 @@ class HTTP_API_POST_Tests {
         //    | tr '\n' ' ' | fgrep integer | fgrep - qi 'count'
         //query = select % 20(count(*) % 20 as% 20 ? count) % 20where % 20 % 7b ? s % 20 ? p % 20 ? o % 7d
         //    EOF
-
         const testName1 = 'POST_tsv_test';
         const paramUriEnc1 = 'query=select%20(count(*)%20as%20?count)%20where%20%7b?s%20?p%20?o%7d';
         const acceptHeader1 = 'text/tab-separated-values';
@@ -98,25 +56,21 @@ class HTTP_API_POST_Tests {
         };
 
         const continuationGetTSV = function (response) {
+            //debugger;
             const testResult = /count\n\"1"/i.test(response);
             DOM_update(testName1, testResult);
         }
 
         const tsvTestContinuation = function (response) {
+            //debugger; 
             window.console.log(response.text);
             response.text().then(continuationGetTSV);
         }
  
         SPARQL.post(this.location, paramUriEnc1, optionsParam, tsvTestContinuation);
-
-
     }
 
-    POST_srj_test() {
-        //#! /bin/bash
-        //# check url encoding
-        //# check various graph parameters
-
+    POST_srj_test_sub1 () {
         //curl_sparql_request \
         //    -H "Content-Type: application/x-www-form-urlencoded" \
         //    -H "Accept: application/sparql-results+json" << EOF \
@@ -124,28 +78,47 @@ class HTTP_API_POST_Tests {
         //query = select % 20count(*) % 20where % 20 % 7b ? s % 20 ? p % 20 ? o % 7d
         //    EOF
 
-        //    curl_sparql_request default -graph - uri=urn: dydra:default \
-        //    -H "Content-Type: application/sparql-query" \
-        //    -H "Accept: application/sparql-results+json" << EOF \
-        //    | jq '.results.bindings[] | .[].value' | fgrep - q 'default'
-        //select * where { ?s ? p ? o }
-        //EOF
+        const testName1 = 'POST_srj_test_sub1';
+        const paramUriEnc1 = 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        const acceptHeader1 = 'application/sparql-results+json';
+        const contentType1 = "application/x-www-form-urlencoded";
+        const optionsParam = {
+            ["Content-Type"]: contentType1,
+            ["Accept"]: acceptHeader1
+        };
+
+        const continuationPOST_srj_sub1 = function (json) {
+            window.console.log('json ', json);
+            window.console.log('json.results.bindings.length', json.results.bindings.length);
+            const testResult = json.results.bindings.length == 1;
+            DOM_update(testName1, testResult);
+
+        }
+
+        const srj_sub1_TestContinuation = function (response) {
+            //debugger; 
+            window.console.log(response.text);
+            response.json().then(continuationPOST_srj_sub1);
+        }
+
+        SPARQL.post(location, paramUriEnc1, optionsParam, srj_sub1_TestContinuation);
+
+    }
+    
 
 
-        //curl_sparql_request  default -graph - uri=urn: dydra: all \
-        //    -H "Content-Type: application/sparql-query" \
-        //    -H "Accept: application/sparql-results+json" << EOF \
-        //    | jq '.results.bindings[] | .[].value' | fgrep - q 'named'
-        //select * where { ?s ? p ? o }
-        //EOF
+    POST_srj_test() {
+        //#! /bin/bash
+        //# check url encoding
+        //# check various graph parameters
 
-        //curl_sparql_request  default -graph - uri=urn: dydra: named\
-        //    -H "Content-Type: application/sparql-query" \
-        //    -H "Accept: application/sparql-results+json" << EOF \
-        //    | jq '.results.bindings[] | .[].value' | fgrep - q - v 'default'
-        //select * where { ?s ? p ? o }
-        //EOF
 
+        //TODO this won't work unless the logical comparison takes place *after* the then() is calledx
+        this.POST_srj_test_sub1();
+
+        //DOM_update("POST_srj_test", 
+        // moved at the leftovers file
+        //&& this.POST_srj_test_sub2() && this.POST_srj_test_sub3() && this.POST_srj_test_sub4());
     }
 
     POST_move_graph_test() {
@@ -204,9 +177,12 @@ class HTTP_API_POST_Tests {
         //    EOF
 
         const testName1 = 'POST_count_srx_test';
-        const paramUriEnc1 = 'query=select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        const paramUriEnc1 = 'query=select count(*) where {?s ?p ?o}';
+        //const paramUriEnc1 = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
+        //const acceptHeader1 = CONSTANT_STRINGS.Accept_SPARQL_XML;
         const acceptHeader1 = 'application/sparql-results+xml';
-        const contentType1 = "application/x-www-form-urlencoded";
+
+        const contentType1 = 'application/x-www-form-urlencoded';
 
         const optionsParam = {
             ["Content-Type"]: contentType1,
@@ -214,7 +190,8 @@ class HTTP_API_POST_Tests {
         };
 
         const continuationGetTSV = function (response) {
-            const testResult = /count\n\"1"/i.test(response);
+            //debugger;
+            const testResult = /<binding name='COUNT1'>.*<literal .*>1<\/literal>/i.test(response);
             DOM_update(testName1, testResult);
         }
 
@@ -222,7 +199,7 @@ class HTTP_API_POST_Tests {
             window.console.log(response.text);
             response.text().then(continuationGetTSV);
         }
-
+        //debugger;
         SPARQL.post(this.location, paramUriEnc1, optionsParam, tsvTestContinuation);
 
 
@@ -230,20 +207,14 @@ class HTTP_API_POST_Tests {
 
     RunAll() {
       
-        this.POST_count_tsv_test();
-        this.POST_count_srx_test();
-
+        this.POST_count_tsv_test(); //DONE 
+        this.POST_count_srx_test(); //DONE 
         this.POST_update_srj_test();
 
-        this.POST_srj_test();
-
+        this.POST_srj_test(); // FAIL -> 405; subtests 2..4 need more library dev. Moving on.
         this.POST_move_graph_test();
-
         this.POST_csv_test();
-
         
-        
-
     }
 
 

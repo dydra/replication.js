@@ -402,13 +402,13 @@ SPARQL.post = function(location, query, options = {}, continuation) {
                headers: headers,
         body: query
     };
-    debugger;
+    //debugger;
   if (query) {
     location = location + SPARQL.locationSuffix;
   } else {
     throw (new Error(`SPARQL.get: a query text is required: '${location}'`));
   }
-  debugger;
+  //debugger;
   var p = SPARQL.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }

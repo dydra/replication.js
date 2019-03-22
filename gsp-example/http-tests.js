@@ -89,6 +89,7 @@ class HTTP_API_GET_Tests {
     //TODO pass non-encoded URL as parameter for readability
     GET_generalized_test_XML(getTestName, paramUri, acceptHeader) {
 
+        //TODO These should come out the class "members", not the UI element
         const location = graphUI.location(); //same
         const authentication = graphUI.authentication(); //same
         
@@ -145,7 +146,7 @@ class HTTP_API_GET_Tests {
 
         const getTestName1 = 'GET_count_tsv_test';
         const paramUri1 = 'select%20count(*)%20where%20%7b?s%20?p%20?o%7d';
-        const acceptHeader1 = 'text/tab-separated-values';
+        const acceptHeader1 = '';
 
         const continuationGetTSV = function (response) {
             const testResult = /COUNT1\n\"1"/i.test(response);
@@ -342,16 +343,18 @@ class HTTP_API_GET_Tests {
 
 
     RunAll() {
+        /*
         this.GET_construct_srx_406();
         this.GET_construct_rdfxml();
 
         this.GET_srx();
         this.GET_anon_srj();
+        */
 
-        this.GET_count_tsv_test();   
+        //this.GET_count_tsv_test();   
         this.GET_count_srx_test();
-        this.GET_count_srj_test();
-        this.GET_count_srj_plus_srx_test();
+        //this.GET_count_srj_test();
+        //this.GET_count_srj_plus_srx_test();
 
 
     }
