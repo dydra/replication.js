@@ -6,7 +6,7 @@
 // via
 // import * as $uuid from 'https://wzrd.in/standalone/uuid%2Fv1@latest';
 // but that server was not reliable
-import * as $uuid from '/javascripts/vendor/uuid-v1.js';
+import * as $uuid from './lib/uuid-v1.js';
 
 //var sha1Lib = require('js-sha1');
 //var uuidLib = require('uuid/v1');

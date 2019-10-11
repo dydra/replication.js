@@ -435,7 +435,7 @@ export class GraphDatabase { // extends IDBDatabase {
    */
   patch(content, options, continuation) {
     // the state manipulation aspect, but without the transport
-    var revision = {patch: patch, name: Date.now(), revision: options.etag};
+    var revision = {patch: content, name: Date.now(), revision: options.etag};
     this.revisions.push(revision);
     return (revision);
   }
