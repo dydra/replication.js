@@ -13,7 +13,7 @@ for (var i = lexer.next(); i ; i = lexer.next()) { console.log(i);}
 mpParse.feed("--b1\n\nline 1\nline2\n--b1--\n").results[0]
 mpParse.feed("--b1\n\nline 1\nline2\n\n--b1\nHeader1: value2\nHeader2: value2\n\nline 3\nline 4\n--b1--\n").results[0]
 
-import * as moo from  '/javascripts/vendor/moo/moo.js';
+import * as moo from  './lib/moo/moo.js';
 export {grammar};
 */
 

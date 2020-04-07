@@ -1,7 +1,7 @@
 // Generated automatically by nearley, version 2.15.1
 // http://github.com/Hardmath123/nearley
 
-import * as moo from  '/javascripts/vendor/moo/moo.js';
+import * as moo from  './lib/moo/moo.js';
 export {grammar};
 
 function id(x) { return x[0]; }
@@ -16,7 +16,7 @@ for (var i = lexer.next(); i ; i = lexer.next()) { console.log(i);}
 mpParse.feed("--b1\n\nline 1\nline2\n--b1--\n").results[0]
 mpParse.feed("--b1\n\nline 1\nline2\n\n--b1\nHeader: value\n\nline 3\nline 4\n--b1--\n").results[0]
 
-import * as moo from  '/javascripts/vendor/moo/moo.js';
+import * as moo from  './lib/moo/moo.js';
 export {grammar};
 */
 
