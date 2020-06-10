@@ -1,0 +1,23 @@
+
+- shift abstract patch computation to background
+- modify n-quads parser to work from stream
+
+
+ui involves a description of the process as a layer tree.
+the core elements are from the sparql algebra.
+these are extended with layrers for ml elements.
+
+the standard operations involve a pull control-flow.
+accession operations must also permit an http push to instantiate the process.
+
+
+a sparql request does that as well, but only to supply the query, not the data
+for an import which is to run through some accession filter, it should sufffice to just supply
+ the dataset. it should not benecessary to also place a rpocessing request.
+ that is, a gsp request should also have a processing side-effect
+
+a GET to a view starts a process which pulls from the sources through the processing tree
+a PUT/POST to a view should act on it by supplying a source.
+if all sources are supplied, then the view should execute.
+
+requires a json->sse translator

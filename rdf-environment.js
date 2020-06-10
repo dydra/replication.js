@@ -17,7 +17,10 @@ import {grammar as multipartGrammar} from './multipart-grammar.js';
 import { makeUUIDString } from './revision-identifier.js';
 import { GraphEnvironment, predicateLeaf } from './graph-environment.js';
 import { GraphObject } from './graph-object.js';
+import { sparqlMediaTypes, rdfMediaTypes, mediaTypeStem } from './rdf-graph-store.js';
 import * as nearley from './lib/nearley/lib/nearley.js';
+export { sparqlMediaTypes, rdfMediaTypes, mediaTypeStem };
+export var createSimpleStrings = false;
 
 // possible alternative uri library, but wants punycode via invalid import
 // import * as URI from '/javascripts/vendor/uri-js/dist/esnext/uri.js';
@@ -45,7 +48,7 @@ export class RDFEnvironment extends GraphEnvironment {
    @param {Node} [graph]
    */
   createStatement(subject, predicate, object, graph = null) {
-    //console.log({op: 'createStatement', subject: subject, predicate: predicate, object: object, graph: graph});
+    // console.log({op: 'createStatement', subject: subject, predicate: predicate, object: object, graph: graph});
     if (typeof(subject) == 'string' || subject instanceof String) {
       subject = this.createNamedNode(subject);
     }
@@ -57,7 +60,7 @@ export class RDFEnvironment extends GraphEnvironment {
         var asURL = new URL(object);
         object = this.createNamedNode(asURL.href);
       } catch (_) {
-        object = new SimpleString(object);
+        object = this.toLiteral(object);
       }
     } else if (typeof(object) != 'object') {
       object = this.toLiteral(object);
@@ -110,7 +113,7 @@ export class RDFEnvironment extends GraphEnvironment {
     // - absolute url : encapsulate as is
     // - curi : convert through the context
     // - simple name : convert through context, fall-back to base iri
-
+    // console.log("RDFE.cnn: ", lexicalForm);
     if (lexicalForm.startsWith('http://') ||
         lexicalForm.startsWith('https://') ||
         lexicalForm.startsWith('urn:')) {
@@ -255,11 +258,8 @@ export class RDFEnvironment extends GraphEnvironment {
   }
 
   graphClassName(field) {
-    function statementClass (statement) {
-      var predicate = statement.predicate;
-      return ( predicate.equals(NamedNode.rdf.type) ? predicateLeaf(statement.object) : null );
-    }
-    return( field.some(statementClass) );
+    var stmt = field.find(function(stmt) { return (statement.predicate.equals(NamedNode.rdf.type)); });
+    return (stmt ? predicateLeaf(statement.object) : null);
   }
 
   /* given some response content and an object cache,
@@ -340,15 +340,21 @@ export class RDFEnvironment extends GraphEnvironment {
    It parses the document and returns or continues with the result, by
    retrieving the respective decoder and delegating the operation
    to that function.
+   It is defined as an instance function rather than static for the case where it would
+   cache retrieval or decoding state.
    */
-  decode(document, contentType, continuation = null) {
+  decode(document, mediaType, continuation = null) {
     var match;
-    // console.log("rdfenv.decode: for", contentType);
-    if (match = contentType.match(/([^;]+)(?:;.*)?/)) {
-      var decoder = decode[match[1]];
+    console.log("rdfenv.decode: for", mediaType);
+    if (match = mediaTypeStem(mediaType)) {
+      var decoder = decode[match];
+      if (!decoder) {
+        throw (new Error(`RDFEnvironment.decode: unsupported media type: ${mediaType}`));
+      }
       // console.log("rdfenv.decode: decoder", decoder);
       // must pass the content type as it can include arguments
-      var decoded = decoder(document, contentType, continuation);
+      var decoded = decoder(document, mediaType, continuation);
+      decoded.mediaType = mediaType
       // console.log("rdfenv.decode: decoded", decoded);
       return (decoded);
     } else {
@@ -399,7 +405,8 @@ export class NamedNode extends Node {
    also a NamedNode and the lexical forms are equal.
    */
   equals(other) {
-    return (!!other && other.termType === this.termType && other.lexicalForm === (this.lexicalForm));
+    return (other == this ||
+            (!!other && other.termType === this.termType && other.lexicalForm == (this.lexicalForm)));
   }
   /**
    The function encode formats the NamedNode as a string and returns it or
@@ -409,6 +416,22 @@ export class NamedNode extends Node {
    */
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
+  }
+  /**
+   The function isLessThan return true iff this node is less than the argument.
+   */
+  isLessThan(other) {
+    return ( this.lexicalForm < other.lexicalForm );
+  }
+  /**
+   The function isGreaterThan return true iff this node is greater than the argument.
+   */
+  isGreaterThan(other) {
+    return ( this.lexicalForm > other.lexicalForm );
+  }
+
+  get turtleForm() {
+    return (`<${this.lexicalForm}>`);
   }
 }
 
@@ -441,6 +464,11 @@ export class UUID extends NamedNode {
   toString() {
     return ('urn:uuid:' + this.lexicalForm);
   }
+
+  get turtleForm() {
+    return (`<${this.toString()}>`);
+  }
+
 }
 
 /**
@@ -449,10 +477,18 @@ export function createUUID() {
   return (new UUID(makeUUIDString()));
 }
 
+NamedNode.prefixes = {
+ "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+ "xsd": "http://www.w3.org/2001/XMLSchema#",
+}
+
 NamedNode.prototype.encode['application/n-quads'] = function(object, continuation) {
   continuation('<' + object.lexicalForm + '>');
 }
 
+NamedNode.owl = {
+  Class: new NamedNode('http://www.w3.org/2002/07/owl#Class')
+}
 NamedNode.rdf = {
     type: new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
     langString: new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString')
@@ -465,7 +501,17 @@ NamedNode.xsd = {
     integer: new NamedNode('http://www.w3.org/2001/XMLSchema#integer'),
     string: new NamedNode('http://www.w3.org/2001/XMLSchema#string')
   };
-
+NamedNode.schema = {
+  url: new NamedNode('http://schema.org/url'),
+  contentUrl: new NamedNode('http://schema.org/contentUrl'),
+  name: new NamedNode('http://schema.org/name'),
+  AudioObject: new NamedNode('http://schema.org/AudioObject'),
+  VideoObject: new NamedNode('http://schema.org/VideoObject')
+ };
+NamedNode.sd = {
+  Service: new NamedNode('http://www.w3.org/ns/sparql-service-description#Service')
+}
+RDFEnvironment.NamedNode = NamedNode;
 
 /**
  A BlankNode is a Node which is identified local to a Surface by a string label.
@@ -490,7 +536,8 @@ export class BlankNode extends Node{
    @return {boolean}
    */
   equals(other) {
-    return (!!other && other.termType === this.termType && other.label.equals(this.label));
+    return (other == this ||
+            (!!other && other.termType === this.termType && other.label == this.label));
   }
 
   /**
@@ -501,6 +548,10 @@ export class BlankNode extends Node{
    */
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
+  }
+
+  get turtleForm() {
+    return (`_:${this.label}`);
   }
 }
 
@@ -619,6 +670,56 @@ export class Graph {
   forEach(op) {
     return (this.statements.forEach(op));
   }
+
+  getObject(subject, predicate) {
+    console.log("graph.getObject: ", this);
+    var statement = this.statements.find(subject ?
+                                 function(statement) {
+                                   //console.log("Graph.fo: ", subject, predicate, statement);
+                                   return (subject.equals(statement.subject) && predicate.equals(statement.predicate)); } :
+                                 function(statement) { return (predicate.equals(statement.predicate)); });
+    return (statement ? statement.object : null);
+  }
+  setObject(subject, predicate, object) {
+    var statement = this.statements.find(subject ?
+                                         function(statement) { return (subject.equals(statement.subject) && predicate.equals(statement.predicate)); } :
+                                         function(statement) { return (predicate.equals(statement.predicate)); });
+    if ( statement) {
+      statement.object = object;
+      return (object);
+    } else if (subject) {
+      this.statements.push(new Statement(subject, predicate, object));
+      return (object);
+    } else {
+      throw new TypeError('Invalid subject argument to Graph.setObject: ' + subject)
+    }
+  }
+
+  /**
+   return the statement count
+   */
+  get count() {
+    return (this.statements.length)
+  }
+
+  /**
+   Append the given statement to the graph's statement set.
+   @param {Statement} statement
+   */
+  push(statement) {
+    return (this.statements.push(statement));
+  }
+
+  find(pattern) {
+    console.log("Graph.find: pattern: ", pattern);
+    function testStatement(statement) {
+      return ((!pattern.subject || pattern.subject.equals(statement.subject)) &&
+              (!pattern.predicate || pattern.predicate.equals(statement.predicate)) &&
+              (!pattern.object || termEquals(pattern.object, statement.object)) &&
+              (!pattern.graph || pattern.graph.equals(statement.graph)));
+    }
+    return (this.statements.find(testStatement));
+  }
 }
 
 /**
@@ -663,7 +764,7 @@ export class Statement {
    */
   equals(other) {
     return (!!other && other.subject.equals(this.subject) && other.predicate.equals(this.predicate) &&
-            other.object.equals(this.object) && other.graph.equals(this.graph));
+            termEquals(other.object, this.object) && other.graph.equals(this.graph));
   }
 
   /**
@@ -760,7 +861,7 @@ export function createQuad(subject, predicate, object, graph) {
 /**
  The class Literal represents an RDF literal.
  The specializations LangString and SimpleString provide for cases where
- a language tag or no datatyoe is provided
+ a language tag or no datatype is provided
  */
 export class Literal extends Term {
   constructor(lexicalForm, language, datatype) {
@@ -782,9 +883,13 @@ export class Literal extends Term {
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
   }
-}
 
-window.classLiteral = Literal;
+  get turtleForm() {
+    return ( this.datatype ? `"${this.lexicalForm}"^^${this.datatype.turtleForm}` :
+             ( this.language ? `"${this.lexicalForm}"@${this.language}` : `"${this.lexicalForm}"` ) )
+  }
+
+}
 
 Literal.prototype.encode['application/n-quads'] = function(object, continuation) {
   var type = object.datatype;
@@ -855,7 +960,11 @@ export function createLiteral(value, language, datatype) {
   } else if (datatype) {
     return (new Literal(value, language, datatype));
   } else {
-    return (new SimpleString(value));
+    if (createSimpleStrings) {
+      return (new SimpleString(value));
+    } else {
+      return ( value);
+    }
   }
 }
 
@@ -870,7 +979,16 @@ export class SimpleString extends Literal {
   equals(other) {
     return ((other === this.lexicalForm) || super.equals(other));
   }
+
+  get turtleForm() {
+    return ( `"${this.lexicalForm}"` );
+  }
 }             
+
+SimpleString.prototype.encode['application/n-quads'] = function(object, continuation) {
+  return (continuation('"' + object.lexicalForm + '"'));
+};
+
 
 /**
  The class LangString specializes {@link Literal} for thos strings with language tag.
@@ -880,7 +998,16 @@ export class LangString extends Literal {
   constructor(lexicalForm, language) {
     super(lexicalForm, language, NamedNode.rdf.langString);
   }
+  get turtleForm() {
+    return ( `"${this.lexicalForm}"@${this.language}` );
+  }
 }
+
+LangString.prototype.encode['application/n-quads'] = function(object, continuation) {
+  return (continuation('"' + object.lexicalForm + '"@' + object.language));
+};
+
+
 
 /**
  The class Patch encapsulates delete, post and put constituents.
@@ -891,14 +1018,14 @@ export class LangString extends Literal {
 export class Patch {
   /**
    @param {Object} options
-   @param {string} options.contentType - The patch section media type
+   @param {string} options.mediaType - The patch section media type
    @param {Graph} [options.delete]
    @param {Graph} [options.post]
    @param {Graph} [options.put]
    */
   constructor(options = {}) {
-    this.contentType = options.contentType || 'application/n-quads';
-    var thisContentType = this.contentType;
+    this.mediaType = options.mediaType || 'application/n-quads';
+    var thisMediaType = this.mediaType;
     var whenGraph = function (statements) {
       //console.log('Patch.constructor');
       //console.log(statements);
@@ -912,7 +1039,7 @@ export class Patch {
           return (null);
         }
       case 'string':
-        return(decode(statements, thisContentType, null));
+        return(decode(statements, thisMediaType, null));
       default:
         return (null);
       }
@@ -992,11 +1119,11 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
       if (content) {
         // encode each section as per the patch content type with
         // appropriate section headers
-        content.encode(object.contentType, function(e) {
+        content.encode(object.mediaType, function(e) {
           if (e && e.length > 0) {
             body += separator + crlf;
             body += `X-HTTP-Method-Override: ${method}${crlf}`;
-            body += `ContentType: ${object.contentType}${crlf}${crlf}`;
+            body += `ContentType: ${object.mediaType}${crlf}${crlf}`;
             body += e;
           }
         });
@@ -1017,12 +1144,15 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
  The implementation are indexed bx media type in the dictionary which is bound
  to the decode symbol.
  */
-export function decode(object, contentType, continuation) {
-  if (match = contentType.match(/([^;]+)(?:;.*)?/)) {
-    var decoder = decode[match[1]];
+export function decode(document, mediaType, continuation) {
+  var match;
+  if (match = mediaTypeStem(mediaType)) {
+    var decoder = decode[match];
     // console.log("decode: decoder", decoder);
     // must pass the content type as it can include arguments
-    var decoded = decoder(document, contentType, continuation);
+    var decoded = decoder(document, mediaType, continuation);
+    // record the given media type in the result
+    decoded.mediaType = mediaType;
     // console.log("rdfenv.decode: decoded", decoded);
     return (decoded);
   } else {
@@ -1031,13 +1161,13 @@ export function decode(object, contentType, continuation) {
   }
 }
 
-decode['application/n-quads'] = function(document, contentType, continuation) {
+decode['application/n-quads'] = function(document, mediaType, continuation) {
   // console.log("decode['application/n-quads']");
   // console.log('nearley', nearley);
   // console.log('nearley.Parser', nearley.Parser);
   // console.log('nearley.Grammar', nearley.Grammar);
   // console.log('nquadsGrammar', nquadsGrammar);
-  // console.log('make parser');
+  console.log('decode[application/n-quads]: make parser');
   var parser = null;
   try {
     parser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar));
@@ -1046,17 +1176,22 @@ decode['application/n-quads'] = function(document, contentType, continuation) {
     return (null);
   }
   try {
+    console.log(document);
     var statements = parser.feed(document).results[0];
     var graph = createGraph(statements);
     // console.log('decoded', graph);
     return (continuation ? continuation(graph) : graph);
   } catch (error) {
-    console.log("decode['application/n-quads'] failed", error);
+    console.log("decode['application/n-quads'] failed", error, document);
     return (null);
   }
 }
 
-decode['multipart/related'] = function(document, contentType, continuation) {
+decode['application/n-triples'] = function(document, mediaType, continuation) {
+  return (decode['application/n-quads'](document, mediaType, continuation));
+}
+
+decode['multipart/related'] = function(document, mediaType, continuation) {
   // segment into parts, parse each, collate respective delete/post/put sections
   // create and return a patch object
   var parser = new nearley.Parser(nearley.Grammar.fromCompiled(multipartGrammar));
@@ -1132,4 +1267,49 @@ encode['application/n-quads'] = function(object, continuation) {
   }
 }
 
+
+export function turtleForm(data) {
+  if (data instanceof Term) {
+    return(data.turtleForm);
+  } else {
+      switch (typeof(data)) {
+      case 'string': return(`”${data}”`);
+      case 'number': return(data.toString());
+      case 'boolean' : return(data ? "true" : "false");
+      case 'undefined' :
+      case 'null' : return("rdf:nil");
+      case 'symbol' : return(data.toString());
+      default : throw new Error(`invalid turtle value ${data}`);
+    }
+  }
+}
+
+export function lexicalForm(term) {
+  if (term instanceof NamedNode) {
+    return (term.lexicalForm);
+  } else if (term instanceof UUID) {
+    return (term.toString());
+  } else if (typeof(term) == 'string') {
+    return (term);
+  } else {
+    console.log(`no lexical form: ${term}`);
+    return (term);
+  }
+}
+
+export function termEquals(t1, t2) {
+  return ( (t1 instanceof Term) ? t1.equals(t2) : t1 == t2 );
+}
+    
+var theEnvironment = null;
+
+Object.defineProperty(RDFEnvironment,'theEnvironment',{
+  get: function(){
+    if (!theEnvironment) {
+      theEnvironment = new RDFEnvironment();
+    }
+    return (theEnvironment);
+  }
+});
+window.RDFEnvironment = RDFEnvironment;
 

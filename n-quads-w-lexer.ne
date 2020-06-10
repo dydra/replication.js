@@ -1,6 +1,9 @@
 # Copyright (c) 2019 datagraph gmbh
 # from the w3c n-quads recommendation: https://www.w3.org/TR/n-quads/
 # nearleyc -o n-quads-grammar.js -e grammar n-quads-w-lexer.ne
+# then eliminate the wrapping
+# (function () { })();
+
 @{%
 /*
 var nearley = require('nearley')
@@ -27,9 +30,6 @@ nqp.feed("<http://example.org/subject><http://example.org/predicate><http://exam
  util.inspect(parser.feed("<http://example.org/subject><http://example.org/predicate>_:blank1.").results, false, null)
 */
 
-//import * as RDFEnvironment from './rdf-environment.js';
-//import * as moo from  '/javascripts/vendor/moo/moo.js';
-//export {grammar};
 /*
 var moo = require('moo');
 var RDFEnvironment = {
@@ -42,13 +42,41 @@ var RDFEnvironment = {
   createQuad: function(s,p,o,g) { return({type: 'quad', s: s, p: p, o: o, g: g}); }
 }*/
 
+import { NamedNode, Graph, RDFEnvironment } from '/javascripts/replication/rdf-environment.js';
+import * as moo from  './lib/moo/moo.js';
+export {grammar};
+
 var HEXPattern = function() { return ('(?:[0-9]|[A-F]|[a-f])'); }
 var UCHARPattern = function() { return ('(?:\\u' + HEXPattern() + '{4}|\\U' + HEXPattern() + '{8})'); }
 var ECHARPattern = function() { return ('\\[tbnrf"\'\\]'); }
 var PN_CHARS_BASEPattern = function() { return ('(?:[A-Z]|[a-z]|[\u00C0-\u00D6]|[\u00D8-\u00F6]|[\u00F8-\u02FF]|[\u0370-\u037D]|[\u037F-\u1FFF]|[\u200C-\u200D]|[\u2070-\u218F]|[\u2C00-\u2FEF]|[\u3001-\uD7FF]|[\uF900-\uFDCF]|[\uFDF0-\uFFFD]|[\u10000-\uEFFFF])'); }
 var PN_CHARS_UPattern = function() { return ('(?:' + PN_CHARS_BASEPattern() + '|_|:)'); }
 var PN_CHARSPattern = function() { return('(?:' + PN_CHARS_UPattern() +'|-|[0-9]|\u00B7|[\u0300-\u036F]|[\u203F-\u2040])'); }
-
+var _environment = null;
+var environment = function () {
+  return (_environment || (_environment = new RDFEnvironment()));
+}
+var term = function(parseResult) {
+  if (parseResult) {
+    console.log('term.pr: ', parseResult);
+    if ((typeof parseResult) == "string") {
+      return ( parseResult);
+    } else {
+      switch (parseResult.type) {
+        case 'IRIREF': return (environment().createNamedNode(parseResult.value));
+        case 'BLANK_NODE_LABEL':
+          console.log("term.bnl: ", parseResult);
+          return (environment().createBlankNode(parseResult.value));
+        case 'STRING_LITERAL_QUOTE': return (parseResult.value);
+        case 'literal' : return (parseResult.value);
+        default : //console.log("term: unknown: ", parseResult);
+          return (parseResult);
+      }
+    }
+  } else {
+    return (null);
+  }
+}
 const lexer = moo.compile({
   DOT:          /\./,
   WS:           {match: /[\u0009\u0020]+/, lineBreaks: false},
@@ -59,7 +87,10 @@ const lexer = moo.compile({
   IRIREF:       {match: new RegExp('<(?:[^\u0000-\u0020<>"{}|^`\\\\])*>'), //|' + UCHARPattern() +')*>') ,
                  value: function(token) {
                    var lexicalForm = token.slice(1, -1);
-                   return (RDFEnvironment.createNamedNode(lexicalForm));
+                   //console.log("lexer.IRIREF: ", lexicalForm);
+                   //console.log("lexer.rdfe: ", RDFEnvironment); 
+                   //return (environment().createNamedNode(lexicalForm));
+                   return (lexicalForm);
                  }},
   CARAT:        {match: /\^\^/, lineBreaks: false},
   STRING_LITERAL_QUOTE: { match: new RegExp( '"(?:[^"\u005C\u000A\u000D]|' + ECHARPattern() + '|' + UCHARPattern() + ')*"'),
@@ -68,7 +99,8 @@ const lexer = moo.compile({
                      value: function (token) {
                        var label = token.slice(2);
                        // console.log(`bnl '${label}'`);
-   		       return (RDFEnvironment.createBlankNode(label));
+   		       //return (RDFEnvironment.createBlankNode(label));
+                       return (label);
  		     } } ,
 
 });
@@ -87,12 +119,22 @@ nquadsDoc            ->  statementEOL:* statement:? {%
 statementEOL         ->  statement %EOL {% function(r) { return(r[0]); } %}
 statement            ->  %WS:? subject %WS:? predicate %WS:? object %WS:? ( graphLabel %WS:?):? %DOT {%
   function(r) {
-    // console.log('statement.r', r);
-    return (RDFEnvironment.createQuad(r[1].value, r[3].value, r[5], (r[7] ? r[7].value : null)));
-  }
+          //console.log('statement.r', r);
+          console.log('statement.r7', r[7], r[7][0]);
+          var graph = ((r[7] && r[7][0]) ? term(r[7][0]) : null);
+          console.log('statement.r7.graph', graph);
+
+          return (environment().createQuad(term(r[1]), term(r[3]), term(r[5]), graph));
+          //console.log("reduce statement.subject", r[1]);
+          //console.log("rdfe: ", RDFEnvironment);
+          //return (environment().createQuad(r[1], r[3], r[5], (r[7] ? r[7].value : null)));
+        }
 %}
 subject	             ->  (%IRIREF | %BLANK_NODE_LABEL) {%
-                           function(r) { r = r[0]; return(r[0] || r[1]);}
+                           function(r) {
+                             r = r[0];
+                             //console.log('subject[0|1]', r);
+                             return(r[0] || r[1]);}
                          %}
 predicate            ->  %IRIREF {% id %}
 object	             ->  (%IRIREF | %BLANK_NODE_LABEL | literal ) {%
@@ -103,7 +145,11 @@ object	             ->  (%IRIREF | %BLANK_NODE_LABEL | literal ) {%
                              return (object);
                            }
                          %}
-graphLabel           ->  (%IRIREF | %BLANK_NODE_LABEL) {% function(r) { r = r[0][0]; return(r[0] || r[1]); } %}
+graphLabel           ->  (%IRIREF | %BLANK_NODE_LABEL) {% function(r) {
+                           console.log('graph.r', r);
+                           r = r[0][0];
+                           return(r);
+                         } %}
 literalType          ->  %CARAT %IRIREF {% function(r) { /* console.log('lt ', r); */ return (r[1].value); } %}
 literal	             ->  %STRING_LITERAL_QUOTE  (literalType | %LANGTAG):? {%
                            function(r) {
@@ -114,12 +160,12 @@ literal	             ->  %STRING_LITERAL_QUOTE  (literalType | %LANGTAG):? {%
                              if (qualifier) {
                                qualifier = qualifier[0];
                                if (qualifier.type == "LANGTAG") {
-                                 term = RDFEnvironment.createLiteral(literal.value, qualifier.value, null);
+                                 term = environment().createLiteral(literal.value, qualifier.value, null);
                                } else {
-                                 term = RDFEnvironment.createLiteral(literal.value, null, qualifier);
+                                 term = environment().createLiteral(literal.value, null, qualifier);
                                }
                              } else {
-                               term = RDFEnvironment.createLiteral(literal.value, null, null);
+                               term = literal.value; // term = environment().createLiteral(literal.value, null, null);
                              }
                              // console.log("literal term", term);
                              return ( term );

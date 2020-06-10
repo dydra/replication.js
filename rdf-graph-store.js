@@ -15,20 +15,56 @@
 
 const now = Date.now;
 
+export const rdfMediaTypes = [
+  "application/n-quads",
+  "application/n-triples",
+  "application/rdf+xml",
+  "text/turtle"
+];
+export const sparqlMediaTypes = [
+  "application/sparql-results+json",
+  "application/sparql-results+xml",
+  "application/sparql-results+csv"
+].concat(rdfMediaTypes);
+
+
+export function mediaTypeStem(mediaType) {
+  var match = mediaType.match(/([^;]+)(?:;.*)?/)
+  return (match ? match[1] : null)
+}
+
+/**
+ provide a generic logging fetch operator.
+ it passes the response to its continuation whether or not the status is 'ok',
+ as well as continuing after logging an error.
+ in cases where additional continuations are supplied, they will obtain this error
+ eg:
+
+   var p = new Promise(function(accept, reject) { accept("accepted"); })
+    .then(function(first) {console.log("first", first); return(first);})
+    .catch(function(caught){console.log("caught", caucht);})
+    .then(function(last){console.log("finally", last);})
+   var p = new Promise(function(accept, reject) { reject("rejected"); })
+    .then(function(first) {console.log("first", first); return(first);})
+    .catch(function(caught){console.log("caught", caught); return("caught")})
+    .then(function(last){console.log("finally", last);})
+ */
+
 function logFetch(location, args) {
   console.log('fetch:', location, args);
+  // in order to see the header entries...
   var headers = args.headers;
-  // for (var [k,v] of headers.entries()) {console.log('fetch:', [k,v])};
+  for (var [k,v] of headers.entries()) {console.log('fetch:', [k,v])};
   var p = fetch(location, args);
   p.location = location;
   p = p.then(function(response) {
         if (response.ok) {
           return (response);
         } else {
-          console.log("fetch response: ${response.status}");
+          console.log(`fetch failed: response: ${response.status}`);
           return (response);
         }
-      });
+      }).catch(function(error) { console.log("fetch failed: ", location, error); });
   // console.log(p);
   return (p);
 }
@@ -51,6 +87,18 @@ window.SPARQL = SPARQL;
 SPARQL.locationSuffix = "/sparql";
 SPARQL.fetchOp = logFetch;
 
+/**
+ The SESAME class supports just a simple document-based get operation
+ */
+
+export class SESAME {
+}
+SESAME.fetchOp = logFetch;
+
+export class HTTP {
+}
+HTTP.fetchOp = logFetch;
+
 // provide default encoding functions
 String.prototype.encode = {
  'application/n-quads': function(object) { return( object ); },
@@ -58,6 +106,29 @@ String.prototype.encode = {
  'application/n-quads': function(object) { return( object ); }
 };
 
+
+function constrainGSLocation(location, options) {
+  var constraintCount = 0;
+  function appendArg(arg) {
+    location = location + ( (0 == constraintCount) ? '?' : '&') + arg;
+  }
+  ['subject', 'predicate', 'object', 'graph'].forEach(function(term) {
+    var constraint = options[term];
+    if (constraint) {
+      if (term == 'graph' && constraint == 'default') {
+        appendArg('default');
+      } else if (constraint) {
+        appendArg(term + '=' + encodeURIComponent(constraint));
+      }
+    }
+  });
+  if (options["default"]) { appendArg('default'); }
+  var offset = options["offset"];
+  var limit = options["limit"];
+  if (limit) { appendArg("limit=" + limit); }
+  if (offset) { appendArg("offset=" + offset); }
+  return (location);
+}
 
 
 // define generic protocol interface
@@ -81,12 +152,7 @@ String.prototype.encode = {
 
 GSP.delete = function(location, options = {}, continuation) {
   var headers = new Headers({ "Accept": GSP.delete.acceptMediaType });
-  if (options['authentication']) {
-    headers.set("Authorization",
-                'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
+  headers = HTTP.setHeaderAuthorization(headers, options);
   if (options.etag) { headers.set("ETag", options.etag) }
   if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var args = { method: "DELETE",
@@ -108,8 +174,8 @@ GSP.delete.acceptMediaType = 'text/turtle';
 
 /**
  GSP.get
- Perform a GSP delete given the location, options for authentication and response
- content type, and an optional continuation operator.
+ Perform a GSP get given the location, options for authentication and response
+ content type, an optional graph designator, and an optional continuation operator.
  @param {string} location - the host and target repository name
  @param {Object} [options]
  @param {string} options.etag - the client revision identifer to identify the transaction
@@ -124,24 +190,12 @@ GSP.delete.acceptMediaType = 'text/turtle';
 
 GSP.get = function(location, options = {}, continuation) {
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.get.acceptMediaType) });
-  if (options['authentication']) {
-    headers.set("Authorization",
-                'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
+  headers = HTTP.setHeaderAuthorization(headers, options);
   var args = { method: "GET",
                cache: "no-cache",
                headers: headers };
-  var constraintCount = 0;
   location = location + GSP.locationSuffix;
-  ['subject', 'predicate', 'object', 'graph'].forEach(function(term) {
-    var constraint = options[term];
-    if (constraint) {
-      location = location + ( (0 == constraintCount) ? '?' : '&') + term + '=';
-      location = location + encodeURIComponent(constraint);
-    }
-  });
+  location = constrainGSLocation(location, options);
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
@@ -157,13 +211,7 @@ GSP.get.acceptMediaType = 'application/n-quads';
  */
 
 GSP.head = function(location, options, continuation) {
-  var headers = new Headers({});
-  if (options['authentication']) {
-    headers.set("Authorization",
-                'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
+  var headers = HTTP.setHeaderAuthorization(new Headers({}), options);
   var args = { method: "HEAD",
                cache: "no-cache",
                headers: headers };
@@ -194,15 +242,11 @@ GSP.patch = function (location, content, options = {}, continuation) {
   var contentType = options["Content-Type"] || GSP.patch.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.patch.acceptMediaType),
                               "Content-Type": contentType,});
+  headers = HTTP.setHeaderAuthorization(headers, options);
   var contentEncoded = ""
   var boundary = null;
   //console.log("GSP.patch");
   //console.log(options);
-  if (options['authentication']) {
-    headers.set("Authorization",'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
   if (options.etag) { headers.set("ETag", options.etag) }
   if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   //console.log(headers);
@@ -246,12 +290,7 @@ GSP.post = function (location, content, options = {}, continuation) {
   var contentType = options["Content-Type"] || GSP.post.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.post.acceptMediaType),
                               "Content-Type": contentType });
-  if (options['authentication']) {
-    headers.set("Authorization",
-                'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
+  headers = HTTP.setHeaderAuthorization(headers, options);
   if (options.etag) { headers.set("ETag", options.etag) }
   if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var contentEncoded = "";
@@ -261,6 +300,7 @@ GSP.post = function (location, content, options = {}, continuation) {
                headers: headers,
                body: contentEncoded };
   location = location + GSP.locationSuffix;
+  location = constrainGSLocation(location, options);
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
@@ -287,12 +327,7 @@ GSP.put = function (location, content, options = {}, continuation) {
   var contentType = options["Content-Type"] || GSP.put.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.put.acceptMediaType),
                               "Content-Type": contentType });
-  if (options['authentication']) {
-    headers.set("Authorization",
-                'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
+  headers = HTTP.setHeaderAuthorization(headers, options);
   if (options.etag) { headers.set("ETag", options.etag) }
   if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var contentEncoded = "";
@@ -302,6 +337,7 @@ GSP.put = function (location, content, options = {}, continuation) {
                headers: headers,
                body: contentEncoded };
   location = location + GSP.locationSuffix;
+  location = constrainGSLocation(location, options);
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
@@ -330,12 +366,7 @@ GSP.put.ContentType = 'application/n-quads';
 SPARQL.get = function(location, query, options = {}, continuation) {
   // console.log("SPARQL.get ", query, options);
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.get.acceptMediaType) });
-  if (options['authentication']) {
-    headers.set("Authorization",
-                'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
+  headers = HTTP.setHeaderAuthorization(headers, options);
   var args = { method: "GET",
                cache: "no-cache",
                headers: headers  };
@@ -362,13 +393,8 @@ SPARQL.get.acceptMediaType = 'application/sparql-results+json';
  */
 
 SPARQL.view = function(location, viewName, options = {}, continuation) {
-  var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.view.acceptMediaType)});
-  if (options['authentication']) {
-    headers.set("Authorization",
-                'Basic ' + btoa(":" + options['authentication']));
-  } else {
-    headers.delete("Authorization");
-  }
+  var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.view.acceptMediaType)});  
+  headers = HTTP.setHeaderAuthorization(headers, options);
   var args = { method: "GET",
                cache: "no-cache",
                headers: headers  };
@@ -397,6 +423,7 @@ SPARQL.post = function(location, query, options = {}, continuation) {
   var contentType = options["Content-Type"] || SPARQL.post.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.post.acceptMediaType),
                               "Content-Type": contentType });
+  headers = HTTP.setHeaderAuthorization(headers, options);
   var args = { method: "POST",
                cache: "no-cache",
                headers: headers,
@@ -412,6 +439,80 @@ SPARQL.post = function(location, query, options = {}, continuation) {
 }
 SPARQL.post.acceptMediaType = 'text/turtle';
 SPARQL.post.contentMediaType = 'application/sparql-query';
+
+
+/**
+ SESAME.get
+ Perform an HTTP get given the location, options for authentication and response
+ content type, and an optional continuation operator.
+ Decode the result and proceed with it.
+ @param {string} location - the host and target repository name
+ @param {Object} [options]
+ @param {string} options.authorization - the basic authoentication string
+ @param {string} options.accept - the media type for the response document
+ @param {string} options.subject - a subject constraint
+ @param {string} options.predicate - a predicate constraint
+ @param {string} options.object - an object constraint
+ @param {string} options.graph - a graph constraint
+ @param {function} [continuation] - if supplied, used to invoke the fetch promise.
+ */
+
+SESAME.get = function(location, options = {}, continuation = null) {
+  var headers = new Headers({ "Accept": (options["Accept"] || SESAME.get.acceptMediaType) });
+  headers = HTTP.setHeaderAuthorization(headers, options);
+  var args = { method: "GET",
+               cache: "no-cache",
+               headers: headers };
+  // no suffix
+  location = constrainGSLocation(location, options);
+  console.log("SESAME.get:", location, args);
+  var p = SESAME.fetchOp(location, args);
+  console.log("SESAME.get: promise", p, continuation);
+  return (continuation ? p.then(continuation) : p);
+}
+SESAME.get.acceptMediaType = 'application/n-quads';
+document.SESAME = SESAME;
+
+/**
+ HTTP performs a simple get, but requires an accept content type.
+ */
+HTTP.get = function(location, options = {}, continuation = null) {
+  var mediaType = options["Accept"];
+  if (!mediaType) { throw new Error(`HTTP.get: Accept is required.`); }
+  var headers = new Headers({ "Accept": mediaType });
+  headers = HTTP.setHeaderAuthorization(headers, options);
+  var args = { method: "GET",
+               cache: "no-cache",
+               headers: headers };
+  // no suffix, no constraints, just a simple get
+  // console.log("HTTP.get:", location, args);
+  var p = HTTP.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
+
+HTTP.setHeaderAuthorization = function (headers, options) {
+  if (options['authentication']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(options['authentication']));
+  } else if (options['token']) {
+    headers.set("Authorization",
+                'Basic ' + btoa(":" + options['token']));
+  } else {
+    headers.delete("Authorization");
+  }
+  return (headers);
+}
+
+HTTP.head = function(location, options = {}, continuation = null) {
+  var headers = HTTP.setHeaderAuthorization(new Headers(), options);
+  var args = { method: "HEAD",
+               cache: "no-cache",
+               headers: headers };
+  // no suffix, no constraints, just a simple get
+  // console.log("HTTP.get:", location, args);
+  var p = HTTP.fetchOp(location, args);
+  return (continuation ? p.then(continuation) : p);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

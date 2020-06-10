@@ -72,7 +72,7 @@ export class RDFDatabase extends GraphDatabase {
     console.log("RDFDatabase.get");
     var decodeGetContent = function(response) {
       // yields a graph or a patch depending on arriving media type
-      var content = this.environment.decode(response.headers.get('Content-Type'), response.body);
+      var content = this.environment.decode( response.body, response.headers.get('Content-Type'));
       return (continuation ? continuation(content) : content);
     };
     options = Object.assign({}, options, {authentication: this.authentication});

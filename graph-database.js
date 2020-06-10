@@ -361,7 +361,7 @@ export class GraphDatabase { // extends IDBDatabase {
   }
 
   /**
-   Returned the object store registerd with that name
+   Return the object store registered with that name
    */
   findObjectStore(name) {
     // console.log('findObjectStore', name);

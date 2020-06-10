@@ -6,6 +6,7 @@
  @typedef {Object} Context
  */
 
+import { GraphObject } from "./graph-object.js";
 
 /**
  The abstract GraphEnvironment class defines the interface to graphs
@@ -255,6 +256,37 @@ export class GraphEnvironment {
   }
 
   /**
+   Given a class name return a known class instance or create it 
+   @param {string} className
+   */
+  ensureClass(className) {
+    var classInstance = this.getClass(className);
+    if (!classInstance) {
+      if ((typeof className == 'string') && className.match(/^[a-zA-Z0-9_]+$/)) {
+        try { classInstance = eval(className); }
+        catch(e) { // unknown class, define it
+          classInstance = class extends GraphObject{};
+          Object.setPrototypeOf(classInstance.prototype, GraphObject.prototype);
+          Object.setPrototypeOf(classInstance, GraphObject);
+          // restrict the cache to this environment
+          // window[className] = classInstance; //does the next step make sense given this?
+        }
+        theGraphEnvironment.setClass(className, classInstance);
+      } else {
+        throw new Error(`ensureClass: invalid class name ${className}`);
+      }
+    }
+    return (classInstance);
+  }
+
+  setClass(className, classInstance) {
+    this.module[className] = classInstance;
+  }
+  getClass(cassName) {
+    return (this.module[className]);
+  }
+
+  /**
    Given a class name, the instance identifier and an initial state,
    instantiate the object, assign the initial state, create its proxy and return that.
    @param {string} className
@@ -263,7 +295,7 @@ export class GraphEnvironment {
    */
   createObject(className, identifier, state = {}) {
     // console.log('createObject', className, 'prototype', className.prototype)
-    var classInstance = this.module[className];
+    var classInstance = this.ensureClass(className);
     // console.log('class', classInstance);
     // console.log('state', state);
     var defs = {};
@@ -288,6 +320,7 @@ export class GraphEnvironment {
     }
   } 
 }
+
 
 /**
  Given an IRI return the last element of its path.

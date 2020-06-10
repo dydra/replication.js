@@ -169,6 +169,7 @@ export class GraphObject {
    @abstract
    */
   get identifier () {
+    console.trace("No GraphObject identifier defined.", this);
     throw new Error("No GraphObject identifier defined.");
   }
   /**
@@ -176,6 +177,7 @@ export class GraphObject {
    @abstract
    */
   set identifier (value) {
+    console.trace("No GraphObject identifier defined.", this);
     throw new Error("No GraphObject identifier defined.");
   }
   /**
@@ -237,7 +239,8 @@ export class GraphObject {
       this.constructor.persistentProperties();
       for (const p of this._persistentProperties) {
         if (validProperties.indexOf(p) < 0) {
-          throw new Error(`GraphObject.persistentProperties: property node bound: '${p}'`);
+          console.trace(`GraphObject.persistentProperties: property not found: '${p}'`, this);
+          throw new Error(`GraphObject.persistentProperties: property not found: '${p}'`);
         }
       }
     }
@@ -440,6 +443,7 @@ GraphObject.computeEffectiveProperties(new Test3(), '_persistentProperties')
 Test1.
   
 Row = class Row extends GraphObject {
+  _mail;
   constructor(name) {
     var instance = super();
     this.name = name;
@@ -458,5 +462,5 @@ Row._persistentProperties = ['_identifier', '_mail'];
 var r = new Row("a name");
 */
 
-console.log('graph-object.js: loaded');
+// console.log('graph-object.js: loaded');
 
