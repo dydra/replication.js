@@ -364,7 +364,7 @@ GraphObject.prototype.asPatch[GraphObject.stateNew] =
 // bind to respective initiating prototype
 GraphObject.computeEffectiveProperties = function(name) {
   var props = [];
-  for (constructor = this;
+  for (var constructor = this;
        (constructor instanceof Function);
        constructor = Object.getPrototypeOf(constructor)) {
     var cprops = constructor[name];
