@@ -57,7 +57,7 @@ function logFetch(location, args) {
   for (var [k,v] of headers.entries()) {console.log('fetch:', [k,v])};
   var p = fetch(location, args);
   p.location = location;
-  p = p.then(function(response) {
+/*  p = p.then(function(response) {
         if (response.ok) {
           return (response);
         } else {
@@ -65,7 +65,7 @@ function logFetch(location, args) {
           return (response);
         }
       }).catch(function(error) { console.log("fetch failed: ", location, error); });
-  // console.log(p);
+  // console.log(p);*/
   return (p);
 }
 
@@ -467,7 +467,7 @@ SESAME.get = function(location, options = {}, continuation = null) {
   location = constrainGSLocation(location, options);
   console.log("SESAME.get:", location, args);
   var p = SESAME.fetchOp(location, args);
-  console.log("SESAME.get: promise", p, continuation);
+  console.log("SESAME.get: promise: ", p, "continuation: ", continuation);
   return (continuation ? p.then(continuation) : p);
 }
 SESAME.get.acceptMediaType = 'application/n-quads';
