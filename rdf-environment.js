@@ -354,7 +354,11 @@ export class RDFEnvironment extends GraphEnvironment {
       // console.log("rdfenv.decode: decoder", decoder);
       // must pass the content type as it can include arguments
       var decoded = decoder(document, mediaType, continuation);
-      decoded.mediaType = mediaType
+      if (decoded) {
+        decoded.mediaType = mediaType
+      } else {
+        console.log.warn("RDFEnvironment.decode: failed: ", mediaType, typeof(document));
+      }
       // console.log("rdfenv.decode: decoded", decoded);
       return (decoded);
     } else {
@@ -548,6 +552,11 @@ export class BlankNode extends Node{
    */
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
+  }
+
+
+  toString() {
+    return (this.turtleForm);
   }
 
   get turtleForm() {
@@ -1167,7 +1176,7 @@ decode['application/n-quads'] = function(document, mediaType, continuation) {
   // console.log('nearley.Parser', nearley.Parser);
   // console.log('nearley.Grammar', nearley.Grammar);
   // console.log('nquadsGrammar', nquadsGrammar);
-  console.log('decode[application/n-quads]: make parser');
+  console.debug('decode[application/n-quads]: make parser');
   var parser = null;
   try {
     parser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar));
@@ -1176,7 +1185,7 @@ decode['application/n-quads'] = function(document, mediaType, continuation) {
     return (null);
   }
   try {
-    console.log(document);
+    console.debug("decode['application/n-quads'] ", document);
     var statements = parser.feed(document).results[0];
     var graph = createGraph(statements);
     // console.log('decoded', graph);

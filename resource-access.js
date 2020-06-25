@@ -23,6 +23,8 @@ import { default as GQLRequest} from '/javascripts/vendor/graphql-request/src/in
 import { RDFEnvironment, mediaTypeStem } from '/javascripts/replication/rdf-environment.js';
 
 export const log = ulog("resource-access");
+log.level = log.DEBUG;
+
 
 /**
  GET:
@@ -57,7 +59,7 @@ export function getResource (location, options, continuation, fail) {
         return (implementation(location, options, continuation, fail || log.warn));
       } else {
         return (new Promise(function(accept, reject) {
-                  implementation(location, options, accept, fail || reject || log.warn); })
+                  implementation(location, options, accept, reject || fail || log.warn) })
                 );
       }
     } else {
@@ -132,7 +134,8 @@ export function postResource (location, content, options, continuation, fail) {
       } else {
         log.debug("postResource: as promise");
         return (new Promise(function(accept, reject) {
-                 implementation(location, content, options, accept, fail || reject || log.warn); })
+                 log.debug("postResource: promise invoed: ", accept, reject);
+                 implementation(location, content, options, accept, reject || fail || log.warn) })
                );
       }
     } else {
@@ -178,7 +181,7 @@ export function putResource (location, content, options, continuation, fail) {
       } else {
         log.debug("putResource: as promise");
         return (new Promise(function(accept, reject) {
-                 implementation(location, content, options, accept, fail || reject || log.warn); })
+                 implementation(location, content, options, accept, reject || fail || log.warn) })
                );
       }
     } else {
@@ -370,7 +373,7 @@ getResource['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
     }
     blob.arrayBuffer().then(acceptBuffer);
   }
-  getResource['application/octet-stream'](location, options, continuation);
+  getResource['application/octet-stream'](location, options, succeed);
 }
 
 
@@ -478,7 +481,7 @@ getResource['application/sparql-query+olog+svg+xml'] = function(location, option
   var query = options['Query'] || options['query'];
   if (query) {
     // if a query is present, it is a sparql request
-    promiseHandler(location, options, continuation, retry, fail)(SPARQL.get(location, query, options));
+    promiseHandler(location, options, succeed, retry, fail)(SPARQL.get(location, query, options));
   } else {
     console.trace();
     throw (new Error("query is required:"));
@@ -503,7 +506,7 @@ postResource['application/sparql-query'] = function(location, query, options, co
   function retry(newOptions) {
     postResource['application/sparql-query'](location, newOptions, continuation, fail);
   }
-  promiseHandler(location, options, continuation, retry, fail)(SPARQL.post(location, query, options));
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, query, options));
 }
 
 /**
@@ -525,7 +528,7 @@ postResource['application/sparql-query+json'] = function(location, query, option
   function retry(newOptions) {
     postResource['application/sparql-query+json'](location, newOptions, continuation, fail);
   }
-  promiseHandler(location, options, continuation, retry, fail)(SPARQL.post(location, query, options));
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, query, options));
 }
 
 /**
@@ -534,9 +537,10 @@ postResource['application/sparql-query+json'] = function(location, query, option
 postResource['application/sparql-query-algebra'] = function(location, query, options, continuation, fail) {
   // log.debug("postResource: ", location, query, options);
   function succeed(response) {
+    log.debug("postResource.succeed:", response);
     var contentType = response.headers.get('Content-Type');
     function acceptText(text) {
-      log.debug("text:", text);
+      log.debug("postResource.text:", text);
       continuation(text);
     }
     log.debug("postResource: response: ", response, contentType);
@@ -545,7 +549,7 @@ postResource['application/sparql-query-algebra'] = function(location, query, opt
   function retry(newOptions) {
     postResource['application/sparql-query-algebra'](location, newOptions, continuation, fail);
   }
-  promiseHandler(location, options, continuation, retry, fail)(SPARQL.post(location, query, options));
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, query, options));
 }
 
 /**
@@ -565,7 +569,7 @@ postResource['application/sparql-query-execution'] = function(location, query, o
   function retry(newOptions) {
     postResource['application/sparql-query-execution'](location, newOptions, continuation, fail);
   }
-  promiseHandler(location, options, continuation, retry, fail)(SPARQL.post(location, query, options));
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, query, options));
 }
 
 /**
@@ -585,7 +589,7 @@ postResource['application/sparql-query-plan'] = function(location, query, option
   function retry(newOptions) {
     postResource['application/sparql-query-plan'](location, newOptions, continuation, fail);
   }
-  promiseHandler(location, options, continuation, retry, fail)(SPARQL.post(location, query, options));
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, query, options));
 }
 
 postResource['application/sparql-results+json'] = function(location, query, options, continuation, fail) {
@@ -604,7 +608,7 @@ postResource['application/sparql-results+json'] = function(location, query, opti
   function retry(newOptions) {
     postResource['application/sparql-results+json'](location, newOptions, continuation, fail);
   }
-  promiseHandler(location, options, continuation, retry, fail)(SPARQL.post(location, query, options));
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, query, options));
 }
 
 /**
@@ -649,9 +653,9 @@ postResource['application/n-quads'] = function(location, content, options, conti
     postResource['application/n-quads'](location, newOptions, continuation, fail);
   }
   if (['graph', 'subject', 'predicate', 'object'].find(function(role) { return(!(options[role] == undefined)); })) {
-    promiseHandler(location, options, continuation, retry, fail)(GSP.post(location, content, options));
+    promiseHandler(location, options, succeed, retry, fail)(GSP.post(location, content, options));
   } else {
-    promiseHandler(location, options, continuation, retry, fail)(SESAME.post(location, content, options));
+    promiseHandler(location, options, succeed, retry, fail)(SESAME.post(location, content, options));
   }
 };
 postResource['application/n-triples'] = function(location, content, options, continuation) {
