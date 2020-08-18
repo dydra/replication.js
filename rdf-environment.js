@@ -116,7 +116,8 @@ export class RDFEnvironment extends GraphEnvironment {
     // console.log("RDFE.cnn: ", lexicalForm);
     if (lexicalForm.startsWith('http://') ||
         lexicalForm.startsWith('https://') ||
-        lexicalForm.startsWith('urn:')) {
+        lexicalForm.startsWith('urn:') ||
+        lexicalForm.startsWith('mailto:')) {
       return (createNamedNode(lexicalForm, null));
     } else {
       var curie = lexicalForm.match(/(\w+):(\w+)/);
@@ -126,7 +127,8 @@ export class RDFEnvironment extends GraphEnvironment {
         if (namespace) {
           return (createNamedNode(local, namespace));
         } else {
-          throw new Error(`createNamedNode: unbound curie: '${curie}'`);
+          console.warn(`createNamedNode: unbound curie: '${curie}'`);
+          return (createNamedNode(lexicalForm, null));
         }
       } else {
         var expandedForm = this.findNameIdentifier(lexicalForm);
@@ -344,10 +346,10 @@ export class RDFEnvironment extends GraphEnvironment {
    cache retrieval or decoding state.
    */
   decode(document, mediaType, continuation = null) {
-    var match;
+    var contentTypeStem;
     console.log("rdfenv.decode: for", mediaType);
-    if (match = mediaTypeStem(mediaType)) {
-      var decoder = decode[match];
+    if (contentTypeStem = mediaTypeStem(mediaType)) {
+      var decoder = decode[contentTypeStem];
       if (!decoder) {
         throw (new Error(`RDFEnvironment.decode: unsupported media type: ${mediaType}`));
       }
@@ -355,9 +357,9 @@ export class RDFEnvironment extends GraphEnvironment {
       // must pass the content type as it can include arguments
       var decoded = decoder(document, mediaType, continuation);
       if (decoded) {
-        decoded.mediaType = mediaType
+        decoded.contentType = contentTypeStem;
       } else {
-        console.log.warn("RDFEnvironment.decode: failed: ", mediaType, typeof(document));
+        console.warn("RDFEnvironment.decode: failed: ", mediaType, typeof(document));
       }
       // console.log("rdfenv.decode: decoded", decoded);
       return (decoded);
@@ -630,9 +632,9 @@ export class Graph {
     var addStatementDelta = function(stmt, makeEntry) {
       // console.log("computeDeltas.asd:", stmt)
       var name = null;
-      try { name = environment.findIdentifierName(stmt.predicate); } catch (e) {console.log("name", e);}
+      try { name = environment.findIdentifierName(stmt.predicate); } catch (e) {console.log("computeDeltas: name failure", e);}
       var value = null;
-      try { value = environment.toValue(stmt.object, stmt.predicate); } catch (e) {console.log("value", e);}
+      try { value = environment.toValue(stmt.object, stmt.predicate); } catch (e) {console.log("computeDeltas: value failure", e);}
       // console.log("name", name, "value", value);
       var id = stmt.subject.lexicalForm;
       // console.log('id', id);
@@ -1154,14 +1156,14 @@ Patch.prototype.encode['multipart/related'] = function(object, continuation) {
  to the decode symbol.
  */
 export function decode(document, mediaType, continuation) {
-  var match;
-  if (match = mediaTypeStem(mediaType)) {
+  var contentTypeStem;
+  if (contentTypeStem = mediaTypeStem(mediaType)) {
     var decoder = decode[match];
     // console.log("decode: decoder", decoder);
     // must pass the content type as it can include arguments
     var decoded = decoder(document, mediaType, continuation);
     // record the given media type in the result
-    decoded.mediaType = mediaType;
+    decoded.contentType = contentTypeStem;
     // console.log("rdfenv.decode: decoded", decoded);
     return (decoded);
   } else {
@@ -1199,6 +1201,21 @@ decode['application/n-quads'] = function(document, mediaType, continuation) {
 decode['application/n-triples'] = function(document, mediaType, continuation) {
   return (decode['application/n-quads'](document, mediaType, continuation));
 }
+
+decode['application/rdf+xml'] = function(document, mediaType, continuation) {
+  console.debug('decode[application/rdf+xml]: make parser');
+  var parser = new window.DOMParser();
+  try {
+    console.debug("decode['application/rdf+xml']. parse ", document);
+    var parsedDocument = parser.parseFromString(document, "text/xml");
+    //console.log('decoded', parsedDocument);
+    return (continuation ? continuation(document) : parsedDocument);
+  } catch (error) {
+    console.log("decode['application/n-quads'] failed", error, document);
+    return (null);
+  }
+}
+
 
 decode['multipart/related'] = function(document, mediaType, continuation) {
   // segment into parts, parse each, collate respective delete/post/put sections

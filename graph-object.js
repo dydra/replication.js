@@ -5,7 +5,7 @@
 The class GraphObject is an abstract class which wraps each concrete
 instance in a proxy to mediate property access and implement a jdo/jpa-like
 state machine to control instance.
-The logic distinguished detached/attached situations wrt a ReplicaObjectStore
+The logic distinguishes detached/attached situations wrt a ReplicaObjectStore
 and, for attached objects, constrcts for them a delta map and uses that cache
 upon tranaction completion to propagate changes to the respective remote
 storage service.

@@ -8,6 +8,12 @@
 // postResource
 // putResource
 
+// the implementation dispatches initially through the base operators based just on the accept media type.
+// where the content type matters, the base operator look for a two-dimensional specialization.
+// if the result for the accept type key is an object, it serves for a second level dispatch.
+// a "*" media type provides a default at the second level.
+// when the result for the accept is a function the base operator calls that directly.
+
 // present interaction operations, simplified as getResource and postResource.
 // implement them in terms application level protocol components - HTTP or higher, such as SPARQL pr GraphQL
 // and eventuall MQTT and WebSockets.
@@ -44,7 +50,8 @@ log.level = log.DEBUG;
 // this needs to be two-dimensional
 
 export function getResource (location, options, continuation, fail) {
-  log.debug("getResource: ", location, options);
+  log.warn("getResource: ", location, options);
+  log.warn("getResource: ", getResource);
   var mediaType = options['Accept'];
   if (! mediaType) {
     console.trace();
@@ -118,34 +125,55 @@ export function headResource (location, options, continuation, fail = log.warn) 
 
 export function postResource (location, content, options, continuation, fail) {
   log.debug("postResource: ", location, content, options);
-  var mediaType = options['Accept'];
-  if (! mediaType) {
+  function invokeImplementation(implementation) {
+    // invoke the implementation. specify the static class context and pass the given arguments
+    if (continuation) {
+      log.debug("postResource: with continuation");
+      return (implementation(location, content, options, continuation, fail || log.warn));
+    } else {
+      log.debug("postResource: as promise");
+      return (new Promise(function(accept, reject) {
+               log.debug("postResource: promise invoked: ", accept, reject);
+               implementation(location, content, options, accept, reject || fail || log.warn) })
+             );
+    }
+  }
+  var acceptType = options['Accept'];
+  if (! acceptType) {
     console.trace();
     throw (new Error("postResource: Accept option is required."));
   }
-  var match = mediaTypeStem(mediaType);
-  if (match) {
-    var implementation = postResource[match];
-    if (implementation) {
-      // invoke the implementation. specify the static class context and pass the given arguments
-      if (continuation) {
-        log.debug("postResource: with continuation");
-        return (implementation(location, content, options, continuation, fail || log.warn));
+  var acceptMatch = mediaTypeStem(acceptType);
+  if (acceptMatch) {
+    let implementation = postResource[acceptMatch];
+    switch(typeof(implementation)) {
+    case "function":
+      return (invokeImplementation(implementation));
+    case "object":
+      var contentType = options['Content-Type'];
+      console.log("content type: ", contentType);
+      var contentMatch = (contentType ? mediaTypeStem(contentType) : "*");
+      if (contentMatch) {
+        implementation = implementation[contentMatch] || implementation["*"];
+        switch(typeof(implementation)) {
+        case "function":
+          return (invokeImplementation(implementation));
+        default:
+          console.trace();
+          throw (new Error(`postResource: unimplemented media type combination: '${acceptType}'.'${contentType}'`));
+        }
       } else {
-        log.debug("postResource: as promise");
-        return (new Promise(function(accept, reject) {
-                 log.debug("postResource: promise invoed: ", accept, reject);
-                 implementation(location, content, options, accept, reject || fail || log.warn) })
-               );
+        console.trace();
+        throw (new Error(`postResource: unrecognized media type: '${contentType}'`));
       }
-    } else {
+    default:
       console.trace();
-      throw (new Error(`postResource: unimplemented media type: '${mediaType}'`));
+      throw (new Error(`postResource: unrecognized media type implementation: '${acceptType}': ${implementation}`));
     }
   } else {
     console.trace();
-    throw (new Error(`postResource: unrecognized media type: '${mediaType}'`));
-  }  
+    throw (new Error(`postResource: unrecognized media type: '${acceptType}'`));
+  }
 }
 
 
@@ -325,9 +353,14 @@ getResource['application/n-quads'] = function(location, options, continuation, f
     function acceptText(document) {
       log.warn("document:", document);
       var graph = RDFEnvironment.theEnvironment.decode(document, contentType);
-      log.warn("getResource: graph:", graph);
-      graph.location = location;
-      continuation(graph);
+      if (graph) {
+        log.warn("getResource: graph:", graph);
+        graph.location = location;
+        continuation(graph);
+      } else {
+        log.warn("getResource: failed to decode", document);
+        fail(document);
+      }
     }
     log.trace("getResource: response: ", response, contentType);
     response.text().then(acceptText);
@@ -367,7 +400,7 @@ getResource['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
       var bodyContinuation = options.acceptBody;
       if (bodyContinuation) { bodyContinuation(buffer); }
       var sheet = XLSX.read(buffer, {type:"buffer"});
-      sheet.mediaType = contentType;
+      sheet.mediaType = mediaTypeStem(contentType);
       sheet.location = location;
       continuation(sheet);
     }
@@ -387,7 +420,7 @@ getResource['text/csv'] = function(location, options, continuation, fail) {
       if (bodyContinuation) { bodyContinuation(document); }  // even if it may be invalid
       var csv = CSV.parse(document);
       log.trace("getResource: csv:", csv);
-      csv.mediaType = contentType;
+      csv.mediaType = mediaTypeStem(contentType);
       csv.location = location;
       continuation(csv);
     }
@@ -409,7 +442,7 @@ getResource['text/html'] = function(location, options, continuation, fail) {
       log.trace("document:", document);
       var html = new DOMParser().parseFromString(document, contentType);
       log.trace("getResource: html:", html);
-      html.mediaType = contentType;
+      html.mediaType = mediaTypeStem(contentType);
       // not permitted : html.location = location;
       continuation(html);
     }
@@ -444,7 +477,7 @@ getResource['application/sparql-results+json'] = function(location, options, con
     var contentType = response.headers.get('Content-Type');
     function acceptJSON(json) {
       // log.debug("json:", json);
-      json.mediaType = contentType;
+      json.mediaType = mediaTypeStem(contentType);
       json.location = location;
       continuation(json);
     }
@@ -462,6 +495,23 @@ getResource['application/sparql-results+json'] = function(location, options, con
     // otherwise, treat it as a rest request via SESAME 
     promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
   }
+}
+
+getResource['application/sparql-query'] = function(location, options, continuation, fail) {
+  log.debug("getResource: ", location, options);
+  function succeed(response) {
+    var contentType = response.headers.get('Content-Type');
+    function acceptText(sparql) {
+      log.debug("getResource: sparql: ", sparql);
+      continuation(sparql);
+    }
+    log.trace("getResource: response: ", response, contentType);
+    response.text().then(acceptText);
+  }
+  function retry(newOptions) {
+    getResource['application/sparql-query'](location, newOptions, continuation, fail);
+  }
+  promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
 }
 
 getResource['application/sparql-query+olog+svg+xml'] = function(location, options, continuation, fail) {
@@ -489,11 +539,12 @@ getResource['application/sparql-query+olog+svg+xml'] = function(location, option
 }
 
 
+
 /**
  Request a query with the expection that it be reflected back
  */
 postResource['application/sparql-query'] = function(location, query, options, continuation, fail) {
-  // log.debug("postResource: ", location, query, options);
+  log.warn("postResource: ", location, query, options);
   function succeed(response) {
     var contentType = response.headers.get('Content-Type');
     function acceptText(text) {
@@ -518,7 +569,7 @@ postResource['application/sparql-query+json'] = function(location, query, option
     var contentType = response.headers.get('Content-Type');
     function acceptJSON(json) {
       log.debug("json:", json);
-      json.mediaType = contentType;
+      json.mediaType = mediaTypeStem(contentType);
       json.location = location;
       continuation(json);
     }
@@ -598,7 +649,7 @@ postResource['application/sparql-results+json'] = function(location, query, opti
     var contentType = response.headers.get('Content-Type');
     function acceptJSON(json) {
       log.debug("json:", json);
-      json.mediaType = contentType;
+      json.mediaType = mediaTypeStem(contentType);
       json.location = location;
       continuation(json);
     }
@@ -612,21 +663,46 @@ postResource['application/sparql-results+json'] = function(location, query, opti
 }
 
 /**
- A POST request for application/json is handled as graphql.
- The simpelform of tht api allows no error reccovery.
+ A POST request for application/json needs to distinguish the request based on content type
+ The simple form of that api allows no error reccovery.
  */
 
-postResource['application/json'] = function(location, query, options, continuation, fail) {
-  log.debug("postResource: ", location, query, options);
+postResource['application/json'] = {};
+postResource['application/json']['application/sparql-query'] = function(location, query, options, continuation, fail) {
+  console.log("postResource: a/j ", location, query, options);
+  function succeed(response) {
+    var contentType = response.headers.get('Content-Type');
+    function acceptJSON(json) {
+      console.log310("json:", json);
+      json.mediaType = mediaTypeStem(contentType);
+      json.location = location;
+      continuation(json);
+    }
+    console.log("postResource: response: ", response, contentType);
+    response.json().then(acceptJSON);
+  }
+  function retry(newOptions) {
+    postResource['application/json'](location, newOptions, continuation, fail);
+  }
+  log.debug("postResource: a/j: sparql.post")
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, query, options));
+}
+postResource['application/json']['application/sparql-update'] =
+  postResource['application/json']['application/sparql-query']
+
+postResource['application/json']['application/graphql'] = function(location, query, options, continuation, fail) {
+  log.debug("postResource: a/j ", location, query, options);
   // the signature is url, query variables
   GQLRequest(location, query, {})
     .then(function (json) {
       // log.debug("json:", json);
-      // not available there: json.mediaType = contentType;
+      // not available there: json.mediaType = mediaTypeStem(contentType);
       json.location = location;
       continuation(json);
     });
 }
+
+
 // var query = '{ Movie(title: "Inception") { releaseDate actors { name } } }'
 // postResource('https://api.graph.cool/simple/v1/movies', query, {"Accept": 'application/json'}, log.debug);
 
@@ -634,33 +710,133 @@ postResource['application/json'] = function(location, query, options, continuati
  postResource['application/n-quads']
  this can be either a GSP import or a SPARQL query.
  */
-postResource['application/n-quads'] = function(location, content, options, continuation, fail) {
-  log.debug("postResource: ", options);
+postResource['application/n-quads'] = {};
+
+/**
+ postResource with sparql content is executed as a SPARQL query.
+ */
+postResource['application/n-quads']['application/sparql-query'] = function(location, content, options, continuation, fail) {
+  log.debug("postResource['application/n-quads']['application/sparql-query']: ", options);
   function succeed(response) {
-    log.trace("postResource['application/n-quads']: response: ", response);
+    log.debug("postResource['application/n-quads']: response: ", response);
     var contentType = response.headers.get('Content-Type');
     function acceptText(document) {
       log.trace("document:", document);
-      var graph = RDFEnvironment.theEnvironment.decode(document, contentType);
+      var graph;
+      if (document) {
+        graph = RDFEnvironment.theEnvironment.decode(document, contentType);
+      } else {
+        graph = RDFEnvironment.theEnvironment.createGraph([]);
+      }
       log.trace("postResource: graph:", graph);
       graph.location = location;
+      graph.contentType = mediaTypeStem(contentType);
       continuation(graph);
     }
     log.trace("postResource: response: ", response, contentType);
     response.text().then(acceptText);
   }
   function retry(newOptions) {
-    postResource['application/n-quads'](location, newOptions, continuation, fail);
+    postResource['application/n-quads'](location, content, newOptions, continuation, fail);
   }
-  if (['graph', 'subject', 'predicate', 'object'].find(function(role) { return(!(options[role] == undefined)); })) {
-    promiseHandler(location, options, succeed, retry, fail)(GSP.post(location, content, options));
-  } else {
-    promiseHandler(location, options, succeed, retry, fail)(SESAME.post(location, content, options));
-  }
+  promiseHandler(location, options, succeed, retry, fail)(SPARQL.post(location, content, options));
 };
-postResource['application/n-triples'] = function(location, content, options, continuation) {
-  return (postResource['application/n-quads'](location, content, options, continuation));
-}
+
+/**
+ postResource with non-sparql content executed as a graph store request toimport rdf content
+ */
+postResource['application/n-quads']['*'] = function(location, content, options, continuation, fail) {
+  log.debug("postResource['application/n-quads']['*']: ", options);
+  function succeed(response) {
+    log.debug("postResource['application/n-quads']: response: ", response);
+    var contentType = response.headers.get('Content-Type');
+    function acceptText(document) {
+      log.trace("document:", document);
+      var graph;
+      if (document) {
+        graph = RDFEnvironment.theEnvironment.decode(document, contentType);
+      } else {
+        graph = RDFEnvironment.theEnvironment.createGraph([]);
+      }
+      log.trace("postResource: graph:", graph);
+      graph.location = location;
+      graph.contentType = mediaTypeStem(contentType);
+      continuation(graph);
+    }
+    log.trace("postResource: response: ", response, contentType);
+    response.text().then(acceptText);
+  }
+  function retry(newOptions) {
+    postResource['application/n-quads'](location, content, newOptions, continuation, fail);
+  }
+  promiseHandler(location, options, succeed, retry, fail)(GSP.post(location, content, options));
+};
+
+postResource['application/n-triples'] = postResource['application/n-quads'];
+
+
+/**
+ putResource['application/n-quads']
+ this can be either a GSP import or a SPARQL query.
+ */
+putResource['application/n-quads'] = {};
+
+putResource['application/n-quads']["application/sparql-query"] = function(location, content, options, continuation, fail) {
+  log.debug("putResource: ", options);
+  function succeed(response) {
+    log.trace("putResource['application/n-quads']: response: ", response);
+    var contentType = response.headers.get('Content-Type');
+    function acceptText(document) {
+      log.trace("document:", document);
+      var graph;
+      if (document) {
+        graph = RDFEnvironment.theEnvironment.decode(document, contentType);
+      } else {
+        graph = RDFEnvironment.theEnvironment.createGraph([]);
+      }
+      log.trace("putResource: graph:", graph);
+      graph.location = location;
+      graph.contentType = mediaTypeStem(contentType);
+      continuation(graph);
+    }
+    log.trace("putResource: response: ", response, contentType);
+    response.text().then(acceptText);
+  }
+  function retry(newOptions) {
+    putResource['application/n-quads'](location, content, newOptions, continuation, fail);
+  }
+  promiseHandler(location, options, succeed, retry, fail)(HTTP.put(location, content, options));
+};
+putResource['application/n-quads']["application/sparql-update"] = putResource['application/n-quads']["application/sparql-query"];
+
+putResource['application/n-quads']["*"] = function(location, content, options, continuation, fail) {
+  log.debug("putResource: ", options);
+  function succeed(response) {
+    log.trace("putResource['application/n-quads']: response: ", response);
+    var contentType = response.headers.get('Content-Type');
+    function acceptText(document) {
+      log.trace("document:", document);
+      var graph;
+      if (document) {
+        graph = RDFEnvironment.theEnvironment.decode(document, contentType);
+      } else {
+        graph = RDFEnvironment.theEnvironment.createGraph([]);
+      }
+      log.trace("putResource: graph:", graph);
+      graph.location = location;
+      graph.contentType = mediaTypeStem(contentType);
+      continuation(graph);
+    }
+    log.trace("putResource: response: ", response, contentType);
+    response.text().then(acceptText);
+  }
+  function retry(newOptions) {
+    putResource['application/n-quads'](location, content, newOptions, continuation, fail);
+  }
+  promiseHandler(location, options, succeed, retry, fail)(GSP.put(location, content, options));
+};
+
+putResource['application/n-triples'] = putResource['application/n-quads'];
 
 
 
