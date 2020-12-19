@@ -557,6 +557,7 @@ getResource['image/vnd.dydra.sparql-results+circos+svg+xml'] = function(location
 
 
 
+
 /**
  Request a query with the expection that it be reflected back
  */
