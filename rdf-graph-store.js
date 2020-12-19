@@ -420,10 +420,17 @@ SPARQL.view.acceptMediaType = 'application/sparql-results+json';
  otherwise the active promise is returned.
  */
 SPARQL.post = function(location, query, options = {}, continuation) {
+  console.log("SPARQL.post", location, query, options);
   var contentType = options["Content-Type"] || SPARQL.post.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.post.acceptMediaType),
                               "Content-Type": contentType });
   headers = HTTP.setHeaderAuthorization(headers, options);
+  if (options.headers) {
+    console.warn("adding headers", options.headers);
+    for (const [key, value] of Object.entries(options.headers)) {
+      headers.set(key, value);
+    }
+  }
   var args = { method: "POST",
                cache: "no-cache",
                headers: headers,
