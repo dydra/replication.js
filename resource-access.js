@@ -550,7 +550,25 @@ getResource['image/vnd.dydra.sparql-results+circos+svg+xml'] = function(location
     response.text().then(acceptText);
   }
   function retry(newOptions) {
-    getResource['application/sparql-query'](location, newOptions, continuation, fail);
+    getResource['image/vnd.dydra.sparql-results+circos+svg+xml'](location, newOptions, continuation, fail);
+  }
+  promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+}
+
+
+getResource['image/vnd.dydra.sparql-results+graphviz+svg+xml'] = function(location, options, continuation, fail) {
+  log.debug("getResource: ", location, options);
+  function succeed(response) {
+    var contentType = response.headers.get('Content-Type');
+    function acceptText(xml) {
+      log.debug("getResource: sparql: ", xml);
+      continuation(xml);
+    }
+    log.trace("getResource: response: ", response, contentType);
+    response.text().then(acceptText);
+  }
+  function retry(newOptions) {
+    getResource['image/vnd.dydra.sparql-results+graphviz+svg+xml'](location, newOptions, continuation, fail);
   }
   promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
 }
