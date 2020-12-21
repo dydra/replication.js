@@ -234,7 +234,7 @@ export function putResource (location, content, options, continuation, fail) {
 
 
 function responseHandler (location, options, succeed, retry, fail) {
-  var savedAuth = responseHandler.map.get(location);
+  var savedAuth = responseHandler.getAuthentication(location);
   var optionsAuth = options.authentication;
   if (savedAuth && !optionsAuth) {
     Object.assign(options, {authentication: savedAuth});
@@ -246,10 +246,10 @@ function responseHandler (location, options, succeed, retry, fail) {
         console.log(response.status, location);
         succeed(response);
       } else if (response.status == 401) {
-          console.log("401: ", location);
+          console.log("responseHandler: 401: ", location);
         function localRetry(authentication) {
           authentication = (authentication.identity || "") + ':' + (authentication.token || "");
-          responseHandler.map.set(location, authentication);
+          responseHandler.setAuthentication(location, authentication);
           options = Object.assign({}, options, {authentication: authentication});
           log.debug("esr: augmented options: ", options);
           retry(options);
@@ -269,6 +269,15 @@ function responseHandler (location, options, succeed, retry, fail) {
   return ( ensureSuccessfulResponse );
 }
 responseHandler.map = new Map();
+responseHandler.getAuthentication = function(location) {
+  authority = new URI(location).authority();
+  return ( this.map.get(authority) );
+}
+responseHandler.setAuthentication = function(location, authentication) {
+  authority = new URI(location).authority();
+  return ( this.map.set(authority, authentication) );
+}
+
 
 function promiseHandler (location, options, succeed, retry, fail = console.warn) {
   var savedAuth = responseHandler.map.get(location);
