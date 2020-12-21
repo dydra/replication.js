@@ -270,17 +270,17 @@ function responseHandler (location, options, succeed, retry, fail) {
 }
 responseHandler.map = new Map();
 responseHandler.getAuthentication = function(location) {
-  authority = new URI(location).authority();
-  return ( this.map.get(authority) );
+  var hostname = new URL(location).host;
+  return ( this.map.get(hostname) );
 }
 responseHandler.setAuthentication = function(location, authentication) {
-  authority = new URI(location).authority();
-  return ( this.map.set(authority, authentication) );
+  var hostname = new URL(location).host;
+  return ( this.map.set(hostname, authentication) );
 }
 
 
 function promiseHandler (location, options, succeed, retry, fail = console.warn) {
-  var savedAuth = responseHandler.map.get(location);
+  var savedAuth = responseHandler.getAuthentication(location);
   var optionsAuth = options.authentication;
   if (savedAuth && !optionsAuth) {
     Object.assign(options, {authentication: savedAuth});
@@ -296,7 +296,7 @@ function promiseHandler (location, options, succeed, retry, fail = console.warn)
           console.log("401: ", location);
           function localRetry(authentication) {
             authentication = (authentication.identity || "") + ':' + (authentication.token || "");
-            responseHandler.map.set(location, authentication);
+            responseHandler.setAuthentication(location, authentication);
             options = Object.assign({}, options, {authentication: authentication});
             log.debug("esr: augmented options: ", options);
             retry(options);
@@ -306,7 +306,7 @@ function promiseHandler (location, options, succeed, retry, fail = console.warn)
         } else {
           console.log(response.status, location);
           // a failed response aborts references to the text body
-          log.warn(`responseHandler ${location}: failed ${response.status}`);
+          log.warn(`promiseHandler ${location}: failed ${response.status}`);
           fail(response);
         }
       } else {
