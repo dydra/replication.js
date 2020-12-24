@@ -248,14 +248,13 @@ export function responseHandler (location, options, succeed, retry, fail) {
       } else if (response.status == 401) {
           console.log("responseHandler: 401: ", location);
         function localRetry(authentication) {
-          authentication = (authentication.identity || "") + ':' + (authentication.token || "");
           responseHandler.setAuthentication(location, authentication);
           options = Object.assign({}, options, {authentication: authentication});
           log.debug("esr: augmented options: ", options);
           retry(options);
         }
         console.log("prompt: ", localRetry);
-        authentication_prompt({location: location, submit: localRetry});
+        authentication_token_prompt({location: location, submit: localRetry});
       } else {
         console.log(response.status, location);
         // a failed response aborts references to the text body
@@ -271,11 +270,15 @@ export function responseHandler (location, options, succeed, retry, fail) {
 responseHandler.map = new Map();
 responseHandler.getAuthentication = function(location) {
   var hostname = new URL(location).host;
-  return ( this.map.get(hostname) );
+  var auth = this.map.get(hostname);
+  // console.log('responseHandler.getAuthentication: ', location, hostname, auth);
+  return( auth );
 }
 responseHandler.setAuthentication = function(location, authentication) {
   var hostname = new URL(location).host;
-  return ( this.map.set(hostname, authentication) );
+  this.map.set(hostname, authentication) ;
+  //  console.log('responseHandler.setAuthentication: ', location, hostname, authentication);
+  return ( authentication);
 }
 
 
@@ -295,14 +298,13 @@ function promiseHandler (location, options, succeed, retry, fail = console.warn)
         } else if (response.status == 401) {
           console.log("401: ", location);
           function localRetry(authentication) {
-            authentication = (authentication.identity || "") + ':' + (authentication.token || "");
             responseHandler.setAuthentication(location, authentication);
             options = Object.assign({}, options, {authentication: authentication});
             log.debug("esr: augmented options: ", options);
             retry(options);
           }
           console.log("prompt: ", localRetry);
-          authentication_prompt({location: location, submit: localRetry});
+          authentication_token_prompt({location: location, submit: localRetry});
         } else {
           console.log(response.status, location);
           // a failed response aborts references to the text body
@@ -908,7 +910,7 @@ export function authentication_prompt(options) {
 }
 
 
-export function authentication_credientials_prompt(options) {
+export function authentication_credentials_prompt(options) {
     var title = options.title || "Please enter",
         host = options.host || Cell.hostname,
         identityLabel = options.identityLabel || "Identity",
@@ -931,7 +933,7 @@ export function authentication_credientials_prompt(options) {
       var password = passwordInput.value;
       if (password.length == 0) {password = null; }
       document.body.removeChild(prompt);
-      submitContinuation({identity: identity, password: password});
+      submitContinuation((identity || "") + ":" + (password || ""));
     };
     var cancel = function() {
         document.body.removeChild(prompt);
@@ -979,6 +981,7 @@ export function authentication_credientials_prompt(options) {
     cancelButton.addEventListener("click", cancel, false);
     prompt.appendChild(cancelButton);
     prompt.style.zIndex = 100;
+    prompt.style.position = "fixed";
     if (position[0] < 0) {
       prompt.style.right = (-position[0])+'px';
     } else {
@@ -994,12 +997,12 @@ export function authentication_credientials_prompt(options) {
 
 
 export function authentication_token_prompt(options) {
-    var title = options.title || "Please enter",
+    var title = options.title || "Please enter for",
         host = options.host || Cell.hostname,
         tokenLabel = options.tokenLabel || "Token",
         submitLabel = options.submitLabel || "Submit",
         cancelLabel = options.cancelLabel || "Cancel";
-    var position = options.position || [4,4];
+  var position = options.position || [20,20];
     var submitContinuation = options.submit || options.accept;
     var cancelContinuation = options.cancel;
     if(! submitContinuation) { 
@@ -1013,7 +1016,7 @@ export function authentication_token_prompt(options) {
       var token = tokenInput.value;
       if (token.length == 0) {token = null; }
       document.body.removeChild(prompt);
-      submitContinuation({token: token});
+      submitContinuation(":" + (token || ""));
     };
     var cancel = function() {
         document.body.removeChild(prompt);
@@ -1051,6 +1054,7 @@ export function authentication_token_prompt(options) {
     cancelButton.addEventListener("click", cancel, false);
     prompt.appendChild(cancelButton);
     prompt.style.zIndex = 100;
+    prompt.style.position = "fixed";
     if (position[0] < 0) {
       prompt.style.right = (-position[0])+'px';
     } else {
