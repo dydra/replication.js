@@ -269,13 +269,13 @@ export function responseHandler (location, options, succeed, retry, fail) {
 }
 responseHandler.map = new Map();
 responseHandler.getAuthentication = function(location) {
-  var hostname = new URL(location).host;
+  var hostname = new URL(location, document.URL).host;
   var auth = this.map.get(hostname);
   // console.log('responseHandler.getAuthentication: ', location, hostname, auth);
   return( auth );
 }
 responseHandler.setAuthentication = function(location, authentication) {
-  var hostname = new URL(location).host;
+  var hostname = new URL(location, document.URL).host;
   this.map.set(hostname, authentication) ;
   //  console.log('responseHandler.setAuthentication: ', location, hostname, authentication);
   return ( authentication);
