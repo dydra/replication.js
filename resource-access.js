@@ -522,8 +522,77 @@ getResource['application/sparql-query'] = function(location, options, continuati
   function retry(newOptions) {
     getResource['application/sparql-query'](location, newOptions, continuation, fail);
   }
-  promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+  // promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+  var query = options['Query'] || options['query'];
+  if (query) {
+    // if a query is present, it is a sparql request
+    promiseHandler(location, options, succeed, retry, fail)(SPARQL.get(location, query, options));
+  } else {
+    // otherwise, treat it as a rest request via SESAME 
+    promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+  }
+
 }
+
+/**
+ Request the query expression variants for a view - as json
+ */
+getResource['application/sparql-query+json'] = function(location, options, continuation, fail) {
+  // log.debug("getResource: ", location, query, options);
+  function succeed(response) {
+    var contentType = response.headers.get('Content-Type');
+    function acceptJSON(json) {
+      log.debug("json:", json);
+      json.mediaType = mediaTypeStem(contentType);
+      json.location = location;
+      continuation(json);
+    }
+    log.debug("getResource: response: ", response, contentType);
+    response.json().then(acceptJSON);
+  }
+  function retry(newOptions) {
+    getResource['application/sparql-query+json'](location, newOptions, continuation, fail);
+  }
+  // promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+  var query = options['Query'] || options['query'];
+  if (query) {
+    // if a query is present, it is a sparql request
+    promiseHandler(location, options, succeed, retry, fail)(SPARQL.get(location, query, options));
+  } else {
+    // otherwise, treat it as a rest request via SESAME 
+    promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+  }
+}
+
+/**
+ Request the query expression variants for a view - as abstract algebra
+ */
+getResource['application/sparql-query-algebra'] = function(location, options, continuation, fail) {
+  // log.debug("getResource: ", location, query, options);
+  function succeed(response) {
+    log.debug("getResource.succeed:", response);
+    var contentType = response.headers.get('Content-Type');
+    function acceptText(text) {
+      log.debug("getResource.text:", text);
+      continuation(text);
+    }
+    log.debug("getResource: response: ", response, contentType);
+    response.text().then(acceptText);
+  }
+  function retry(newOptions) {
+    getResource['application/sparql-query-algebra'](location, newOptions, continuation, fail);
+  }
+  // promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+  var query = options['Query'] || options['query'];
+  if (query) {
+    // if a query is present, it is a sparql request
+    promiseHandler(location, options, succeed, retry, fail)(SPARQL.get(location, query, options));
+  } else {
+    // otherwise, treat it as a rest request via SESAME 
+    promiseHandler(location, options, succeed, retry, fail)(SESAME.get(location, options));
+  }
+}
+
 
 getResource['application/sparql-query+olog+svg+xml'] = function(location, options, continuation, fail) {
   log.debug("getResource: ", location, options);
