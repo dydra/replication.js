@@ -275,10 +275,14 @@ responseHandler.getAuthentication = function(location) {
   return( auth );
 }
 responseHandler.setAuthentication = function(location, authentication) {
-  var hostname = new URL(location, document.URL).host;
-  this.map.set(hostname, authentication) ;
-  //  console.log('responseHandler.setAuthentication: ', location, hostname, authentication);
-  return ( authentication);
+  if (typeof(authentication) == 'string') {
+    var hostname = new URL(location, document.URL).host;
+    this.map.set(hostname, authentication) ;
+    //  console.log('responseHandler.setAuthentication: ', location, hostname, authentication);
+    return (true);
+  } else {
+    throw (new Error(`setAuthentication: invalid authentication value: ${authentication}`));
+  }
 }
 
 
@@ -970,8 +974,7 @@ putResource['application/n-triples'] = putResource['application/n-quads'];
 // https://stackoverflow.com/questions/9554987/how-can-i-hide-the-password-entered-via-a-javascript-dialog-prompt
 
 export function authentication_set(location, authentication) {
-  responseHandler.setAuthentication(location, authentication);
-  return ( authentication );
+  return (responseHandler.setAuthentication(location, authentication));
 }
 
 export function authentication_prompt(options) {
