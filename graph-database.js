@@ -869,7 +869,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
           child.forEach(attachChild);
         }
       }
-      if (! objects.has(object)) {
+      if (! objects.has(object.identifier)) {
         objects.set(object.identifier, object);
         object._store = thisStore;
         object._transaction = thisStore.transaction;

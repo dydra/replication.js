@@ -256,7 +256,7 @@ export class RDFEnvironment extends GraphEnvironment {
   }
 
   computeGraphObjects(field, resourceIDs = this.graphResourceIDs(field).map(name), context = new Map()) {
-    return (resourceIDs.map(function(id) { return (computeGraphObject(field, id, context)); }));
+    return (resourceIDs.map(function(id) { return (computeGraphObject(field, id, context)) }));
   }
 
   graphClassName(field) {
@@ -270,7 +270,7 @@ export class RDFEnvironment extends GraphEnvironment {
    * for each instance extract its +/- deltas
    */
   computeDeltas(content) {
-    // console.log("cd", content, content.computeDeltas);
+    // console.log("computeDeltas", content, content.computeDeltas);
     return (content.computeDeltas(this));
   }
  

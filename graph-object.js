@@ -2,7 +2,7 @@
 
 /**
  @overview
-The class GraphObject is an abstract class which wraps each concrete
+The class GraphObject is an abstract class which wraps each
 instance in a proxy to mediate property access and implement a jdo/jpa-like
 state machine to control instance.
 The logic distinguishes detached/attached situations wrt a ReplicaObjectStore
@@ -234,17 +234,26 @@ export class GraphObject {
   persistentProperties() {
     //console.log('persistentProperties');
     if (! this._persistentProperties) {
-      var validProperties = Object.keys(this).concat(Object.keys(this.constructor.prototype));
+      var ownProperties = Object.keys(this);
+      var prototypeProperties = Object.keys(this.constructor.prototype);
+      var existingProperties = ownProperties.concat(prototypeProperties);
       //console.log('persistentProperties: new');
       this.constructor.persistentProperties();
+      console.log("own", ownProperties);
+      console.log("prototype", prototypeProperties);
+      console.log("_persistent", this._persistentProperties);
       for (const p of this._persistentProperties) {
-        if (validProperties.indexOf(p) < 0) {
+        if (existingProperties.indexOf(p) < 0) {
           console.trace(`GraphObject.persistentProperties: property not found: '${p}'`, this);
           throw new Error(`GraphObject.persistentProperties: property not found: '${p}'`);
         }
       }
     }
     return (this._persistentProperties);
+  }
+
+  editableProperties() {
+    return (this._editableProperties || this.persistentProperties());
   }
 
   /**
@@ -351,6 +360,7 @@ GraphObject.prototype.asPatch[GraphObject.stateNew] =
     var self = this;
     var id = self.identifier;
     var statements = [];
+    // collect storage  representation agnostic  entity-attribute-value statements
     self.persistentProperties().forEach(function(name) {
       statements.push([id, name, self[name]]);
     });
