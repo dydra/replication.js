@@ -3,6 +3,7 @@
 import {getResource} from './resource-access.js';
 import {GraphObject} from './graph-object.js';
 import { makeUUIDString } from './revision-identifier.js';
+import { NamedNode } from './rdf-environment.js';
 
 /**
    The class RDFGraphObject extends the GraphObject definition with logic to
@@ -22,34 +23,29 @@ export class RDFGraphObject extends GraphObject {
         var self = this._self || this;
         var patch = super.asPatch();
         var rdfPatch = {};
+        console.trace("asPatch: generic", patch)
         for (let [mode, assertions] of Object.entries(patch)) {
             rdfPatch[mode] = self.assertionStatements(assertions);
         }
+        console.log("asPatch: rdf", this.constructor.name, rdfPatch);
         return (rdfPatch);
     }
 
     assertionStatements(assertions) {
-        var propertyMap = this.propertyMap;
-
+        console.log("assertionStatements", assertions);
+        var thisObject = this;
         function assertionStatement(assertion) {
             var [subject, name, value] = assertion;
-            var predicate = propertyMap.get(name);
+            var predicate = thisObject.getPropertyIdentifier(name);
             if (!predicate) {
                 throw new Error(`field predicate unknown: ${name}`);
             }
-            return ([subject, predicate, object]);
+            return ([subject, predicate, value]);
         }
         return (assertions.map(assertionStatement));
     }
-
-    /**
-     The default property map is a static map bound to the class, as is by
-      the getSparqlClass.computeSparqlClass combination.
-     */
-    get propertyMap() { return (this.constructor.propertyMap); }
 }
 
-RDFGraphObject.propertyeMap = new Map();
 window.RDFGraphObject = RDFGraphObject;
 
 /**
@@ -104,7 +100,12 @@ export function computeSparqlClass(sparqlDefinition) {
             }
         }
     }
-    
+
+    // don't add abbrreviated desriptor to map only
+    // var typeDescriptor = {name: "@type", identifier: NamedNode.rdf.type};
+    // propertyMap.put("@type", typeDescriptor);
+    // propertyMap.put(NamedNode.rdf.type, typeDescriptor);
+
     // console.log("extracting...", className);
     extractPatterns(sparqlDefinition);
     console.log("computeSparqlClass.statementPatterns", statementPatterns);
@@ -178,8 +179,8 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
     var labelWidth = 40;
     var valueWidth = 100;
     var elementWidth = 0;
-    var elementHeight = 20;
-    var gridPad = 8;
+    var elementHeight = 24;
+    var gridPad = 10;
     var pixelsPerCharacter = 10;
     var editableProperties = object.editableProperties();
     var classStyle = object.constructor.objectEditorCss;
@@ -198,16 +199,26 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
         labelElement.innerText = key;
         labelWidth = Math.max(labelWidth, (key.length +2) * pixelsPerCharacter);
         labelElement.className = "editorLabel";
-        labelElement.style.cssText = "display: block; height: 8px; font-size: 8pt; padding: 0; position: absolute; right: 6px; top: -8px;";
+        labelElement.style.cssText = "display: block; height: 8px; font-size: 8pt; padding: 0; position: absolute; right: 6px; top: -11px;";
         valueElement.className = "editorValue";
         valueElement.style.textAlign =  "left";
         valueElement.style.height =  elementHeight + "px";
+        valueElement.style.marginTop =  "2px";
+        valueElement.style.paddingLeft =  "2px";
         for (var [property, cssValue] of Object.entries(valueStyle)) {
           valueElement.style[property] = cssValue;
         };
         var styleWidth = Number.parseInt(valueElement.style.width || "0px");
         
         valueElement.contentEditable = editable;
+        if (editable) {
+           valueElement.style.backgroundColor = "#ffffff";
+           valueElement.style.borderLeft = "solid 1px #d3d3d3";
+           valueElement.style.borderRight = "solid 1px #d3d3d3";
+           valueElement.style.borderBottom = "solid 1px #d3d3d3";
+        } else {
+           valueElement.style.borderBottom = "solid 1px #d3d3d3";
+        }
         setElementText(valueElement, value);
         allElements[key] = valueElement;
         valueWidth = Math.max(valueWidth, (valueElement.innerText.length * pixelsPerCharacter), styleWidth)
@@ -217,7 +228,7 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
                 if (!editedElements[key]) { editedElements[key] = valueElement; }
             }
         });
-        element.style.cssText = "position: relative; top: 0; left: 0; grid-column: 1; border-bottom: solid 1px gray;";
+        element.style.cssText = "position: relative; top: 0; left: 0; grid-column: 1;" ;
         // the object's class can define appropriate grid regions
         element.style.gridRow = row;
         element.className = key;
@@ -252,6 +263,9 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
     }
     function setObject(newObject) {
         object = newObject;
+        updateFields();
+    }
+    function updateFields() {
         editableProperties.forEach(function(key) {
           setElementText(allElements[key], object[key]);
           delete editedElements[key];
@@ -289,13 +303,15 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
             break;
             }
         }
-        console.log("objectEditor.updateObject: edited", editedElements);
         Object.keys(editedElements).forEach(applyElement);
+        console.log("objectEditor.updateObject: edited", editedElements);
+        console.log("objectEditor.state", object._state, object._deltas);
         return (count);
     }
     editableProperties.forEach(addFieldElements);    
     fieldsElement.id = object.id || makeUUIDString();
     fieldsElement.updateObject = updateObject;
+    fieldsElement.updateFields = updateFields;
     fieldsElement.setObject = setObject;
     fieldsElement.getObject = function () { return (object) };
     fieldsElement.style.display = "grid";
@@ -315,7 +331,7 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
         elt.parentNode.style.width = elt.style.width;
     });
     fieldsElement.style.width = (elementWidth +4) + "px";
-    fieldsElement.style.paddingTop = "6px";
+    fieldsElement.style.paddingTop = "8px";
     fieldsElement.style.paddingLeft = "2px";
     fieldsElement.style.paddingBottom = "2px";
     fieldsElement.style.gridRowGap = gridPad +"px";
@@ -387,11 +403,16 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
     function doSave(event) {
         var id = idElement.innerText;
         var store = object.store();
-        console.log("doSave");
+        console.log("doSave", object);
         if (id && presentation.updateObject() > 0) {
           object.setIdentifier(id);
           if (store) {
-            store.put(object);
+            var transaction = store.database.transaction([store.name], "readwrite");
+            console.log("opened transaction", store, transaction);
+            console.log("store =?", store == transaction.stores[0]);
+            console.log("object =?", object == transaction.stores[0].objects.get(object.getIdentifier()));
+            //transaction.stores[0].put(object);
+            transaction.commit();
           }
         }
     }
@@ -416,8 +437,13 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
     frame.style.height = "auto";
     frame.style.width = (Number.parseInt(presentation.style.width)+4) +"px";
     frame.draggable = "true";
-    frame.setObject = presentation.setObject;
-    frame.getObject = presentation.getObject;
+    frame.setObject = function (newObject) { object = newObject; presentation.setObject(newObject); }
+    frame.getObject = function () { return(object); };
+    frame.updateFields = function () {
+      idElement.innerText = object.getIdentifier() || "";
+      presentation.updateFields();
+    }
+    frame.updateObject = presentation.updateObject;
     controls.style.backgroundColor = "#f0f0f0";
     controls.style.border = "none";
     controls.style.display = "grid";

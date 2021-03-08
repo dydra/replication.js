@@ -101,10 +101,11 @@ export class GraphObject {
     },
 
     set(target, name, value) {
-      //console.log("handled set", target, name, value)
+      console.log("handled set")
       if (name == "_handler") { throw new GraphStateError(true, "set"); }
       if (handler.hasOwnProperty(name)) { handler[name] = value; return true;}
       var properties = target.constructor.managedProperties();
+      console.log("handled set", target, name, value, handler._store)
       if (properties.includes(name)) {
         // if the property is managed
         switch (handler._state) {
@@ -118,7 +119,7 @@ export class GraphObject {
         }
         if (handler._store) {
           // attached
-          //console.log('persistent set');
+          console.log('persistent set');
           var oldValue = target[name];
           if (oldValue != value ) {
             var deltas = handler._deltas;
@@ -266,13 +267,8 @@ export class GraphObject {
    implement as properties of the base function to permit extension
    */
   asPatch() {
-    //console.log('GraphObject.asPatch');
-    //console.log(this);
-    var self = this._self || this;
-    // console.log('asPatch: ', self);
-    // compute the patch for the target instance as per its state
-    // console.log(`asPatch: for state: '${self._state}’`);
-    return (self.asPatch[self._state].call(self));
+    console.log('GraphObject.asPatch');
+    return (GraphObject.asPatch(this));
   }
 
   /**
@@ -285,7 +281,7 @@ export class GraphObject {
       var value = values[1];
       self[name] = value;
     });
-    this.deltas = {};
+    this._deltas = {};
     return (deltas);
   }
 
@@ -302,7 +298,7 @@ export class GraphObject {
         self[name] = value;
     });
     // console.log('rollforward.end', this);
-    this.deltas = {};
+    this._deltas = {};
     return (deltas);
   }
 
@@ -403,17 +399,24 @@ GraphObject.setPropertyType = function(designator, value) {
     return(definition.type = value);
 }
 
+GraphObject.asPatch = function(object) {
+    console.log('GraphObject.asPatch');
+    console.log(object, object._state,);
+    var patchOperator = GraphObject.asPatch[object._state];
+    console.log("asPatch: using: ", patchOperator);
+    return (patchOperator.call(object));
+  }
 
 GraphObject.stateClean = Symbol.for("clean");
 Object.defineProperty(GraphObject.prototype, "stateClean", {get: function () { return (this.constructor.stateClean) }})
-GraphObject.prototype.asPatch[GraphObject.stateClean] =
+GraphObject.asPatch[GraphObject.stateClean] =
   function() {
     return ({});
   }
 
 GraphObject.stateDeleted = Symbol.for("deleted");
 Object.defineProperty(GraphObject.prototype, "stateDeleted", {get: function () { return (this.constructor.stateDeleted) }})
-GraphObject.prototype.asPatch[GraphObject.stateDeleted] =
+GraphObject.asPatch[GraphObject.stateDeleted] =
   function() {
     // iterate over all properties and collect the elements to delete
     var self = this._self;
@@ -422,22 +425,26 @@ GraphObject.prototype.asPatch[GraphObject.stateDeleted] =
     self.persistentProperties().forEach(function(name) {
       statements.push([id, name, self[name]]);
     });
-    statements.push([id, "@type", self.constructor.name]);
+    /*var type = self["_type"];
+    if (type) {
+      statements.push([id, "@type", type]);
+    }*/
     return ({delete: statements});
   }
 
 GraphObject.stateModified = Symbol.for("dirty");
 Object.defineProperty(GraphObject.prototype, "stateDirty", {get: function () { return (this.constructor.stateModified) }})
-GraphObject.prototype.asPatch[GraphObject.stateModified] =
+GraphObject.asPatch[GraphObject.stateModified] =
   function() {
     // iterate over all properties and collect the elements to delete
     var self = this._self;
     var id = this.getIdentifier();
     var posts = [];
     var deletes = [];
+    var deltas = this._deltas;
     self.persistentProperties().forEach(function(name) {
-      if (self._deltas && self._deltas.hasOwnProperty(name)) {
-        var [newValue, oldValue] = self._deltas[name];
+      if (deltas && deltas.hasOwnProperty(name)) {
+        var [newValue, oldValue] = deltas[name];
         if (oldValue) {
           deletes.push([id, name, oldValue]);
         }
@@ -451,7 +458,7 @@ GraphObject.prototype.asPatch[GraphObject.stateModified] =
 
 GraphObject.stateNew = Symbol.for("new");
 Object.defineProperty(GraphObject.prototype, "stateNew", {get: function () { return (this.constructor.stateNew) }})
-GraphObject.prototype.asPatch[GraphObject.stateNew] =
+GraphObject.asPatch[GraphObject.stateNew] =
   function() {
     //console.log('GraphObject.prototype.asPatch[GraphObject.stateNew]');
     //console.log(this);
@@ -464,7 +471,10 @@ GraphObject.prototype.asPatch[GraphObject.stateNew] =
     self.persistentProperties().forEach(function(name) {
       statements.push([id, name, self[name]]);
     });
-    statements.push([id, "@type", self.constructor.name]);
+    /*var type = self["_type"];
+    if (type) {
+      statements.push([id, "@type", type]);
+    }*/
     return ({post: statements});
   }
 

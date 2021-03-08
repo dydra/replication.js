@@ -545,8 +545,12 @@ export class GDBTransaction { // extends IDBTransaction {
                            parentRevisionID: {value: "HEAD"},
                            mode: {value: mode}});
     var stores = names.map(function(name) {
-      var store = database.cloneObjectStore(name);
+      // var store = database.cloneObjectStore(name);
+      // do not clone. it is part of the described method, but it breaks the
+      // connection to the store used to read. why?
+      var store = database.findObjectStore(name);
       //console.log(`transaction store for '${name}’`, store);
+      // leave it to the application to have just one transaction per store
       if (store.transaction) {
         throw new Error(`store is already in a transaction: ${thisTransaction}: ${store}.${store.transaction}`);
       } else {
@@ -693,22 +697,22 @@ export class GDBObjectStore { // extends IDBObjectStore {
    */
   put(object) {  // single level
     var thisStore = this;
-    var request = new PutRequest(this, this.transaction);
+    var request = new PutRequest(this, thisStore.transaction);
+    var patch = object.asPatch();
+    console.log("put", object._state, patch, request);
     object._state = object.stateNew;
     var p = new Promise(function(accept, reject) {
-      var patch = object.asPatch();
       request.patch = patch;
-      request.transaction = thisStore.transaction;
       request.result = object;
-      this.requests.push(request);
+      thisStore.requests.push(request);
       accept(request);
     });
     p.then(function(requestIgnored) {
       for (request = thisStore.requests.shift();
            request;
-           request = this.requests.shift()) {
+           request = thisStore.requests.shift()) {
         // allow the onsuccess to push more requests
-        this.patches.push(request.patch);
+        thisStore.patches.push(request.patch);
         request.readyState = "complete";
         if (request.onsuccess) {
           request.onsuccess(new SuccessEvent("success", "put", request.result));
@@ -759,6 +763,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
               object.oncreate(deltas);
             }
           }
+          object._state = GraphObject.stateClean;
           if (id == keyId) { keyObject = object; }
           continuation(object);
           // it should return
@@ -786,7 +791,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
                              acceptGetContent);
       break;
     case 'object' :
-      console.log("GDBObjectStore.get: as object", key);
+      console.log("GDBObjectStore.get: as object", key, key.constructor);
       keyId = key.getIdentifier();
       keyObject = key;
       if (keyId) {
@@ -813,7 +818,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
    */
   delete(object) {
     var thisStore = this;
-    var request = new DeleteRequest(this, this.transaction);
+    var request = new DeleteRequest(this, thisStore.transaction);
     var p = new Promise(function(accept, reject) {
       var store = object._store;
       if (store == thisStore) { // just mark the closure
@@ -835,7 +840,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
         request.patch = object.asPatch();
       }
       request.result = object;
-      this.requests.push(request);
+      thisStore.requests.push(request);
       accept(request);
     });
     p.then(function(requestIgnored) {
@@ -843,7 +848,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
            request;
            request = thisStore.requests.shift()) {
         // allow the onsuccess to push more requests
-        this.patches.push(request.patch);
+        thisStore.patches.push(request.patch);
         request.readyState = "complete";
         if (request.onsuccess) {
           request.onsuccess(new SuccessEvent("success", "delete", request.result));
@@ -872,7 +877,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
       //  throw new Error(`Object is already attached: ${this}, ${object}.`);
       //} else {}
     } else if (object instanceof GraphObject) {
-      var objects = this.objects;
+      var objects = thisStore.objects;
       var attachChild = function(child) {
         if (child instanceof GraphObject) {
           thisStore.attach(object);
@@ -896,7 +901,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
    */
   detach(object) {
     var thisStore = this;
-    var objects = this.objects;
+    var objects = thisStore.objects;
     var detachChild = function(child) {
       if (child instanceof GraphObject) {
         thisStore.detach(object);
@@ -946,12 +951,12 @@ export class GDBObjectStore { // extends IDBObjectStore {
     var posts = [];
     var puts = [];
     var deletes = [];
-    this.patches.forEach(function(patch) {
+    thisStore.patches.forEach(function(patch) {
       deletes = deletes.concat(patch.delete || []);
       posts = posts.concat(patch.post || []);
       puts = puts.concat(patch.put || []);
     });
-    this.objects.forEach(function(object, id) {
+    thisStore.objects.forEach(function(object, id) {
       // console.log('asPatch: forEach: ', id, object);
       var patch = object.asPatch();
       // console.log('asPatch.forEach');
@@ -961,8 +966,8 @@ export class GDBObjectStore { // extends IDBObjectStore {
       puts = puts.concat(patch.put || []);
     });
     // console.log('asPatch: deletes,posts,puts', deletes, posts, puts);
-    var patch = this.environment.createPatch({delete: deletes, post: posts, put: puts});
-    this.cleanObjects();
+    var patch = thisStore.environment.createPatch({delete: deletes, post: posts, put: puts});
+    thisStore.cleanObjects();
     return (patch);
   }
 

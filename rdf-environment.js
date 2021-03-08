@@ -805,13 +805,13 @@ export function createStatement(subject, predicate, object, graph) {
 }
 
 
-Statement.prototype.encode['application/n-quads'] = function(object, continuation) {
+Statement.prototype.encode['application/n-quads'] = function(statement, continuation) {
   var s,p,o,g = null;
-  object.subject.encode('application/n-quads', function(encoded) { s = encoded; });
-  object.predicate.encode('application/n-quads', function(encoded) { p = encoded; });
-  object.object.encode('application/n-quads', function(encoded) { o = encoded; });
-  if (object.graph) {
-    object.graph.encode('application/n-quads', function(encoded) { g = encoded; });
+  encode(statement.subject, 'application/n-quads', function(encoded) { s = encoded; });
+  encode(statement.predicate, 'application/n-quads', function(encoded) { p = encoded; });
+  encode(statement.object, 'application/n-quads', function(encoded) { o = encoded; });
+  if (statement.graph) {
+    encode(statement.graph, 'application/n-quads', function(encoded) { g = encoded; });
   }
   return (continuation(s + ' ' + p + ' ' + o + ' ' + (g ? (g + ' ') : '') + '.'));
 }
@@ -1270,7 +1270,22 @@ decode['multipart/related'] = function(document, mediaType, continuation) {
  Numbers and strings are encoded in-line while objects delegate to the respective method.
  */
 export function encode(object, mediaType, continuation) {
-  return (encode[mediaType](object, continuation))
+  var genericFunction = object.encode;
+  if (genericFunction) {
+    var specializedMethod = genericFunction[mediaType];
+    if (specializedMethod) {
+       return (specializedMethod(object, continuation));
+    } else {
+      throw new Error(`unknown method: encode(${object}, ${mediaType})`);
+    }
+  } else {
+    specializedMethod = encode[mediaType];
+    if (specializedMethod) {
+      return (specializedMethod(object, continuation));
+    } else {
+      throw new Error(`unknown method: encode(${object}, ${mediaType})`);
+    }
+  }
 }
 
 encode['application/n-quads'] = function(object, continuation) {
