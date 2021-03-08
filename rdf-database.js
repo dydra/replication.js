@@ -9,6 +9,8 @@ via RDF Graph Store and SPARQL protocols.
 import {GraphDatabase} from './graph-database.js';
 import {GSP, SPARQL} from './rdf-graph-store.js';
 import * as RDFEnvironment from './rdf-environment.js';
+import { getResource, headResource, postResource, putResource, deleteResource,
+         authentication_prompt, authentication_set } from './resource-access.js';
 
 // console.log('rdf-database.js: start');
 // console.log(GraphDatabase);
@@ -68,16 +70,13 @@ export class RDFDatabase extends GraphDatabase {
    @param {(function|null)} [continuation]
    @todo Allow an option to override the response content.
    */
-  get(options, continuation = null) {
+  get(options, continuation) {
     console.log("RDFDatabase.get");
-    var decodeGetContent = function(response) {
-      // yields a graph or a patch depending on arriving media type
-      var content = this.environment.decode( response.body, response.headers.get('Content-Type'));
-      return (continuation ? continuation(content) : content);
-    };
-    options = Object.assign({}, options, {authentication: this.authentication});
-    return (GSP.get(this.location, options,
-                    decodeGetContent));
+    options = Object.assign({}, options,
+                    {"Accept": 'application/n-quads',
+                     environment: this.environment,
+                     authentication: this.authentication});
+    getResource(this.location, options, continuation);
   }
 
   /**
@@ -86,11 +85,14 @@ export class RDFDatabase extends GraphDatabase {
    @param {Object} options
    @param {(function|null)} [continuation]
    */
-  describe(keyObject, options, continuation = null) {
+  describe(keyObject, options, continuation) {
     console.log("RDFDatabase.describe");
     console.log(keyObject);
+    options = Object.assign({}, options,
+                    {"Accept": 'application/n-quads',
+                     environment: this.environment,
+                     authentication: this.authentication});
     var thisDatabase = this;
-    options = Object.assign({}, options, {authentication: thisDatabase.authentication});
     var properties = keyObject.persistentProperties();
     var where = Object.getOwnPropertyNames(keyObject).map(function(key) {
       if (properties.indexOf(key) >= 0) {
@@ -107,7 +109,7 @@ export class RDFDatabase extends GraphDatabase {
       }
     }).join(' ');
     var query = `describe ?s where { ${where} }`;
-    return (SPARQL.get(thisDatabase.location, query, options, continuation));
+    postResource(thisDatabase.location, query, options, continuation );
   }
 }
 

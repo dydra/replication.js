@@ -225,7 +225,7 @@ export class RDFEnvironment extends GraphEnvironment {
       if ( resourceClass ) {
         // create the object without state and set just its identifier
         resource = this.createObject(resourceClass)._self;
-        resource.identifier = resourceID;
+        resource.setIdentifier(resourceID);
       } else {
         return ( null );
       }
@@ -269,9 +269,9 @@ export class RDFEnvironment extends GraphEnvironment {
    * find or make an instance respective each identifier
    * for each instance extract its +/- deltas
    */
-  computeDeltas(content) {
-    // console.log("computeDeltas", content, content.computeDeltas);
-    return (content.computeDeltas(this));
+  computeDeltas(content, prototypeObject) {
+    console.log("computeDeltas", content, content.computeDeltas);
+    return (content.computeDeltas(this, prototypeObject));
   }
  
   computeObjectGraph (object) {
@@ -291,7 +291,7 @@ export class RDFEnvironment extends GraphEnvironment {
    */
   toValue(term, predicate) {
     var datatype = term.datatype || this.fieldType(predicate);
-    // console.log('toValue', term, predicate, datatype);
+     console.log('toValue', term, predicate, datatype);
     if (datatype) {
       var converter = Literal.toValue[datatype.lexicalForm];
       // console.log('toValue.converter: ', converter);
@@ -299,7 +299,7 @@ export class RDFEnvironment extends GraphEnvironment {
         return (converter(term.lexicalForm));
       }
     }
-    return (term.lexicalForm);
+    return (term.lexicalForm || term);
   }
 
   /**
@@ -347,13 +347,13 @@ export class RDFEnvironment extends GraphEnvironment {
    */
   decode(document, mediaType, continuation = null) {
     var contentTypeStem;
-    console.log("rdfenv.decode: for", mediaType);
+    console.log("rdfenv.decode: for", mediaType, document);
     if (contentTypeStem = mediaTypeStem(mediaType)) {
       var decoder = decode[contentTypeStem];
       if (!decoder) {
         throw (new Error(`RDFEnvironment.decode: unsupported media type: ${mediaType}`));
       }
-      // console.log("rdfenv.decode: decoder", decoder);
+      console.log("rdfenv.decode: decoder", decoder);
       // must pass the content type as it can include arguments
       var decoded = decoder(document, mediaType, continuation);
       if (decoded) {
@@ -622,7 +622,7 @@ export class Graph {
    and the second is an array of roll-forward deltas.
    That is, the first value is set to a JavaScript value and the second is left undefined.
    */
-  computeDeltas(environment) {
+  computeDeltas(environment, prototypeObject) {
     // console.log('computeDeltas', this, environment);
     // console.log('computeDeltas.fin', environment.findIdentifierName)
     // extract all subjects , for each assemble add/remove sets
@@ -632,10 +632,12 @@ export class Graph {
     var addStatementDelta = function(stmt, makeEntry) {
       // console.log("computeDeltas.asd:", stmt)
       var name = null;
-      try { name = environment.findIdentifierName(stmt.predicate); } catch (e) {console.log("computeDeltas: name failure", e);}
+      var predicate = stmt.predicate.lexicalForm;
+      try { name = prototypeObject.getPropertyName(predicate) || environment.findIdentifierName(stmt.predicate); }
+        catch (e) {console.log("computeDeltas: name failure", e);}
       var value = null;
       try { value = environment.toValue(stmt.object, stmt.predicate); } catch (e) {console.log("computeDeltas: value failure", e);}
-      // console.log("name", name, "value", value);
+      console.log("computeDeltas", "name", name, "value", value);
       var id = stmt.subject.lexicalForm;
       // console.log('id', id);
       // console.log('allDeltas', allDeltas);
@@ -651,9 +653,9 @@ export class Graph {
       } else {
         deltas = idDeltas[1];
       }
-      // console.log('set delta', deltas);
+       console.log('set delta', deltas);
       deltas[name] = delta;
-      // console.log('set delta', deltas);
+       console.log('set delta', deltas);
       var object = null;
       if (name == '@type') {
         // create an instance to accompany the deltas
@@ -1063,13 +1065,14 @@ export class Patch {
   encode(mediaType, continuation) {
     return (this.encode[mediaType](this, continuation));
   }
-  computeDeltas(environment) {
+  computeDeltas(environment, prototypeObject) {
     // extract all subjects , for each assemble add/remove sets
     var ids = [];
     var deltaMap = new Map();
     var addStatementDelta = function(stmt, makeEntry) {
-      var name = environment.findIdentifierName(stmt.predicate);
-      var value = environment.toValue(stmt.object, stmt.predicate);
+      var predicate = stmt.predicate;
+      var name = prototypeObject.getPropertyName(predicate) || environment.findIdentifierName(predicate);
+      var value = environment.toValue(stmt.object, predicate);
       var id = stmt.subject.lexicalForm;
       var idDeltas = deltaMap.get(id);
       var delta = makeEntry(value);

@@ -30,14 +30,14 @@ nqp.feed("<http://example.org/subject><http://example.org/predicate><http://exam
 
 /*
 var moo = require('moo');
-var RDFEnvironment = {
-  createNamedNode: function(lf) { return ({type: 'NamedNode', lexicalForm: lf}); },
-  createBlankNode: function(lf) { return ({type: 'BlankNode', lexicalForm: lf}); },
-  createLiteral: function(lf, lang, type) {
+class RDFEnvironment {
+  createNamedNode (lf) { return ({type: 'NamedNode', lexicalForm: lf}); }
+  createBlankNode (lf) { return ({type: 'BlankNode', lexicalForm: lf}); }
+  createLiteral (lf, lang, type) {
     // console.log("literal", lf, lang, type);
     return({type: 'Literal', lexicalForm: lf, language: lang, type: type});
-  },
-  createQuad: function(s,p,o,g) { return({type: 'quad', s: s, p: p, o: o, g: g}); }
+  }
+  createQuad (s,p,o,g) { return({type: 'quad', s: s, p: p, o: o, g: g}); }
 }*/
 
 import { NamedNode, Graph, RDFEnvironment } from '/javascripts/replication/rdf-environment.js';
@@ -75,6 +75,11 @@ var term = function(parseResult) {
     return (null);
   }
 }
+var re0 = new RegExp("" + UCHARPattern() + "*")
+var re1 = new RegExp(/(?:[^"\\\u005C\u000A\u000D]*(?:\\.[^"\\]*)*)/)
+var re2 = new RegExp(/(?:[^'\\\u005C\u000A\u000D]*(?:\\.[^'\\]*)*)/)
+var reString = new RegExp( '"' + re1.source + re0.source + '"' + "|" + "'" + re2.source + re0.source + "'")
+
 const lexer = moo.compile({
   DOT:          /\./,
   WS:           {match: /[\u0009\u0020]+/, lineBreaks: false},
@@ -91,7 +96,7 @@ const lexer = moo.compile({
                    return (lexicalForm);
                  }},
   CARAT:        {match: /\^\^/, lineBreaks: false},
-  STRING_LITERAL_QUOTE: { match: new RegExp( '"(?:[^"\u005C\u000A\u000D]|' + ECHARPattern() + '|' + UCHARPattern() + ')*"'),
+  STRING_LITERAL_QUOTE: { match: reString,
                          value: function(token) { return (token.slice(1, -1));} } ,
   BLANK_NODE_LABEL: { match: new RegExp('_:(?:' + PN_CHARS_UPattern() + '|[0-9])(?:(?:' + PN_CHARSPattern() + '|\\.)*' + PN_CHARSPattern() + ')?'),
                      value: function (token) {

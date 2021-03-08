@@ -365,9 +365,10 @@ getResource['application/n-quads'] = function(location, options, continuation, f
   function succeed(response) {
     log.warn("getResource['application/n-quads']: response: ", response);
     var contentType = response.headers.get('Content-Type');
+    var environment = options.environment || RDFEnvironment.theEnvironment;
     function acceptText(document) {
       log.warn("document:", document);
-      var graph = RDFEnvironment.theEnvironment.decode(document, contentType);
+      var graph = environment.decode(document, contentType);
       if (graph) {
         log.warn("getResource: graph:", graph);
         graph.location = location;

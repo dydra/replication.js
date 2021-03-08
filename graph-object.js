@@ -48,32 +48,37 @@ class GraphStateError extends Error {
  The abstract root class for all managed objects
  */
 export class GraphObject {
-  constructor() {
-    this.initializeState();
-    // out-of-line initialization to avoid proxy
+  constructor () {
+    var handler = this.initializeState(this.createHandler(this));
     this.initializeInstance(...arguments);
-    return (this.createProxy());
+    return this.createProxy(this, handler);
   }
 
+
   /**
-   Provide a method to initialize the code properies from the constructor
-   out-of-line and for direct object creation
+   Provide a method to initialize the handler meta-properies.
+   from the constructor, it must be called with the hander
+   for direct object creation, it defaults
    */
-  initializeState(state = GraphObject.stateNew) {
-    this._state = state;
-    this._store = null;
-    this._transaction = null;
-    this._deltas = null;
-    this._identifier = undefined;
+  initializeState(handler = this._handler, options = {state: GraphObject.stateNew}) {
+    handler._deltas = null;
+    handler._identifier = undefined;
+    handler._state = options.state;
+    handler._store = null;
+    handler._self = this;
+    handler._transaction = null;
+    return (handler);
   }
+
 
   /**
    Provide a method to perform general initialization out-of-line.
    */
-  initializeInstance() {}
+  initializeInstance(options) {}
+
 
   /**
-   The final step of {@link GraphObject} base constructor invokes this to
+   The final step of {@link GraphObject} base constructor invokes these to
    create the proxy which wraps the target instance and manages its property
    access. It excludes those which begin with '_' and limits control to
    {@link GraphObject#managedProperties}, if specified.
@@ -82,110 +87,101 @@ export class GraphObject {
    Set modifies instance state as a side-effect.
    As a special case, given get('_self'), it returns the target instance.
    */
-  createProxy() {
-    // console.log('create proxy', this);
-    var proxy = new Proxy (this, {
-      set(target, name, value) {
-        //console.log({set: name, value: value});
-        var properties = target.constructor.managedProperties();
-        if ((properties == [] && (name[0] != '_'))
-            || properties.includes(name)) {
-          // if the property is managed
-          switch (target._state) {
-            case GraphObject.stateNew:
-              break;
-            case GraphObject.stateClean:
-              target._state = GraphObject.stateModified;
-              break;
-            case GraphObject.stateDeleted:
-              throw new GraphStateError(target._state, "set");
-          }
-          if (target._store) {
-            // attached
-            //console.log('persistent set');
-            var oldValue = target[name];
-            if (oldValue != value ) {
-              var deltas = target._deltas;
-              if (! deltas) {
-                deltas = {};
-                target._deltas = deltas;
-              }
-              var delta = deltas[name];
-              if (delta) {
-                if (delta[1] == value) {
-                  // if setting back to the original value, delete the entry
-                  deltas.delete(name);
-                } else {
-                  // otherwise replace the new value
-                  delta[0] = value;
-                }
-              } else {
-                // iff this is the first change, record [new,old]
-                delta = [value, oldValue];
-                deltas[name] = delta;
-              }
-            }
-          } else {
-          // detached or no active transaction
-          }
+  createProxy(target, handler) {
+    return (new Proxy(target, handler));
+  }
+
+  createHandler (object) {
+  var handler = {
+    get(target, name) {
+      // console.log("handled get", target, name)
+      if (name == "_handler") { return (handler); }
+      if (handler.hasOwnProperty(name)) { return (handler[name]); }
+      return (target[name])
+    },
+
+    set(target, name, value) {
+      //console.log("handled set", target, name, value)
+      if (name == "_handler") { throw new GraphStateError(true, "set"); }
+      if (handler.hasOwnProperty(name)) { handler[name] = value; return true;}
+      var properties = target.constructor.managedProperties();
+      if (properties.includes(name)) {
+        // if the property is managed
+        switch (handler._state) {
+          case GraphObject.stateNew:
+            break;
+          case GraphObject.stateClean:
+            handler._state = GraphObject.stateModified;
+            break;
+          case GraphObject.stateDeleted:
+            throw new GraphStateError(handler._state, "set");
         }
-        // set the property
-        target[name] = value;
-        return true;
-      },
-      get(target, name) {
-        //console.log({get: name});
-        switch (name) {
-        case '_self':  // special case to get the target
-          //console.log('as self');
-          //console.log(target);
-          return (target);
-        default:
-          var properties = target.persistentProperties();
-          if ((properties == [] && (name[0] != '_'))
-              || properties.includes(name)) {
-            // if the property is managed
-            /*
-            if (target._transaction) {
-              switch (target._state) {
-              default: // read in all states except new (ie. also deleted)
-                return (target[name]);
-              case GraphObject.stateNew:
-                throw new GraphStateError(GraphObject.stateNew, "get");
+        if (handler._store) {
+          // attached
+          //console.log('persistent set');
+          var oldValue = target[name];
+          if (oldValue != value ) {
+            var deltas = handler._deltas;
+            if (! deltas) {
+              deltas = {};
+              handler._deltas = deltas;
+            }
+            var delta = deltas[name];
+            if (delta) {
+              if (delta[1] == value) {
+                // if setting back to the original value, delete the entry
+                deltas.delete(name);
+              } else {
+                // otherwise replace the new value
+                delta[0] = value;
               }
-            }*/
+            } else {
+              // iff this is the first change, record [new,old]
+              delta = [value, oldValue];
+              deltas[name] = delta;
+            }
           }
-          return (target[name]);
+        } else {
+          // detached
         }
       }
-    });
-    // console.log('create proxy', proxy);
-    return (proxy);
+      // set the property
+      target[name] = value;
+      return true;
+    },
   }
+  return(handler);
+  }
+
 
   /**
    The getter return a property which serves as the identity in the store.
    The value should be suitable to act as both an object and a map key.
-   @abstract
    */
-  get identifier () {
-    console.trace("No GraphObject identifier defined.", this);
-    throw new Error("No GraphObject identifier defined.");
+  getIdentifier () {
+    return (this._identifier);
   }
   /**
-   The setter must record the value as the instance identity in the store.
+   The setter must record a value suitable as the instance identity in the store.
    @abstract
    */
-  set identifier (value) {
-    console.trace("No GraphObject identifier defined.", this);
-    throw new Error("No GraphObject identifier defined.");
+  setIdentifier (value) {
+    this._identifier = value;
   }
+
+  /**
+   Return the object's store
+   */
+  store() {
+    return (this._store);
+  }
+
   /**
    Return the current instance state, ["clean", "deleted", "dirty", "new"],
    to reflect the correspondence between the instance state and that in the
    store.
    */
-  get state() {
+  state() {
     return (this._state);
   }
 
@@ -211,8 +207,7 @@ export class GraphObject {
    Return an array of the values of persistent properties.
    */
   persistentValues() {
-    var self = this._self || this;
-    var names = self.persistentProperties();
+    var names = this.persistentProperties();
     var values = [];
     names.forEach(function(name) { 
       values.push(self[name]);
@@ -221,7 +216,8 @@ export class GraphObject {
   }
 
   /**
-   Return an array of the names of managed properties, to be managed by the proxy.
+   Return an array of the names of managed properties.
+   If not yet bound, delegate to the class for it to compute and bind to the prototype.
    */
   managedProperties() {
     return (this._managedProperties
@@ -284,11 +280,13 @@ export class GraphObject {
    nb. also undefined values, could restrict to null
    */
   rollback(deltas = this._deltas) {
-    var self = this._self || this;
+    var self = this._self;
     deltas.forEach(function(name, values) {
       var value = values[1];
       self[name] = value;
     });
+    this.deltas = {};
+    return (deltas);
   }
 
   /**
@@ -296,7 +294,7 @@ export class GraphObject {
    nb. also undefined values, could restrict to null
    */
   rollforward(deltas = this._deltas) {
-    var self = this._self || this;
+    var self = this._self;
     console.log('rollforward', self, deltas);
     Object.entries(deltas).forEach(function([name, values]) {
       // console.log('rollforward', name, values);
@@ -304,22 +302,122 @@ export class GraphObject {
         self[name] = value;
     });
     // console.log('rollforward.end', this);
+    this.deltas = {};
+    return (deltas);
   }
 
+  // delegate to class for property definition access
+  get propertyDefinitions () {
+    console.log("pd", this, this.constructor, this.constructor.propertyDefinitions)
+    return (this.constructor.propertyDefinitions);
+  }
+  getPropertyDefinition(designator) {
+    return (this.propertyDefinitions.get(designator));
+  }
+  setPropertyDefinition(designator, definition) {
+    this.propertyDefinitions.set(designator, definition);
+  }
+
+  getPropertyName (designator) {
+    console.log("getPropertyName", this.propertyDefinitions, designator, typeof designator);
+    return ((this.getPropertyDefinition(designator) || {}).name)
+  }
+  setPropertyName = function(designator, value) {
+    var definition = this.getPropertyDefinition(designator);
+    if (!definition) {
+      definition = {};
+      this.setPropertyDefinition(designator, definition);
+    }
+    return(definition.name = value);
+  }
+
+  getPropertyIdentifier(designator) {
+    return (this.constructor.getPropertyIdentifier(designator));
+  }
+  setPropertyIdentifier(designator, value) {
+    return (this.constructor.setPropertyIdentifier(designator, value));
+  }
+
+  getPropertyType(designator) {
+    return (this.constructor.getPropertyType(designator));
+  }
+  setPropertyType(designator, value) {
+    return (this.constructor.setPropertyType(designator, value));
+  }
 }
 
-GraphObject.stateClean = "clean";
+
+GraphObject.create = function(fromClass, definitions = {}, options = {}) {
+  var object = Object.create(fromClass.prototype, definitions);
+  var handler = this.createHandler(object);
+  object.initializeInstance(options);
+  handler = object.initializeState(handler);
+  return (new Proxy(object, handler))
+}
+
+GraphObject.propertyDefinitions = new Map();
+Object.defineProperty(GraphObject.prototype, "_self", {get: function() { return (this) }})
+//Object.defineProperty(GraphObject.prototype, "propertyDefinitions", {get: function() { return (this.constructor.propertyDefinitions) }})
+
+GraphObject.getPropertyDefinition = function(designator) {
+    return (this.propertyDefinitions.get(designator));
+}
+GraphObject.setPropertyDefinition = function(designator, definition) {
+  return (this.propertyDefinitions.set(designator, definition));
+}
+
+GraphObject.getPropertyName = function(designator) {
+    console.log("getPropertyName", this.propertyDefinitions, designator, typeof designator);
+    return ((this.getPropertyDefinition(designator) || {}).name)
+}
+GraphObject.setPropertyName = function(designator, value) {
+    var definition = this.getPropertyDefinition(designator);
+    if (!definition) {
+      definition = {};
+      this.setPropertyDefinition(designator, definition);
+    }
+    return(definition.name = value);
+}
+
+GraphObject.getPropertyIdentifier = function(designator) {
+    return ((this.getPropertyDefinition(designator) || {}).identifier)
+}
+GraphObject.setPropertyIdentifier = function(designator, value) {
+    var definition = this.getPropertyDefinition(designator);
+    if (!definition) {
+      definition = {};
+      this.setPropertyDefinition(designator, definition);
+    }
+    return(definition.identifier = value);
+}
+
+GraphObject.getPropertyType = function(designator) {
+    return ((this.getPropertyDefinition(designator) || {}).type)
+}
+GraphObject.setPropertyType = function(designator, value) {
+    var definition = this.getPropertyDefinition(designator);
+    if (!definition) {
+      definition = {};
+      this.setPropertyDefinition(designator, definition);
+    }
+    return(definition.type = value);
+}
+
+
+GraphObject.stateClean = Symbol.for("clean");
+Object.defineProperty(GraphObject.prototype, "stateClean", {get: function () { return (this.constructor.stateClean) }})
 GraphObject.prototype.asPatch[GraphObject.stateClean] =
   function() {
     return ({});
   }
 
-GraphObject.stateDeleted = "deleted";
+GraphObject.stateDeleted = Symbol.for("deleted");
+Object.defineProperty(GraphObject.prototype, "stateDeleted", {get: function () { return (this.constructor.stateDeleted) }})
 GraphObject.prototype.asPatch[GraphObject.stateDeleted] =
   function() {
     // iterate over all properties and collect the elements to delete
-    var self = this;
-    var id = self.identifier;
+    var self = this._self;
+    var id = this.getIdentifier();
     var statements = [];
     self.persistentProperties().forEach(function(name) {
       statements.push([id, name, self[name]]);
@@ -328,12 +426,13 @@ GraphObject.prototype.asPatch[GraphObject.stateDeleted] =
     return ({delete: statements});
   }
 
-GraphObject.stateModified = "dirty";
+GraphObject.stateModified = Symbol.for("dirty");
+Object.defineProperty(GraphObject.prototype, "stateDirty", {get: function () { return (this.constructor.stateModified) }})
 GraphObject.prototype.asPatch[GraphObject.stateModified] =
   function() {
     // iterate over all properties and collect the elements to delete
-    var self = this;
-    var id = self.identifier;
+    var self = this._self;
+    var id = this.getIdentifier();
     var posts = [];
     var deletes = [];
     self.persistentProperties().forEach(function(name) {
@@ -350,15 +449,16 @@ GraphObject.prototype.asPatch[GraphObject.stateModified] =
     return ({post: posts, delete: deletes});
   }
 
-GraphObject.stateNew = "new";
+GraphObject.stateNew = Symbol.for("new");
+Object.defineProperty(GraphObject.prototype, "stateNew", {get: function () { return (this.constructor.stateNew) }})
 GraphObject.prototype.asPatch[GraphObject.stateNew] =
   function() {
     //console.log('GraphObject.prototype.asPatch[GraphObject.stateNew]');
     //console.log(this);
     //console.log(this.persistentProperties());
     // iterate over all properties and collect the elements to delete
-    var self = this;
-    var id = self.identifier;
+    var self = this._self;
+    var id = this.getIdentifier();
     var statements = [];
     // collect storage  representation agnostic  entity-attribute-value statements
     self.persistentProperties().forEach(function(name) {
@@ -415,14 +515,8 @@ GraphObject.transactionalProperties = function() {
 GraphObject._persistentProperties = null;
 GraphObject._transactionalProperties = null;
 
-GraphObject.stateClean =
-  GraphObject.prototype.stateClean = "clean";
-GraphObject.stateDeleted =
-  GraphObject.prototype.stateDeleted =  "deleted";
-GraphObject.stateModified =
-  GraphObject.prototype.stateModified =  "dirty";
-GraphObject.stateNew =
-  GraphObject.prototype.stateNew =  "new";
+
+if (window) { window.GraphObject = GraphObject; }
 
 /*
 GraphObject.hollow = "hollow";

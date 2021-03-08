@@ -85,7 +85,6 @@ import {NotFoundError} from './errors.js';
 import * as $uuid from './revision-identifier.js';
 
 const now = Date.now;
-window.thisDatabase = null;
 
 class GraphFactory extends IDBFactory {
 
@@ -226,8 +225,8 @@ var resp = onmessage_parse("HTTP/1.1 200 OK\r\nContent-Type: application/n-quads
 export class GraphDatabase { // extends IDBDatabase {
   constructor(name, location, authentication, options = {}) {
     //super();
-    //console.log('GraphDatabase.constructor');
-    //console.log(arguments);
+    console.log('GraphDatabase.constructor');
+    console.log(arguments);
     this.name = name;
     this.baseETag = this.makeUUID();
     this.nodeAddress = this.baseETag.substring(24);  // use to filter or check mirrored replications
@@ -426,7 +425,7 @@ export class GraphDatabase { // extends IDBDatabase {
    @abstract
    */
   head(options, continuation) {
-    throw (new Error(`${this.constructor.name}.get must be defined`));
+    throw (new Error(`${this.constructor.name}.head must be defined`));
   }
   /**
    The base method caches the patch with time and regision tags.
@@ -497,15 +496,15 @@ onmessage['multipart/related'] = function(db, response) {
         deltas = db.environment.computeDeltas(patch);
         if (deltas) {
           // console.log("GDBObjectStore.onmessage.multipart: deltas", deltas);
-          var gottenObjects = deltas.map(function(idDeltas) {
-            // console.log("GDBObjectStore.onmessage: next delta", idDeltas);
-            var [id, deltas] = idDeltas;
+          var gottenObjects = deltas.map(function(perIdDeltas) {
+            // console.log("GDBObjectStore.onmessage: next delta", perIdDeltas);
+            var [id, deltas] = perIdDeltas;
             var object = db.findObject(id);
             // console.log("GDBObjectStore.onmessage: found:", object);
             if (object) {
               object.onupdate(deltas);
             } else {
-              object = idDeltas['object'];
+              object = perIdDeltas['object'];
               // console.log("GDBObjectStore.onmessage: created", object); 
               if (object) {
                 object.oncreate(deltas);
@@ -729,70 +728,82 @@ export class GDBObjectStore { // extends IDBObjectStore {
    suport rollforward/rollback
    @param {(Object|string)} key
    */
-  get(key) {
+  get(key, continuation) {
     console.log("GDBObjectStore.get", key, this);
     var thisStore = this;
     var request = new GetRequest(thisStore, thisStore.transaction);
+    var keyId = null;
+    var keyObject = null;
     var p = null;
     thisStore.requests[key] = request;
-    // console.log(request);
+    console.log("get", key, request);
+
+    function acceptGetContent (content) {
+      console.log("get.acceptGetContent", content);
+      delete thisStore.requests[key];
+      if (content) {
+        var deltas = thisStore.environment.computeDeltas(content, keyObject);
+        // console.log("GDBObjectStore.get: deltas", deltas);
+        var gottenObjects = deltas.map(function(perIdDeltas) {
+          // console.log('GDBObjectStore.get: next delta', perIdDeltas);
+          var [id, deltas] = perIdDeltas;
+          console.log('GDBObjectStore.get: next perIdDeltas', perIdDeltas);
+          var object = thisStore.objects.get(id);
+          // console.log('GDBObjectStore.get: gotten:', object);
+          if (object) {
+            object.onupdate(deltas);
+          } else {
+            object = perIdDeltas['object'];
+            // console.log("GDBObjectStore.get: created", object); 
+            if (object) {
+              object.oncreate(deltas);
+            }
+          }
+          if (id == keyId) { keyObject = object; }
+          continuation(object);
+          // it should return
+          return (object);
+        });
+        // console.log("GDBObjectStore.get: gotten objects", gottenObjects);
+        request.result = deltas;
+        if (request.onsuccess) {
+          request.onsuccess(new SuccessEvent("success", "get", gottenObjects));
+        }
+        if (thisStore.transaction) {
+          thisStore.transaction.commitIfComplete();
+        }
+        continuation(keyObject);
+      };
+    };
     switch (typeof(key)) {
     case 'string' :
-      // console.log("GDBObjectStore.get: as string", key);
-      p = // perform a get to retrieve the single instance via from the database
-        thisStore.database.get({subject: key,
-                                revision: thisStore.revision,
-                                "Accept": 'application/n-quads'});
+      console.log("GDBObjectStore.get: as string", key);
+      keyId = key;
+      keyObject = thisStore.objects.get(keyId);
+      // perform a get to retrieve the single instance via from the database
+      thisStore.database.get({subject: key,
+                              revision: thisStore.revision},
+                             acceptGetContent);
       break;
     case 'object' :
-      // console.log("GDBObjectStore.get: as object", key);
-      p = // construct a describe to retrieve the single instance via from the database
-        thisStore.database.describe(key, {revision: thisStore.revision,
-                                          "Accept": 'application/n-quads'});
+      console.log("GDBObjectStore.get: as object", key);
+      keyId = key.getIdentifier();
+      keyObject = key;
+      if (keyId) {
+        thisStore.objects.set(keyId, key);
+        thisStore.database.get({subject: '<'+keyId+'>',
+                                revision: thisStore.revision},
+                               acceptGetContent);
+      } else {
+        thisStore.database.describe(key, {revision: thisStore.revision},
+                                    acceptGetContent);
+      }
       break;
     default :
-      return (null);
+      continuation (null);
     }
 
     // console.log("GDBObjectStore.get: promise", p);
-    p.then(function(response) {
-      var contentType = response.headers.get['Content-Type'] || 'application/n-quads';
-      // console.log("get.continuation", response);
-      delete thisStore.requests[key];
-      response.text().then(function(text) {
-        // console.log("text", text);
-        // console.log("store", thisStore);
-        // console.log("env", thisStore.environment);
-        var decoded = thisStore.environment.decode(text, contentType);
-        if (decoded) {
-          var deltas = thisStore.environment.computeDeltas(decoded);
-          // console.log("GDBObjectStore.get: deltas", deltas);
-          var gottenObjects = deltas.map(function(idDeltas) {
-            // console.log('GDBObjectStore.get: next delta', idDeltas);
-            var [id, deltas] = idDeltas;
-            // console.log('GDBObjectStore.get: next idDeltas', idDeltas);
-            var object = thisStore.objects.get(id);
-            // console.log('GDBObjectStore.get: gotten:', object);
-            if (object) {
-              object.onupdate(deltas);
-            } else {
-              object = idDeltas['object'];
-              // console.log("GDBObjectStore.get: created", object); 
-              if (object) {
-                object.oncreate(deltas);
-              }
-            }
-            return (object);
-          });
-          // console.log("GDBObjectStore.get: gotten objects", gottenObjects);
-          if (request.onsuccess) {
-            request.result = delta;
-            request.onsuccess(new SuccessEvent("success", "get", gottenObjects));
-          }
-        }
-        thisStore.transaction.commitIfComplete();
-      });
-    });
     return (request);
   }
 
@@ -869,14 +880,14 @@ export class GDBObjectStore { // extends IDBObjectStore {
           child.forEach(attachChild);
         }
       }
-      if (! objects.has(object.identifier)) {
-        objects.set(object.identifier, object);
+      if (! objects.has(object.getIdentifier())) {
+        objects.set(object.getIdentifier(), object);
         object._store = thisStore;
         object._transaction = thisStore.transaction;
         object.persistentValues(object).forEach(attachChild);
         //console.log('attached');
       }
-    }
+    } console.log("attached", object)
     return (object);
   }
 
@@ -894,7 +905,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
       }
     }
     if (object._store == this) {
-      objects.delete(object.identifier);
+      objects.delete(object.getIdentifier());
       object._state = GraphObject.stateNew;
       object._transaction = null;
       object._store = null;
@@ -973,6 +984,15 @@ export class GDBObjectStore { // extends IDBObjectStore {
 
 }
 
+
+export class SuccessEvent extends Event {
+  constructor (state, operation, result) {
+    super(state);
+    this.operation = operation;
+    this.result = result;
+  }
+}
+
 /**
  Combine the object store context and the transaction active at the point when an
  operation was performed to return to the calling application as a handle.
@@ -987,10 +1007,10 @@ class GraphRequest extends IDBRequest {
                           {onerror: {value: GraphRequest.prototype.noErrorProvided},
                            onsuccess: {value: GraphRequest.prototype.noSuccessProvided},
                            source: {value: objectStore},
-                           readyState: {value: "pending"},
+                           readyState: {value: "pending", writable: true},
                            transaction: {value: transaction},
-                           patch: {value: null},
-                           result: {value: null}});
+                           patch: {value: null, writable: true},
+                           result: {value: null, writable: true}});
     return (r);
   }
   noErrorProvided() {};
@@ -1013,6 +1033,8 @@ export class DeleteRequest extends GraphRequest {
 export class CommitRequest extends GraphRequest {
 }
 
+window.thisDatabase = null;
+window.GraphDatabase = GraphDatabase;
 
 // console.log('graph-database.js: loaded');
 

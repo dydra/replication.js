@@ -29,22 +29,28 @@ export class RDFGraphObject extends GraphObject {
     }
 
     assertionStatements(assertions) {
-        var propertyPredicateMap = this.propertyPredicateMap;
+        var propertyMap = this.propertyMap;
 
         function assertionStatement(assertion) {
             var [subject, name, value] = assertion;
-            var predicate = propertyPredicateMap.get(name);
+            var predicate = propertyMap.get(name);
             if (!predicate) {
                 throw new Error(`field predicate unknown: ${name}`);
             }
-            return ([subject, pedicate, object]);
+            return ([subject, predicate, object]);
         }
-        return (statements.map(assertionStatement));
+        return (assertions.map(assertionStatement));
     }
 
+    /**
+     The default property map is a static map bound to the class, as is by
+      the getSparqlClass.computeSparqlClass combination.
+     */
+    get propertyMap() { return (this.constructor.propertyMap); }
 }
 
-RDFGraphObject.prototype.propertyPredicateMap = new Map();
+RDFGraphObject.propertyeMap = new Map();
+window.RDFGraphObject = RDFGraphObject;
 
 /**
    Given a location which designates a sparql view, retrieve the json encoding
@@ -54,64 +60,12 @@ RDFGraphObject.prototype.propertyPredicateMap = new Map();
 */
 
 export function getSparqlClass(location, continuation) {
-    var locationUri = new URL(location);
-    var className = locationUri.pathname.split('/').pop();
-    var statementPatterns = [];
-    function extractPatterns(json) {
-        for (var [name, value] of Object.entries(json)) {
-            if (name == "type" && value == "Triple") {
-                statementPatterns.push(json);
-                break;
-            } else if (typeof value == 'object') {
-                extractPatterns(value);
-            }
-        }
+    function computeAndContinue(definition) {
+       continuation(computeSparqlClass(definition))
     }
-
-    function computeClass(sparqlDefinition) {
-        //sparqlClass.prototype = Object.create(GraphObject.prototype);
-        //sparqlClass.prototype.constructor = sparqlClass;
-        //Object.setPrototypeOf(sparqlClass, GraphObject.prototype);
-    
-        var propertyDefinitions = {};
-        var propertyNames = [];
-        var propertyMap = new Map();
-        console.log("extracting...", className);
-        extractPatterns(sparqlDefinition);
-        console.log("statementPatterns", statementPatterns);
-
-        for (var pattern of statementPatterns) {
-            var predicate = pattern.predicate;
-            var object = pattern.object;
-            if (object.termType == 'Variable') {
-                var name = object.value;
-                var url = predicate.value;
-                var descriptor = Object.create(null);
-                descriptor.writable = true;
-                descriptor.value = undefined;
-                descriptor.enumerable = true;
-                propertyNames.push(name);
-                propertyDefinitions[name] = descriptor;
-                propertyMap.set(name, url);
-            }
-        }
-        const sparqlClass =
-            {[className]: class extends RDFGraphObject {
-                constructor() {
-                    super();
-                    console.log("constructor", className, this, propertyDefinitions);
-                    for (let [name, descriptor] of Object.entries(propertyDefinitions)) {
-                        Object.defineProperty(this, name, descriptor);
-                    }
-                }}} [className];
-        sparqlClass._persistentProperties = propertyNames;
-        sparqlClass._transactionalProperties = propertyNames;
-        sparqlClass.prototype.propertyPredicateMap = propertyMap;
-        continuation(sparqlClass);
-    }
-    getResource(location, {"Accept": 'application/sparql-query+json'}, computeClass);
+    getResource(location, {"Accept": 'application/sparql-query+json'}, computeAndContinue);
 }
-
+RDFGraphObject.getSparqlClass = getSparqlClass;
 
 /**
    Given a location which designates a SPARQL view, delegate to getSparqlClass to
@@ -130,7 +84,74 @@ export function defSparqlClass(resourceLocation, continuation = null) {
     }
     return (getSparqlClass(resourceLocation, bindAndContinue));
 }
+RDFGraphObject.defSparqlClass = defSparqlClass;
 
+export function computeSparqlClass(sparqlDefinition) {
+    var location = sparqlDefinition.location;
+    var locationUri = new URL(location);
+    var className = locationUri.pathname.split('/').pop();
+    var statementPatterns = [];
+    var propertyDefinitions = {};  // definitions, by name only, for use in constructor
+    var propertyNames = []; // names for use in state management
+    var propertyMap = new Map(); // uri+name map for use in codecs
+    function extractPatterns(json) {
+        for (var [name, value] of Object.entries(json)) {
+            if (name == "type" && value == "Triple") {
+                statementPatterns.push(json);
+                break;
+            } else if (typeof value == 'object') {
+                extractPatterns(value);
+            }
+        }
+    }
+    
+    // console.log("extracting...", className);
+    extractPatterns(sparqlDefinition);
+    console.log("computeSparqlClass.statementPatterns", statementPatterns);
+
+    // this retains just one pattern for a given predicate
+    for (var pattern of statementPatterns) {
+        var predicate = pattern.predicate;
+        var object = pattern.object;
+        if (object.termType == 'Variable') {
+            var name = object.value;
+            var url = predicate.value;
+            console.log("nme url", name, url);
+            var identifier = url;
+            var descriptor = Object.create(null);
+            descriptor.writable = true;
+            descriptor.value = undefined;
+            descriptor.enumerable = true;
+            descriptor.name = name;
+            descriptor.identifier = identifier;
+            propertyNames.push(name);
+            propertyDefinitions[name] = descriptor;
+            propertyMap.set(name, descriptor);
+            if (propertyMap.get(identifier)) {
+              console.warn(`computeSparqlClass: predicate appears multiple times: ${identifier}.`);
+            }
+            propertyMap.set(identifier, descriptor);
+            console.log("computeSparqlClass.descriptor", descriptor)
+        }
+    }
+
+    const sparqlClass =
+        {[className]: class extends RDFGraphObject {
+            constructor() {
+                super();
+                // get the target and work on that
+                var self = this._self || this;
+                console.log("constructor", className, this, self, propertyDefinitions);
+                for (let [name, descriptor] of Object.entries(propertyDefinitions)) {
+                    Object.defineProperty(self, name, descriptor);
+                }
+            }}} [className];
+    sparqlClass._persistentProperties = propertyNames;
+    sparqlClass._transactionalProperties = propertyNames;
+    sparqlClass.propertyDefinitions = propertyMap;
+    console.log("computeSparqlClass map", sparqlClass.name, propertyMap);
+    return (sparqlClass);
+}
 
 /**
    Given an RDFGraphObject instance, generate a html presentation
@@ -146,29 +167,29 @@ RDFGraphObject.objectEditorCss = {
   fontSize: "10px"
 }
 
-RDFGraphObject.objectEditor = function(object, options = {}) {
+RDFGraphObject.objectPresentation = function(object, options = {}) {
     console.log("RDFGraphObject.objectEditor: ", object, options);
     options = options || {};
     var fieldsElement = document.createElement('div');
     var row = 1;
+    var objectEditable = (options.hasOwnProperty("editable") ? options.editable : true);
     var editedElements = {};
     var allElements = {};
     var labelWidth = 40;
     var valueWidth = 100;
     var elementWidth = 0;
     var elementHeight = 20;
-    var elementHeights = 0;
     var gridPad = 8;
     var pixelsPerCharacter = 10;
     var editableProperties = object.editableProperties();
     var classStyle = object.constructor.objectEditorCss;
     var optionsStyle = options.style;
-    console.log("styles", classStyle, optionsStyle);
+    console.log("objectEditor: styles", classStyle, optionsStyle);
 
     function addFieldElements(key) {
         var value = object[key] || "";
         var definition = Object.getOwnPropertyDescriptor(object, key);
-        var editable = (definition ? definition.writable : false)
+        var editable = objectEditable && (definition ? definition.writable : false)
         var element = document.createElement('div');
         var labelElement = document.createElement('div');
         var valueElement = document.createElement('div');
@@ -180,18 +201,18 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
         labelElement.style.cssText = "display: block; height: 8px; font-size: 8pt; padding: 0; position: absolute; right: 6px; top: -8px;";
         valueElement.className = "editorValue";
         valueElement.style.textAlign =  "left";
-        valueElement.style.height =  "16px";
+        valueElement.style.height =  elementHeight + "px";
         for (var [property, cssValue] of Object.entries(valueStyle)) {
           valueElement.style[property] = cssValue;
         };
         var styleWidth = Number.parseInt(valueElement.style.width || "0px");
-        console.log("addFieldElements: ", key, value, editable, valueStyle);
         
-        valueElement.contentEditable = true;
+        valueElement.contentEditable = editable;
         setElementText(valueElement, value);
         allElements[key] = valueElement;
         valueWidth = Math.max(valueWidth, (valueElement.innerText.length * pixelsPerCharacter), styleWidth)
         valueElement.addEventListener("keyup", function(event) {
+            // test again here to allow value to disable edit
             if (valueElement.contentEditable=="true") {
                 if (!editedElements[key]) { editedElements[key] = valueElement; }
             }
@@ -237,9 +258,8 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
         });
     }
     function updateObject() {
-        console.log("doupdate");
         var count = 0;
-        function saveElement(key) {
+        function applyElement(key) {
             var element = editedElements[key];
             var text = element.innerText.trim();
             var value = object[key];
@@ -269,34 +289,32 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
             break;
             }
         }
-        console.log("edited", editedElements);
-        Object.keys(editedElements).forEach(saveElement);
+        console.log("objectEditor.updateObject: edited", editedElements);
+        Object.keys(editedElements).forEach(applyElement);
         return (count);
     }
     editableProperties.forEach(addFieldElements);    
     fieldsElement.id = object.id || makeUUIDString();
     fieldsElement.updateObject = updateObject;
     fieldsElement.setObject = setObject;
+    fieldsElement.getObject = function () { return (object) };
     fieldsElement.style.display = "grid";
     fieldsElement.style.gridTemplateRows = `repeat(${row-1}, auto)`;
     fieldsElement.style.gridTemplateColumns = "1";
-    // augment and/or override css
+    // augment and/or override css for entries which do not correspond to object fields
     for (var [property, value] of Object.entries(object.constructor.objectEditorCss)) {
         if (! editableProperties.includes(property)) {
             fieldsElement.style[property] = value;
         }
     }
-    
+
+    // resize all element to the max
     elementWidth = Math.max(labelWidth, valueWidth);
-    // console.log("widths: ", labelWidth, valueWidth);
     fieldsElement.querySelectorAll('.editorValue').forEach(function(elt) {
-            console.log("sum heights", elt, elt.style.height, gridPad);
-            elementHeights += (Number.parseInt(elt.style.height) + gridPad);
-            elt.style.width = elementWidth +"px";
-            elt.parentNode.style.width = elt.style.width;
-        });
-    fieldsElement.style.width = (valueWidth +4) + "px";
-    fieldsElement.style.height = elementHeights + "px";
+        elt.style.width = elementWidth +"px";
+        elt.parentNode.style.width = elt.style.width;
+    });
+    fieldsElement.style.width = (elementWidth +4) + "px";
     fieldsElement.style.paddingTop = "6px";
     fieldsElement.style.paddingLeft = "2px";
     fieldsElement.style.paddingBottom = "2px";
@@ -314,19 +332,18 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
    @param {object} options
 */
 
-RDFGraphObject.editObject = function(object, options = {}) {
-    var fieldsElement = this.objectEditor(object, options);
+RDFGraphObject.objectEditor = function(object, options = {}) {
+    var presentation = this.objectPresentation(object, options);
     var frame = document.createElement('div');
     var controls = document.createElement('div');
     var get = document.createElement('span');
     var save = document.createElement('span');
-    var cancel = document.createElement('span');
+    var reset = document.createElement('span');
+    var trash = document.createElement('span');
     var idElement = document.createElement('span');
     var id = makeUUIDString();
     var [x, y] = options.coordinates || [0,0];
     var dragCount = 0;
-    var saveOp = options.save || console.log;
-    var loadOp = options.load || (function(object) { return (new object.constructor()) });
 
     function dragFrame(event) {
         if (0 == dragCount ++) {
@@ -335,13 +352,13 @@ RDFGraphObject.editObject = function(object, options = {}) {
         event.dataTransfer.setData("text/plain+optionsposition", [event.layerX,event.layerY].toString());
         event.dataTransfer.setData("text/plain+id", event.target.id);
         event.dataTransfer.dropEffect = "move";
-        // console.log("dragging: ", event);
+        console.log("dragging: ", event);
     }
     function dropFrame(event) {
         var position = /(\d+),(\d+)/.exec(event.dataTransfer.getData("text/plain+optionsposition"))
-        .slice(1).map(function(s) {return (Number.parseInt(s))});
+                                    .slice(1).map(function(s) {return (Number.parseInt(s))});
         var id = event.dataTransfer.getData("text/plain+id");
-        // console.log("dropFrame: ", event, position);
+        console.log("dropFrame: ", event, position);
         if (position && id) {
             event.preventDefault();
             var droppedPane = section.querySelector('#'+id);
@@ -350,19 +367,42 @@ RDFGraphObject.editObject = function(object, options = {}) {
         }
     }
     function doGet(event) {
-        object = loadOp(object);
-        fieldsElement.setObject(object);
-    }
-    function doSave(event) {
-        console.log("dosave");
-        if (fieldsElement.updateObject() > 0) {
-          saveOp(object);
+        var id = idElement.innerText;
+        var store = object.store();
+        console.log("doGet.........", object, id, store, object._store);
+        window.doGetObject = object;
+        if (id && store) {
+          object.setIdentifier(id);
+          store.get(object, function (newObject) {
+            if (newObject) {
+              object = newObject
+              presentation.setObject(object);
+            } else {
+              console.log("not found: ", object);
+            }
+          });
         }
     }
-    function doClose(event) {
-        frame.parentNode.removeChild(frame);
-        if (dragCount > 0) {
-          frame.parentNode.removeEventListener("drop", dropFrame);
+    // (test-sparql "select distinct  ?s from <urn:dydra:all> where {?s ?p ?o}" :repository-id "james/cms")
+    function doSave(event) {
+        var id = idElement.innerText;
+        var store = object.store();
+        console.log("doSave");
+        if (id && presentation.updateObject() > 0) {
+          object.setIdentifier(id);
+          if (store) {
+            store.put(object);
+          }
+        }
+    }
+    function doReset(event) {
+        // just reapply the object
+        presentation.setObject(object);
+    }
+    function doDelete(event) {
+        var store = object.store();
+        if (store && object.getIdentifier()) {
+          store.delete(object);
         }
     }
 
@@ -370,32 +410,60 @@ RDFGraphObject.editObject = function(object, options = {}) {
     frame.style.position = options.position || "relative";
     frame.style.display = options.display || "block";
     frame.style.border = "dotted 1px gray";
+    frame.style.paddingBottom = "2px";
     frame.style.top = y + "px";
     frame.style.left = x + "px";
     frame.style.height = "auto";
-    frame.style.width = (Number.parseInt(fieldsElement.style.width)+4) +"px";
+    frame.style.width = (Number.parseInt(presentation.style.width)+4) +"px";
     frame.draggable = "true";
+    frame.setObject = presentation.setObject;
+    frame.getObject = presentation.getObject;
     controls.style.backgroundColor = "#f0f0f0";
+    controls.style.border = "none";
+    controls.style.display = "grid";
+    controls.style.height = "28px";
+    controls.style.gridTemplateRows = "1";
+    controls.style.gridTemplateColumns = " 1fr 24px 24px 24px 24px";
+    controls.style.gridPad = "4px";
+    get.style.width = "24px";
+    get.style.height = "24px";
+    get.style.gridColumn = "2";
     get.style.margin ="2px";
-    get.style.border = "solid 1px gray";
-    get.innerText = "get";
+    //get.innerText = "get";
+    get.style.backgroundImage = "url('https://dydra.com/icons/search.svg')";
+    save.style.width = "24px";
+    save.style.height = "24px";
+    save.style.gridColumn = "3";
     save.style.margin ="2px";
-    save.style.border = "solid 1px gray";
-    save.innerText = "save";
-    cancel.style.margin ="2px";
-    cancel.style.border = "solid 1px gray";
-    cancel.innerText = "cancel";
+    //save.innerText = "save";
+    save.style.backgroundImage = "url('https://dydra.com/icons/device-floppy.svg')";
+    reset.style.width = "24px";
+    reset.style.height = "24px";
+    reset.style.gridColumn = "4";
+    reset.style.margin ="2px";
+    //reset.innerText = "reset";
+    reset.style.backgroundImage = "url('https://dydra.com/icons/rotate.svg')";
+    trash.style.width = "24px";
+    trash.style.height = "24px";
+    trash.style.gridColumn = "5";
+    trash.style.margin ="2px";
+    //trash.innerText = "delete";
+    trash.style.backgroundImage = "url('https://dydra.com/icons/trash.svg')";
     idElement.contentEditable = true;
+    idElement.style.gridColumn = "1";
     idElement.style.margin ="2px";
-    idElement.style.borderBottom = "solid 1px red";
-    idElement.style.width = "auto";
+    idElement.style.border = "solid 1px darkblue";
+
+    idElement.innerText = object.getIdentifier() || "";
+
     
-    frame.appendChild(fieldsElement);
+    frame.appendChild(presentation);
     frame.appendChild(controls);
+    controls.appendChild(idElement);
     controls.appendChild(get);
     controls.appendChild(save);
-    controls.appendChild(cancel);
-    controls.appendChild(idElement);
+    controls.appendChild(reset);
+    controls.appendChild(trash);
 
     frame.addEventListener("dragstart", dragFrame);
     frame.addEventListener("keyup", function(event) {
@@ -409,7 +477,8 @@ RDFGraphObject.editObject = function(object, options = {}) {
         });
     get.addEventListener("click", doGet);
     save.addEventListener("click", doSave);
-    cancel.addEventListener("click", doClose);
+    reset.addEventListener("click", doReset);
+    trash.addEventListener("click", doDelete);
     
     return (frame);
 }
@@ -421,25 +490,52 @@ RDFGraphObject.editObject = function(object, options = {}) {
    @param {object} options
 */
 
-RDFGraphObject.prototype.objectEditor = function(options = {}) {
-    return (this.constructor.objectEditor(this, options));
+RDFGraphObject.prototype.objectPresentation = function(options = {}) {
+    return (this.constructor.objectPresentation(this, options));
 }
 
 /**
-   Generate a html presentation for the instance
+   Generate a html editor for the instance
    
    @param {object} options
 */
 
-RDFGraphObject.prototype.editObject = function(options = {}) {
-    return (this.constructor.editObject(this, options));
+RDFGraphObject.prototype.objectEditor = function(options = {}) {
+    return (this.constructor.objectEditor(this, options));
 }
 
+/*
+ // an trivial document
+ var rgo = null; import("https://nl4.dydra.com/javascripts/replication/rdf-graph-object.js").then(function(m) { rgo = m})
+ rgo.defSparqlClass("https://nl4.dydra.com/james/cms/topics", console.log)
+ topics
+ var aTopic = new topics
+ aTopic.objectEditor()
+ aTopic.editObject({parent: document.querySelector('body')})
 
+ // in observable
+ var db = new GraphDatabase("nl4", "https://nl4.dydra.com/james/cms", secret("nl4/james/cms"), {})
+ var store = db.createObjectStore("test");
+ var 
 
-// var rgo = null; import("https://nl4.dydra.com/javascripts/replication/rdf-graph-object.js").then(function(m) { rgo = m})
-// rgo.defSparqlClass("https://nl4.dydra.com/james/cms/topics", console.log)
-// topics
-// var aTopic = new topics
-// aTopic.objectEditor()
-// aTopic.editObject({parent: document.querySelector('body')})
+${await sparqlObjectEditor("https://nl4.dydra.com/james/cms/topics", {
+  style: { description: { height: '80pt', width: '400px' } },
+  save: function(object) {
+    console.log("to save", object);
+  }
+})}
+
+sparqlPersistentObjectEditor(location, options) {
+  var db = new GraphDatabase("nl4", "https://nl4.dydra.com/james/cms", secret("nl4/james/cms"), {})
+  var store = db.createObjectStore("test");
+  return new Promise(function(accept, reject) {
+    GraphObject.getSparqlClass(location, function(sparqlClass) {
+      var object = new sparqlClass();
+      store.attach(object);
+      accept(
+        RDFGraphObject.editObject(object, options)
+      );
+    });
+  });
+}
+*/

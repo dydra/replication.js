@@ -103,6 +103,7 @@ export class GraphEnvironment {
    */
   fieldDefinition(identifier) {
     var def;
+    console.log("fieldDefinition", identifier);
     switch (typeof(identifier)) {
     case 'string': // field name
       return (this.context[name] || null);
@@ -112,7 +113,7 @@ export class GraphEnvironment {
       if (def) {
         return (def);
       } else {
-        var localPart = identifier.localPart();
+        var localPart = predicateLeaf(identifier);
         def = this.context[localPart];
         if (def) {
           this.context[namestring] = def;
@@ -193,6 +194,14 @@ export class GraphEnvironment {
     }
     // console.log(uri);
     return (uri);
+  }
+
+  /**
+   Given a Graph, and a prototype, compute the per-id state deltas.
+   @abstract
+   */
+  computeDeltas(graph, prototypeObject) {
+    throw (new Error('GraphEnvironment.computeDeltas must be implemented'));
   }
 
   /**
@@ -301,7 +310,7 @@ export class GraphEnvironment {
     var defs = {};
     if (classInstance) {
       var instance = Object.create(classInstance.prototype, defs);
-      instance.identifier = identifier;
+      instance.setIdentifier(identifier);
       instance.initializeState(instance.stateClean);
       // apply state after initialization, but before proyxing
       Object.entries(state).forEach(function([entryKey, entryValue]) {
@@ -328,7 +337,8 @@ export class GraphEnvironment {
  @returns {string}
  */
 export function predicateLeaf(url) {
-  var asURL = ( (url instanceof URL) ? url : new URL(url.toString()))
+  console.log("predicateLeaf", url)
+  var asURL = ( (url instanceof URL) ? url : new URL(url.lexicalForm))
   return ( (asURL.hash.length > 0) ? asURL.hash.slice(1) : asURL.pathname.split('/').pop() );
 }
 
