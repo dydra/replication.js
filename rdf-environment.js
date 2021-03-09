@@ -270,7 +270,7 @@ export class RDFEnvironment extends GraphEnvironment {
    * for each instance extract its +/- deltas
    */
   computeDeltas(content, prototypeObject) {
-    console.log("computeDeltas", content, content.computeDeltas);
+    // console.log("computeDeltas", content, content.computeDeltas);
     return (content.computeDeltas(this, prototypeObject));
   }
  
@@ -291,7 +291,7 @@ export class RDFEnvironment extends GraphEnvironment {
    */
   toValue(term, predicate) {
     var datatype = term.datatype || this.fieldType(predicate);
-     console.log('toValue', term, predicate, datatype);
+    // console.log('toValue', term, predicate, datatype);
     if (datatype) {
       var converter = Literal.toValue[datatype.lexicalForm];
       // console.log('toValue.converter: ', converter);
@@ -347,13 +347,13 @@ export class RDFEnvironment extends GraphEnvironment {
    */
   decode(document, mediaType, continuation = null) {
     var contentTypeStem;
-    console.log("rdfenv.decode: for", mediaType, document);
+    // console.log("rdfenv.decode: for", mediaType, document);
     if (contentTypeStem = mediaTypeStem(mediaType)) {
       var decoder = decode[contentTypeStem];
       if (!decoder) {
         throw (new Error(`RDFEnvironment.decode: unsupported media type: ${mediaType}`));
       }
-      console.log("rdfenv.decode: decoder", decoder);
+      // console.log("rdfenv.decode: decoder", decoder);
       // must pass the content type as it can include arguments
       var decoded = decoder(document, mediaType, continuation);
       if (decoded) {
@@ -364,7 +364,7 @@ export class RDFEnvironment extends GraphEnvironment {
       // console.log("rdfenv.decode: decoded", decoded);
       return (decoded);
     } else {
-      console.log("rdfenv.decode: decoder not found");
+      console.warn(`RDFEnvironment.decode: decoder not found: ${mediaType}`);
       return (null);
     }
   }
@@ -634,10 +634,11 @@ export class Graph {
       var name = null;
       var predicate = stmt.predicate.lexicalForm;
       try { name = prototypeObject.getPropertyName(predicate) || environment.findIdentifierName(stmt.predicate); }
-        catch (e) {console.log("computeDeltas: name failure", e);}
+        catch (e) {console.warn("computeDeltas: name failure", e);}
       var value = null;
-      try { value = environment.toValue(stmt.object, stmt.predicate); } catch (e) {console.log("computeDeltas: value failure", e);}
-      console.log("computeDeltas", "name", name, "value", value);
+      try { value = environment.toValue(stmt.object, stmt.predicate); }
+        catch (e) {console.warn("computeDeltas: value failure", e);}
+      // console.log("computeDeltas", "name", name, "value", value);
       var id = stmt.subject.lexicalForm;
       // console.log('id', id);
       // console.log('allDeltas', allDeltas);
@@ -653,9 +654,7 @@ export class Graph {
       } else {
         deltas = idDeltas[1];
       }
-       console.log('set delta', deltas);
       deltas[name] = delta;
-       console.log('set delta', deltas);
       var object = null;
       if (name == '@type') {
         // create an instance to accompany the deltas
@@ -673,7 +672,7 @@ export class Graph {
     this.statements.forEach(function(stmt) {
       addStatementDelta(stmt, function(value) { return ([value, undefined]); });
     });
-    console.log('computeDeltas', allDeltas);
+    console.debug('Graph.computeDeltas', allDeltas);
     return (Array.from(allDeltas.values()));
   }
 
@@ -685,7 +684,7 @@ export class Graph {
   }
 
   getObject(subject, predicate) {
-    console.log("graph.getObject: ", this);
+    console.debug("graph.getObject: ", this);
     var statement = this.statements.find(subject ?
                                  function(statement) {
                                    //console.log("Graph.fo: ", subject, predicate, statement);
@@ -724,7 +723,7 @@ export class Graph {
   }
 
   find(pattern) {
-    console.log("Graph.find: pattern: ", pattern);
+    console.debug("Graph.find: pattern: ", pattern);
     function testStatement(statement) {
       return ((!pattern.subject || pattern.subject.equals(statement.subject)) &&
               (!pattern.predicate || pattern.predicate.equals(statement.predicate)) &&
@@ -1080,7 +1079,6 @@ export class Patch {
       if (name == '@type') {
         var stmtClass = predicateLeaf(stmt.object)
         object = environment.createObject(stmtClass, id);
-        // console.log('computeDeltas: created: ', object._state);
       }
       var deltas = null;
       if (! idDeltas ) {
@@ -1170,7 +1168,7 @@ export function decode(document, mediaType, continuation) {
     // console.log("rdfenv.decode: decoded", decoded);
     return (decoded);
   } else {
-    console.log("decode: decoder not found");
+    console.warn("decode: decoder not found");
     return (null);
   }
 }
@@ -1186,7 +1184,7 @@ decode['application/n-quads'] = function(document, mediaType, continuation) {
   try {
     parser = new nearley.Parser(nearley.Grammar.fromCompiled(nquadsGrammar));
   } catch (error) {
-    console.log("from grammar failed: ", error);
+    console.warn("from grammar failed: ", error);
     return (null);
   }
   try {
@@ -1196,7 +1194,7 @@ decode['application/n-quads'] = function(document, mediaType, continuation) {
     // console.log('decoded', graph);
     return (continuation ? continuation(graph) : graph);
   } catch (error) {
-    console.log("decode['application/n-quads'] failed", error, document);
+    console.warn("decode['application/n-quads'] failed", error, document);
     return (null);
   }
 }
@@ -1214,7 +1212,7 @@ decode['application/rdf+xml'] = function(document, mediaType, continuation) {
     //console.log('decoded', parsedDocument);
     return (continuation ? continuation(document) : parsedDocument);
   } catch (error) {
-    console.log("decode['application/n-quads'] failed", error, document);
+    console.warn("decode['application/n-quads'] failed", error, document);
     return (null);
   }
 }
@@ -1253,7 +1251,7 @@ decode['multipart/related'] = function(document, mediaType, continuation) {
         puts = puts.concat(statements);
         break;
       default:
-        console.log(`decode['multipart/related']: invalid method '${method.toUpperCase()}'`);
+        console.warn(`decode['multipart/related']: invalid method '${method.toUpperCase()}'`);
       }
     });
   }
@@ -1269,6 +1267,14 @@ decode['multipart/related'] = function(document, mediaType, continuation) {
  It encodes the data as a string and delegates to the continuation.
  Numbers and strings are encoded in-line while objects delegate to the respective method.
  */
+
+// provide default encoding functions
+String.prototype.encode = {
+ 'application/n-quads': function(object, continuation) { return (continuation('"' + object + '"')); },
+ 'text/turtle': function(object, continuation) { return (continuation('"' + object + '"')); }
+};
+
+
 export function encode(object, mediaType, continuation) {
   var genericFunction = object.encode;
   if (genericFunction) {
@@ -1336,7 +1342,7 @@ export function lexicalForm(term) {
   } else if (typeof(term) == 'string') {
     return (term);
   } else {
-    console.log(`no lexical form: ${term}`);
+    console.warn(`no lexical form: ${term}`);
     return (term);
   }
 }

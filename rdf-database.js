@@ -99,7 +99,7 @@ export class RDFDatabase extends GraphDatabase {
         var value = keyObject[key];
         if (value) {
           var predicate = thisDatabase.environment.createNamedNode(key);
-          console.log('predicate ' + key + ' : ' + predicate)
+          // console.log('predicate ' + key + ' : ' + predicate)
           return (`?s <${predicate.lexicalForm}> "${value}" .`);
         } else {
           return ("");

@@ -50,8 +50,8 @@ log.level = log.DEBUG;
 // this needs to be two-dimensional
 
 export function getResource (location, options, continuation, fail) {
-  log.warn("getResource: ", location, options);
-  log.warn("getResource: ", getResource);
+  log.debug("getResource: ", location, options);
+  log.debug("getResource: ", getResource);
   var mediaType = options['Accept'];
   if (! mediaType) {
     console.trace();
@@ -151,7 +151,6 @@ export function postResource (location, content, options, continuation, fail) {
       return (invokeImplementation(implementation));
     case "object":
       var contentType = options['Content-Type'];
-      console.log("content type: ", contentType);
       var contentMatch = (contentType ? mediaTypeStem(contentType) : "*");
       if (contentMatch) {
         implementation = implementation[contentMatch] || implementation["*"];
@@ -240,23 +239,22 @@ export function responseHandler (location, options, succeed, retry, fail) {
     Object.assign(options, {authentication: savedAuth});
   }
   function ensureSuccessfulResponse (response) {
-    console.warn("ensureSuccessfulResponse: ", response);
+    log.debug("ensureSuccessfulResponse: ", response);
     if (response instanceof Response) {
       if (response.ok) {
-        console.log(response.status, location);
+        log.debug(response.status, location);
         succeed(response);
       } else if (response.status == 401) {
-          console.log("responseHandler: 401: ", location);
+        log.warn("responseHandler: 401: ", location);
         function localRetry(authentication) {
           responseHandler.setAuthentication(location, authentication);
           options = Object.assign({}, options, {authentication: authentication});
           log.debug("esr: augmented options: ", options);
           retry(options);
         }
-        console.log("prompt: ", localRetry);
+        log.debug("prompt: ", localRetry);
         authentication_token_prompt({location: location, submit: localRetry});
       } else {
-        console.log(response.status, location);
         // a failed response aborts references to the text body
         log.debug(`responseHandler ${location}: ${response.status}`);
         if (fail) { fail(response); }
@@ -286,37 +284,35 @@ responseHandler.setAuthentication = function(location, authentication) {
 }
 
 
-function promiseHandler (location, options, succeed, retry, fail = console.warn) {
+function promiseHandler (location, options, succeed, retry, fail = log.warn) {
   var savedAuth = responseHandler.getAuthentication(location);
   var optionsAuth = options.authentication;
   if (savedAuth && !optionsAuth) {
     Object.assign(options, {authentication: savedAuth});
   }
   function retryUntilSuccessful (promise) {
-    console.warn("retryUntilSuccessful: ", promise);
+    log.debug("retryUntilSuccessful: ", promise);
     function accepted(response) {
       if (response instanceof Response) {
         if (response.ok) {
-          console.log(response.status, location);
+          log.debug(response.status, location);
           succeed(response);
         } else if (response.status == 401) {
-          console.log("401: ", location);
+          log.warn("401: ", location);
           function localRetry(authentication) {
             responseHandler.setAuthentication(location, authentication);
             options = Object.assign({}, options, {authentication: authentication});
             log.debug("esr: augmented options: ", options);
             retry(options);
           }
-          console.log("prompt: ", localRetry);
+          log.debug("prompt: ", localRetry);
           authentication_token_prompt({location: location, submit: localRetry});
         } else {
-          console.log(response.status, location);
           // a failed response aborts references to the text body
           log.warn(`promiseHandler ${location}: failed ${response.status}`);
           fail(response);
         }
       } else {
-        console.log(response);
         log.warn(`promiseHandler ${location}: not a response ${response}`);
         fail(response);
       }
@@ -363,14 +359,14 @@ getResource['application/json'] = function(location, options, continuation, fail
 getResource['application/n-quads'] = function(location, options, continuation, fail) {
   log.debug("getResource: ", options);
   function succeed(response) {
-    log.warn("getResource['application/n-quads']: response: ", response);
+    log.debug("getResource['application/n-quads']: response: ", response);
     var contentType = response.headers.get('Content-Type');
     var environment = options.environment || RDFEnvironment.theEnvironment;
     function acceptText(document) {
-      log.warn("document:", document);
+      log.debug("document:", document);
       var graph = environment.decode(document, contentType);
       if (graph) {
-        log.warn("getResource: graph:", graph);
+        log.debug("getResource: graph:", graph);
         graph.location = location;
         continuation(graph);
       } else {
@@ -665,7 +661,7 @@ getResource['image/vnd.dydra.sparql-results+graphviz+svg+xml'] = function(locati
  Request a query with the expection that it be reflected back
  */
 postResource['application/sparql-query'] = function(location, query, options, continuation, fail) {
-  log.warn("postResource: ", location, query, options);
+  log.debug("postResource: ", location, query, options);
   function succeed(response) {
     var contentType = response.headers.get('Content-Type');
     function acceptText(text) {
@@ -790,16 +786,16 @@ postResource['application/sparql-results+json'] = function(location, query, opti
 
 postResource['application/json'] = {};
 postResource['application/json']['application/sparql-query'] = function(location, query, options, continuation, fail) {
-  console.log("postResource: a/j ", location, query, options);
+  log.debug("postResource: application/json ", location, query, options);
   function succeed(response) {
     var contentType = response.headers.get('Content-Type');
     function acceptJSON(json) {
-      console.log("json:", json);
+      log.debug("json:", json);
       json.mediaType = mediaTypeStem(contentType);
       json.location = location;
       continuation(json);
     }
-    console.log("postResource: response: ", response, contentType);
+    log.debug("postResource: response: ", response, contentType);
     response.json().then(acceptJSON);
   }
   function retry(newOptions) {

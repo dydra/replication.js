@@ -27,12 +27,10 @@ export class RDFGraphObject extends GraphObject {
         for (let [mode, assertions] of Object.entries(patch)) {
             rdfPatch[mode] = self.assertionStatements(assertions);
         }
-        console.log("asPatch: rdf", this.constructor.name, rdfPatch);
         return (rdfPatch);
     }
 
     assertionStatements(assertions) {
-        console.log("assertionStatements", assertions);
         var thisObject = this;
         function assertionStatement(assertion) {
             var [subject, name, value] = assertion;
@@ -108,7 +106,6 @@ export function computeSparqlClass(sparqlDefinition) {
 
     // console.log("extracting...", className);
     extractPatterns(sparqlDefinition);
-    console.log("computeSparqlClass.statementPatterns", statementPatterns);
 
     // this retains just one pattern for a given predicate
     for (var pattern of statementPatterns) {
@@ -117,7 +114,6 @@ export function computeSparqlClass(sparqlDefinition) {
         if (object.termType == 'Variable') {
             var name = object.value;
             var url = predicate.value;
-            console.log("nme url", name, url);
             var identifier = url;
             var descriptor = Object.create(null);
             descriptor.writable = true;
@@ -132,7 +128,6 @@ export function computeSparqlClass(sparqlDefinition) {
               console.warn(`computeSparqlClass: predicate appears multiple times: ${identifier}.`);
             }
             propertyMap.set(identifier, descriptor);
-            console.log("computeSparqlClass.descriptor", descriptor)
         }
     }
 
@@ -142,7 +137,6 @@ export function computeSparqlClass(sparqlDefinition) {
                 super();
                 // get the target and work on that
                 var self = this._self || this;
-                console.log("constructor", className, this, self, propertyDefinitions);
                 for (let [name, descriptor] of Object.entries(propertyDefinitions)) {
                     Object.defineProperty(self, name, descriptor);
                 }
@@ -150,7 +144,6 @@ export function computeSparqlClass(sparqlDefinition) {
     sparqlClass._persistentProperties = propertyNames;
     sparqlClass._transactionalProperties = propertyNames;
     sparqlClass.propertyDefinitions = propertyMap;
-    console.log("computeSparqlClass map", sparqlClass.name, propertyMap);
     return (sparqlClass);
 }
 
@@ -185,7 +178,7 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
     var editableProperties = object.editableProperties();
     var classStyle = object.constructor.objectEditorCss;
     var optionsStyle = options.style;
-    console.log("objectEditor: styles", classStyle, optionsStyle);
+    // console.log("objectEditor: styles", classStyle, optionsStyle);
 
     function addFieldElements(key) {
         var value = object[key] || "";
@@ -277,7 +270,7 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
             var element = editedElements[key];
             var text = element.innerText.trim();
             var value = object[key];
-            console.log("updating", element, text, value);
+            // console.log("updating", element, text, value);
             switch (typeof(value)) {
             case 'undefined':
             case 'null': // absent type declarations, limited to strings
@@ -304,8 +297,7 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
             }
         }
         Object.keys(editedElements).forEach(applyElement);
-        console.log("objectEditor.updateObject: edited", editedElements);
-        console.log("objectEditor.state", object._state, object._deltas);
+        // console.log("objectEditor.state", object._state, object._deltas);
         return (count);
     }
     editableProperties.forEach(addFieldElements);    
@@ -385,16 +377,19 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
     function doGet(event) {
         var id = idElement.innerText;
         var store = object.store();
-        console.log("doGet.........", object, id, store, object._store);
-        window.doGetObject = object;
+        console.log("objectEditor.doGet", object, id);
         if (id && store) {
           object.setIdentifier(id);
           store.get(object, function (newObject) {
             if (newObject) {
+              console.debug("objectEditor: found: ", object);
               object = newObject
               presentation.setObject(object);
             } else {
-              console.log("not found: ", object);
+              console.warn("objectEditor: not found: ", object);
+              var oldColor = idElement.style.borderColor;
+              idElement.style.borderColor = "red";
+              setTimeout(function() { idElement.style.borderColor = oldColor }, 2000);
             }
           });
         }
@@ -403,14 +398,14 @@ RDFGraphObject.objectEditor = function(object, options = {}) {
     function doSave(event) {
         var id = idElement.innerText;
         var store = object.store();
-        console.log("doSave", object);
+        console.log("objectEditor.doSave", object);
         if (id && presentation.updateObject() > 0) {
           object.setIdentifier(id);
           if (store) {
             var transaction = store.database.transaction([store.name], "readwrite");
-            console.log("opened transaction", store, transaction);
-            console.log("store =?", store == transaction.stores[0]);
-            console.log("object =?", object == transaction.stores[0].objects.get(object.getIdentifier()));
+            //console.log("opened transaction", store, transaction);
+            //console.log("store =?", store == transaction.stores[0]);
+            //console.log("object =?", object == transaction.stores[0].objects.get(object.getIdentifier()));
             //transaction.stores[0].put(object);
             transaction.commit();
           }

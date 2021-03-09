@@ -103,7 +103,7 @@ export class GraphEnvironment {
    */
   fieldDefinition(identifier) {
     var def;
-    console.log("fieldDefinition", identifier);
+    // console.log("fieldDefinition", identifier);
     switch (typeof(identifier)) {
     case 'string': // field name
       return (this.context[name] || null);
@@ -324,7 +324,7 @@ export class GraphEnvironment {
       // console.log('graph-environment.createObject: state', instance._state);
       return( proxy );
     } else {
-      console.log(`graph-environment.createObject: class not found '${className}'`);
+      console.warn(`graph-environment.createObject: class not found '${className}'`);
       return (state);
     }
   } 
@@ -337,7 +337,7 @@ export class GraphEnvironment {
  @returns {string}
  */
 export function predicateLeaf(url) {
-  console.log("predicateLeaf", url)
+  // console.log("predicateLeaf", url)
   var asURL = ( (url instanceof URL) ? url : new URL(url.lexicalForm))
   return ( (asURL.hash.length > 0) ? asURL.hash.slice(1) : asURL.pathname.split('/').pop() );
 }

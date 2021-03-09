@@ -699,7 +699,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
     var thisStore = this;
     var request = new PutRequest(this, thisStore.transaction);
     var patch = object.asPatch();
-    console.log("put", object._state, patch, request);
+    console.log("GDBObjectStore.put", object._state, patch, request);
     object._state = object.stateNew;
     var p = new Promise(function(accept, reject) {
       request.patch = patch;
@@ -740,18 +740,17 @@ export class GDBObjectStore { // extends IDBObjectStore {
     var keyObject = null;
     var p = null;
     thisStore.requests[key] = request;
-    console.log("get", key, request);
 
     function acceptGetContent (content) {
-      console.log("get.acceptGetContent", content);
+      console.log("GDBObjectStore.get.acceptGetContent", content);
       delete thisStore.requests[key];
-      if (content) {
+      if (content && content.statements.length > 0) {
         var deltas = thisStore.environment.computeDeltas(content, keyObject);
         // console.log("GDBObjectStore.get: deltas", deltas);
         var gottenObjects = deltas.map(function(perIdDeltas) {
           // console.log('GDBObjectStore.get: next delta', perIdDeltas);
           var [id, deltas] = perIdDeltas;
-          console.log('GDBObjectStore.get: next perIdDeltas', perIdDeltas);
+          // console.log('GDBObjectStore.get: next perIdDeltas', perIdDeltas);
           var object = thisStore.objects.get(id);
           // console.log('GDBObjectStore.get: gotten:', object);
           if (object) {
@@ -777,8 +776,9 @@ export class GDBObjectStore { // extends IDBObjectStore {
         if (thisStore.transaction) {
           thisStore.transaction.commitIfComplete();
         }
-        continuation(keyObject);
-      };
+      } else {
+        continuation(null);
+      }
     };
     switch (typeof(key)) {
     case 'string' :
@@ -868,9 +868,6 @@ export class GDBObjectStore { // extends IDBObjectStore {
     // attach the instance to a store
     var thisStore = this;
     var store = object._store;
-    //console.log('attaching');
-    //console.log(object);
-    //console.log(thisStore);
     if (store) {
       // no error, just stop walking
       //if (transaction != this) {
@@ -892,7 +889,7 @@ export class GDBObjectStore { // extends IDBObjectStore {
         object.persistentValues(object).forEach(attachChild);
         //console.log('attached');
       }
-    } console.log("attached", object)
+    }
     return (object);
   }
 
@@ -959,8 +956,6 @@ export class GDBObjectStore { // extends IDBObjectStore {
     thisStore.objects.forEach(function(object, id) {
       // console.log('asPatch: forEach: ', id, object);
       var patch = object.asPatch();
-      // console.log('asPatch.forEach');
-      // console.log(patch);
       deletes = deletes.concat(patch.delete || []);
       posts = posts.concat(patch.post || []);
       puts = puts.concat(patch.put || []);

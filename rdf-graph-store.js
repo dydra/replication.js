@@ -51,20 +51,20 @@ export function mediaTypeStem(mediaType) {
  */
 
 function logFetch(location, args) {
-  console.log('fetch:', location, args);
+  console.debug('fetch:', location, args);
   // in order to see the header entries...
   var headers = args.headers;
-  for (var [k,v] of headers.entries()) {console.log('fetch:', [k,v])};
+  for (var [k,v] of headers.entries()) {console.debug('fetch:', [k,v])};
   var p = fetch(location, args);
   p.location = location;
 /*  p = p.then(function(response) {
         if (response.ok) {
           return (response);
         } else {
-          console.log(`fetch failed: response: ${response.status}`);
+          console.warb(`fetch failed: response: ${response.status}`);
           return (response);
         }
-      }).catch(function(error) { console.log("fetch failed: ", location, error); });
+      }).catch(function(error) { console.warn("fetch failed: ", location, error); });
   // console.log(p);*/
   return (p);
 }
@@ -98,13 +98,6 @@ SESAME.fetchOp = logFetch;
 export class HTTP {
 }
 HTTP.fetchOp = logFetch;
-
-// provide default encoding functions
-String.prototype.encode = {
- 'application/n-quads': function(object) { return( object ); },
- 'text/turtle': function(object) { return( object ); },
- 'application/n-quads': function(object) { return( object ); }
-};
 
 
 function constrainGSLocation(location, options) {
@@ -238,15 +231,13 @@ GSP.head = function(location, options, continuation) {
  */
 
 GSP.patch = function (location, content, options = {}, continuation) {
-  console.log("GSP.patch", location, content, options);
+  console.debug("GSP.patch", location, content, options);
   var contentType = options["Content-Type"] || GSP.patch.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || GSP.patch.acceptMediaType),
                               "Content-Type": contentType,});
   headers = HTTP.setHeaderAuthorization(headers, options);
   var contentEncoded = ""
   var boundary = null;
-  //console.log("GSP.patch");
-  //console.log(options);
   if (options.etag) { headers.set("ETag", options.etag) }
   if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   //console.log(headers);
@@ -364,7 +355,7 @@ GSP.put.ContentType = 'application/n-quads';
  */
 
 SPARQL.get = function(location, query, options = {}, continuation) {
-  // console.log("SPARQL.get ", query, options);
+  console.debug("SPARQL.get ", query, options);
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.get.acceptMediaType) });
   headers = HTTP.setHeaderAuthorization(headers, options);
   var args = { method: "GET",
@@ -420,7 +411,7 @@ SPARQL.view.acceptMediaType = 'application/sparql-results+json';
  otherwise the active promise is returned.
  */
 SPARQL.post = function(location, query, options = {}, continuation) {
-  console.log("SPARQL.post", location, query, options);
+  console.debug("SPARQL.post", location, query, options);
   var contentType = options["Content-Type"] || SPARQL.post.contentMediaType;
   var headers = new Headers({ "Accept": (options["Accept"] || SPARQL.post.acceptMediaType),
                               "Content-Type": contentType });
@@ -472,9 +463,9 @@ SESAME.get = function(location, options = {}, continuation = null) {
                headers: headers };
   // no suffix
   location = constrainGSLocation(location, options);
-  console.log("SESAME.get:", location, args);
+  console.debug("SESAME.get:", location, args);
   var p = SESAME.fetchOp(location, args);
-  console.log("SESAME.get: promise: ", p, "continuation: ", continuation);
+  // console.log("SESAME.get: promise: ", p, "continuation: ", continuation);
   return (continuation ? p.then(continuation) : p);
 }
 SESAME.get.acceptMediaType = 'application/n-quads';
