@@ -181,7 +181,7 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
     // console.log("objectEditor: styles", classStyle, optionsStyle);
 
     function addFieldElements(key) {
-        var value = object[key] || "";
+        //var value = object[key] || "";
         var definition = Object.getOwnPropertyDescriptor(object, key);
         var editable = objectEditable && (definition ? definition.writable : false)
         var element = document.createElement('div');
@@ -212,7 +212,7 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
         } else {
            valueElement.style.borderBottom = "solid 1px #d3d3d3";
         }
-        setElementText(valueElement, value);
+        //setElementText(valueElement, value);
         allElements[key] = valueElement;
         valueWidth = Math.max(valueWidth, (valueElement.innerText.length * pixelsPerCharacter), styleWidth)
         valueElement.addEventListener("keyup", function(event) {
@@ -246,6 +246,8 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
                 value = value.id;
             } else if (value instanceof URL) {
                 value = value.toString();
+            } else if (value instanceof Array) {
+                value = '[' + value.map(toString).join(', ') + ']';
             } else {
                 value = value.toString();
                 element.contentEditable = false;
@@ -290,6 +292,10 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
             } else if (value instanceof URL) {
                 object[key] = new URI(text);
                 count ++;
+            } else if (value instanceof Array) {
+                count ++;
+                object[key] = value.substring(1, value.length-1).split(',').map(function(v){return(v.trim(' '))});
+            }
             } else {
                 // ignore
             }

@@ -16,7 +16,7 @@ import {grammar as nquadsGrammar} from './n-quads-grammar.js';
 import {grammar as multipartGrammar} from './multipart-grammar.js';
 import { makeUUIDString } from './revision-identifier.js';
 import { GraphEnvironment, predicateLeaf } from './graph-environment.js';
-import { GraphObject } from './graph-object.js';
+//import { GraphObject } from './graph-object.js';
 import { sparqlMediaTypes, rdfMediaTypes, mediaTypeStem } from './rdf-graph-store.js';
 import * as nearley from './lib/nearley/lib/nearley.js';
 export { sparqlMediaTypes, rdfMediaTypes, mediaTypeStem };
@@ -251,7 +251,7 @@ export class RDFEnvironment extends GraphEnvironment {
       }
     }
     field.map(setEntry);
-    resource._state = GraphObject.stateClean;
+    resource.setStateClean();
     return( resource );
   }
 
@@ -621,6 +621,7 @@ export class Graph {
    Each entry is an array of which the first element is the lexical identifier of a subject
    and the second is an array of roll-forward deltas.
    That is, the first value is set to a JavaScript value and the second is left undefined.
+   Functional predicate yield a single value, while multi-valued predicate yield an array.
    */
   computeDeltas(environment, prototypeObject) {
     // console.log('computeDeltas', this, environment);
@@ -644,8 +645,6 @@ export class Graph {
       // console.log('allDeltas', allDeltas);
       var idDeltas = allDeltas.get(id);
       // console.log( 'iddeltas', idDeltas);
-      var delta = makeEntry(value);
-      // console.log('entry', delta);
       var deltas = null;
       if (! idDeltas ) {
         deltas = {};
@@ -654,7 +653,16 @@ export class Graph {
       } else {
         deltas = idDeltas[1];
       }
-      deltas[name] = delta;
+      var delta = deltas[name];
+      if (delta) {
+        var deltaValue = delta[0];
+        if (deltaValue instanceof Array) { deltaValue.push(value); }
+        else { delta[0] = [deltaValue, value]; }
+      } else {
+        delta = makeEntry(value);
+      }
+      console.debug('entry', delta);
+      /*
       var object = null;
       if (name == '@type') {
         // create an instance to accompany the deltas
@@ -666,7 +674,7 @@ export class Graph {
         // console.log('object by type', object);
         idDeltas['object'] = object;
         // console.log('object by type', object);
-      }
+      }*/
       // console.log("computeDeltas.asd: added:", stmt);
     };
     this.statements.forEach(function(stmt) {

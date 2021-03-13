@@ -186,6 +186,10 @@ export class GraphObject {
     return (this._state);
   }
 
+  setStateClean() {
+    this._state = GraphObject.stateClean;
+  }
+
   /**
    Accept a delta-array with the state of the new instance.
    @param deltas [ [String, Any], ...]
@@ -318,7 +322,7 @@ export class GraphObject {
     console.log("getPropertyName", this.propertyDefinitions, designator, typeof designator);
     return ((this.getPropertyDefinition(designator) || {}).name)
   }
-  setPropertyName = function(designator, value) {
+  setPropertyName (designator, value) {
     var definition = this.getPropertyDefinition(designator);
     if (!definition) {
       definition = {};
@@ -422,8 +426,16 @@ GraphObject.asPatch[GraphObject.stateDeleted] =
     var self = this._self;
     var id = this.getIdentifier();
     var statements = [];
+    var deltas = this._deltas;
     self.persistentProperties().forEach(function(name) {
-      statements.push([id, name, self[name]]);
+      var oldValue = ((deltas && deltas.hasOwnProperty(name)) ? deltas[name][1] : self[name]);
+      if (oldValue instanceof Array) {
+        for (let eltValue of oldValue) {
+          statements.push([id, name, eltValue]);
+        }
+      } else {
+        statements.push([id, name, oldValue]);
+      }
     });
     /*var type = self["_type"];
     if (type) {
@@ -446,10 +458,22 @@ GraphObject.asPatch[GraphObject.stateModified] =
       if (deltas && deltas.hasOwnProperty(name)) {
         var [newValue, oldValue] = deltas[name];
         if (oldValue) {
-          deletes.push([id, name, oldValue]);
+          if (oldValue instanceof Array) {
+            for (let eltValue of oldValue) {
+              deletes.push([id, name, eltValue]);
+            }
+          } else {
+            deletes.push([id, name, oldValue]);
+          }
         }
         if (newValue) {
-          posts.push([id, name, newValue]);
+          if (newValue instanceof Array) {
+            for (let eltValue of newValue) {
+              posts.push([id, name, eltValue]);
+            }
+          } else {
+            posts.push([id, name, newValue]);
+          }
         }
       };
     });
@@ -469,7 +493,16 @@ GraphObject.asPatch[GraphObject.stateNew] =
     var statements = [];
     // collect storage  representation agnostic  entity-attribute-value statements
     self.persistentProperties().forEach(function(name) {
-      statements.push([id, name, self[name]]);
+      var newValue = self[name];
+      if (newValue) {
+        if (newValue instanceof Array) {
+          for (let eltValue of newValue) {
+            statements.push([id, name, eltValue]);
+          }
+        } else {
+          statements.push([id, name, newValue]);
+        }
+      }
     });
     /*var type = self["_type"];
     if (type) {
