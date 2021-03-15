@@ -295,7 +295,6 @@ RDFGraphObject.objectPresentation = function(object, options = {}) {
             } else if (value instanceof Array) {
                 count ++;
                 object[key] = value.substring(1, value.length-1).split(',').map(function(v){return(v.trim(' '))});
-            }
             } else {
                 // ignore
             }
