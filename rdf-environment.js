@@ -399,7 +399,13 @@ export class NamedNode extends Node {
     switch (typeof(lexicalForm)) {
     case 'string': break;
     case 'object' :
-      lexicalForm = lexicalForm.toString();
+      if (lexicalForm instanceof NamedNode) {
+        return (lexicalForm);
+      } else if (lexicalForm.type == "iri" || lexicalForm.type == "uri" || lexicalForm.type == "url") {
+        lexicalForm = lexicalForm.value;
+      } else {
+        lexicalForm = lexicalForm.toString();
+      }
       break;
     default:
       throw new Error(`NamedNode: invalid lexicalForm: '${lexicalForm}'`);
@@ -438,6 +444,10 @@ export class NamedNode extends Node {
 
   get turtleForm() {
     return (`<${this.lexicalForm}>`);
+  }
+
+  get predicateLeaf() {
+    return (predicateLeaf(this.lexicalForm))
   }
 }
 
@@ -1349,6 +1359,8 @@ export function lexicalForm(term) {
     return (term.toString());
   } else if (typeof(term) == 'string') {
     return (term);
+  } else if (term.type == "iri" || term.type == "uri" || term.type == "url") {
+    return (term.value);
   } else {
     console.warn(`no lexical form: ${term}`);
     return (term);

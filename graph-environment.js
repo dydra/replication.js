@@ -337,8 +337,10 @@ export class GraphEnvironment {
  @returns {string}
  */
 export function predicateLeaf(url) {
-  // console.log("predicateLeaf", url)
-  var asURL = ( (url instanceof URL) ? url : new URL(url.lexicalForm))
+  var asURL = (url instanceof URL) ? url :
+              (typeof url === 'string' || url instanceof String) ? new URL(url) :
+              (url.type == "iri" || url.type == "uri" || url.type == "url") ? new URL(url.value) :
+              (url.lexicalForm) ? new URL(url.lexicalForm) : undefined;
   return ( (asURL.hash.length > 0) ? asURL.hash.slice(1) : asURL.pathname.split('/').pop() );
 }
 

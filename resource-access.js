@@ -50,8 +50,6 @@ log.level = log.DEBUG;
 // this needs to be two-dimensional
 
 export function getResource (location, options, continuation, fail) {
-  log.debug("getResource: ", location, options);
-  log.debug("getResource: ", getResource);
   var mediaType = options['Accept'];
   if (! mediaType) {
     console.trace();
