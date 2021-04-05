@@ -49,6 +49,22 @@ log.level = log.DEBUG;
 // excel : would be https://github.com/SheetJS/sheetjs
 // this needs to be two-dimensional
 
+const serviceSuffix = '/service';
+
+function ensureServiceLocation(location) {
+    if (!(location instanceof URL)) {
+        location = new URL(location);
+    }
+    let path = location.pathname;
+    if (path.endsWith(serviceSuffix)) {
+        return (location.toString());
+    } else if (path.slice(1).split('/').length >= 3) {
+        return (location.toString());
+    } else {
+        return (location.toString() + serviceSuffix);
+    }
+}
+
 export function getResource (location, options, continuation, fail) {
   var mediaType = options['Accept'];
   if (! mediaType) {
@@ -378,6 +394,7 @@ getResource['application/n-quads'] = function(location, options, continuation, f
   function retry(newOptions) {
     getResource['application/n-quads'](location, newOptions, continuation, fail);
   }
+  location = ensureServiceLocation(location);
   if (['graph', 'subject', 'predicate', 'object'].find(function(role) { return(!(options[role] == undefined)); })) {
     promiseHandler(location, options, succeed, retry, fail)(GSP.get(location, options));
   } else {
@@ -858,10 +875,11 @@ postResource['application/n-quads']['application/sparql-query'] = function(locat
 };
 
 /**
- postResource with non-sparql content executed as a graph store request toimport rdf content
+ postResource with non-sparql content executed as a graph store request to import rdf content
  */
 postResource['application/n-quads']['*'] = function(location, content, options, continuation, fail) {
-  log.debug("postResource['application/n-quads']['*']: ", options);
+  //log.debug("postResource['application/n-quads']['*']: ", options);
+console.log("postResource['application/n-quads']['*']: ", options);
   function succeed(response) {
     log.debug("postResource['application/n-quads']: response: ", response);
     var contentType = response.headers.get('Content-Type');
@@ -884,6 +902,8 @@ postResource['application/n-quads']['*'] = function(location, content, options, 
   function retry(newOptions) {
     postResource['application/n-quads'](location, content, newOptions, continuation, fail);
   }
+  location = ensureServiceLocation(location);
+  console.log("effective location", location)
   promiseHandler(location, options, succeed, retry, fail)(GSP.post(location, content, options));
 };
 
@@ -948,6 +968,7 @@ putResource['application/n-quads']["*"] = function(location, content, options, c
   function retry(newOptions) {
     putResource['application/n-quads'](location, content, newOptions, continuation, fail);
   }
+  location = ensureServiceLocation(location);
   promiseHandler(location, options, succeed, retry, fail)(GSP.put(location, content, options));
 };
 

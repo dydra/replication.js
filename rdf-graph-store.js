@@ -75,7 +75,8 @@ function logFetch(location, args) {
 export class GSP {
 }
 window.GSP = GSP;
-GSP.locationSuffix = "/service";
+// 2021.04.05 eliminated as it prevented posting to views
+//GSP.locationSuffix = "/service";
 GSP.fetchOp = logFetch;
 
 /**
@@ -152,7 +153,7 @@ GSP.delete = function(location, options = {}, continuation) {
                cache: "no-cache",
                headers: headers };
   var constraint = options['graph'];
-  location = location + GSP.locationSuffix;
+  //location = location + GSP.locationSuffix;
   if (constraint) {
     location = location + '?graph=' + encodeURIComponent(constraint);
   }
@@ -187,7 +188,7 @@ GSP.get = function(location, options = {}, continuation) {
   var args = { method: "GET",
                cache: "no-cache",
                headers: headers };
-  location = location + GSP.locationSuffix;
+  //location = location + GSP.locationSuffix;
   location = constrainGSLocation(location, options);
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
@@ -208,7 +209,7 @@ GSP.head = function(location, options, continuation) {
   var args = { method: "HEAD",
                cache: "no-cache",
                headers: headers };
-  location = location + GSP.locationSuffix;
+  //location = location + GSP.locationSuffix;
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
 }
@@ -243,30 +244,37 @@ GSP.patch = function (location, content, options = {}, continuation) {
   //console.log(headers);
   //console.log(content);
   //console.log(contentType);
-  content.encode(contentType, function(e, options ={}) {
-    contentEncoded = e;
-    boundary = options.boundary
-  });
+  if (content instanceof File) {
+      contentEncoded = content;
+  } else if (content instanceof Object) {
+      content.encode(contentType, function(e, options ={}) {
+          contentEncoded = e;
+          boundary = options.boundary
+      });
+  } else {
+      contentEncoded = content;
+  }
+
   if (boundary) {
     headers.set("Content-Type", headers.get("Content-Type") + `; boundary=${boundary}`);
   }
   var args = { method: "PATCH",
                headers: headers,
                body: contentEncoded };
-  var httpURL = location + GSP.patch.locationSuffix;
+  var httpURL = location; // + GSP.patch.locationSuffix;
   var p = GSP.fetchOp(httpURL, args);
   return (continuation ? p.then(continuation) : p);
 }
 GSP.patch.acceptMediaType = 'text/turtle';
 GSP.patch.contentMediaType = 'multipart/related';
-GSP.patch.locationSuffix = GSP.locationSuffix;
+//GSP.patch.locationSuffix = GSP.locationSuffix;
 
 
 /**
  GSP.post
  Perform a GSP post given the location, content, options for authentication, and an optional continuation operator.
- The content is first encoded as per the given content type and a request is issued
- with the given headers.
+ Any object content is first encoded as per the given content type, while string or file content is used as-is.
+ A request is issued with the given headers.
  @param {string} location - the host and target repository name
  @param {Graph} content - the request content
  @param {Object} [options]
@@ -285,12 +293,17 @@ GSP.post = function (location, content, options = {}, continuation) {
   if (options.etag) { headers.set("ETag", options.etag) }
   if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var contentEncoded = "";
-  content.encode(contentType, function(e) { contentEncoded = e; });
-
+  if (content instanceof File) {
+      contentEncoded = content;
+  } else if (content instanceof Object) {
+      content.encode(contentType, function(e) { contentEncoded = e; });
+  } else {
+      contentEncoded = content;
+  }
   var args = { method: "POST",
                headers: headers,
                body: contentEncoded };
-  location = location + GSP.locationSuffix;
+  //location = location + GSP.locationSuffix;
   location = constrainGSLocation(location, options);
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
@@ -322,12 +335,17 @@ GSP.put = function (location, content, options = {}, continuation) {
   if (options.etag) { headers.set("ETag", options.etag) }
   if (options.contentDisposition) { headers.set("Content-Disposition", options.contentDisposition); }
   var contentEncoded = "";
-  content.encode(contentType, function(e) { contentEncoded = e; });
-
+  if (content instanceof File) {
+      contentEncoded = content;
+  } else if (content instanceof Object) {
+      content.encode(contentType, function(e) { contentEncoded = e; });
+  } else {
+      contentEncoded = content;
+  }
   var args = { method: "PUT",
                headers: headers,
                body: contentEncoded };
-  location = location + GSP.locationSuffix;
+  //location = location + GSP.locationSuffix;
   location = constrainGSLocation(location, options);
   var p = GSP.fetchOp(location, args);
   return (continuation ? p.then(continuation) : p);
