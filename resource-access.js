@@ -83,6 +83,15 @@ export function getResource (location, options, continuation, fail) {
                   implementation(location, options, accept, reject || fail || log.warn) })
                 );
       }
+    } else if (implementation = getResource['text/plain']) {
+      // invoke a default implementation. 
+      if (continuation) {
+        return (implementation(location, options, continuation, fail || log.warn));
+      } else {
+        return (new Promise(function(accept, reject) {
+                  implementation(location, options, accept, reject || fail || log.warn) })
+                );
+      }
     } else {
       console.trace();
       throw (new Error(`getResource: unimplemented media type: '${mediaType}'`));
@@ -320,7 +329,8 @@ function promiseHandler (location, options, succeed, retry, fail = log.warn) {
             retry(options);
           }
           log.debug("prompt: ", localRetry);
-          authentication_token_prompt({location: location, submit: localRetry});
+          var hostname = new URL(location, document.URL).host;
+          authentication_token_prompt({host: hostname, submit: localRetry});
         } else {
           // a failed response aborts references to the text body
           log.warn(`promiseHandler ${location}: failed ${response.status}`);
@@ -821,6 +831,8 @@ postResource['application/json']['application/sparql-query'] = function(location
 }
 postResource['application/json']['application/sparql-update'] =
   postResource['application/json']['application/sparql-query']
+postResource['application/json']['application/json'] =
+  postResource['application/json']['application/sparql-query']
 
 postResource['application/json']['application/graphql'] = function(location, query, options, continuation, fail) {
   log.debug("postResource: a/j ", location, query, options);
@@ -1090,9 +1102,11 @@ export function authentication_token_prompt(options) {
         tokenLabel = options.tokenLabel || "Token",
         submitLabel = options.submitLabel || "Submit",
         cancelLabel = options.cancelLabel || "Cancel";
-  var position = options.position || [20,20];
+    var position = options.position || [20,20];
     var submitContinuation = options.submit || options.accept;
     var cancelContinuation = options.cancel;
+
+console.log("authentication_token_prompt", options);
     if(! submitContinuation) { 
       throw (new Error("authentication_prompt requires a commit continuation."));
     };
